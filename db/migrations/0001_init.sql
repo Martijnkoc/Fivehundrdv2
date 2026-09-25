@@ -73,7 +73,8 @@ create table spots (
   foreign key (story_id, lane, no) references stories (id, lane, spot_no),
   -- Vacant spots hold nothing; reserved and live spots hold a story.
   check ((status = 'vacant') = (story_id is null)),
-  -- Only a reservation expires (§15: 15 minutes to finish checkout).
+  -- Only a reservation expires (§15: 30 minutes, the same as the Stripe
+  -- Checkout session's expires_at, so a payment can't land after release).
   check ((status = 'reserved') = (reserved_until is not null))
 );
 

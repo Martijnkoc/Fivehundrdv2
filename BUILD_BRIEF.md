@@ -246,9 +246,9 @@ The schema lives in [`db/migrations/0001_init.sql`](db/migrations/0001_init.sql)
 - `POST /api/uploads/sign`: signed R2 upload for artwork, logo or audio, with type/size limits.
 - `POST /api/checkout`:
   1. Validate the form (same rules and error copy as the reference).
-  2. **Reserve the spot number** in its lane (`reserveSpot` in `db/queries.mjs`): `update spots set status='reserved', reserved_until=now()+15min, story_id=$3 where lane=$1 and no=$2 and status='vacant'`. If 0 rows update, offer another vacant number.
-  3. Create the Stripe Checkout session for $9.95, with the reservation in its metadata.
-- `POST /api/stripe/webhook`: on `checkout.session.completed`, set the spot live (`starts_at=now()`, `ends_at=now()+72h`), revalidate the wall, send the "You're on the wall" mail.
+  2. **Reserve the spot number** in its lane (`reserveSpot` in `db/queries.mjs`): `update spots set status='reserved', reserved_until=now()+30min, story_id=$3 where lane=$1 and no=$2 and status='vacant'`. If 0 rows update, offer another vacant number.
+  3. Create the Stripe Checkout session for $9.95, with the reservation in its metadata and `expires_at` 30 minutes out (Stripe's minimum). Then set the reservation to end at the session's `expires_at` (`holdUntilCheckoutExpires`), so no payment can arrive after the number is released.
+- `POST /api/stripe/webhook`: on `checkout.session.completed`, set the spot live (`starts_at=now()`, `ends_at=now()+72h`), revalidate the wall, send the "You're on the wall" mail. On `checkout.session.expired`, free the number straight away (`releaseReservation`).
 - `POST /api/events`: record opens/saves/clicks. Rate-limit per cookie and per IP hash; drop bots except Googlebot.
 
 **Jobs**
@@ -276,7 +276,7 @@ The schema lives in [`db/migrations/0001_init.sql`](db/migrations/0001_init.sql)
 - [ ] Visual regression passes at 390, 700 and 1400px, light and dark, for every state in §1.
 - [ ] Two browsers get different ring entry points; one browser keeps its entry point for the whole day.
 - [ ] A double purchase of the same spot number is impossible under concurrent checkouts.
-- [ ] A spot goes live only after the Stripe webhook; an abandoned checkout frees the number after 15 minutes.
+- [ ] A spot goes live only after the Stripe webhook; an abandoned checkout frees the number after 30 minutes.
 - [ ] `/s/217` renders a correct link preview in WhatsApp, iMessage and X.
 - [ ] Open/save counters and saves survive reloads; saves persist without an account and sync correctly once one is created.
 - [ ] The phone sheet: opens on tap, ghost-animates from the tile, closes via ×/backdrop/Escape/back-gesture/drag, and Next-spot swaps content in place.

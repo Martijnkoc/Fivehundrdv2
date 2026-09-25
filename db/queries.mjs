@@ -6,11 +6,27 @@
  * and matches 0 rows.
  */
 
-/** $1 lane, $2 no, $3 story id. 0 rows: the spot is taken; offer another. */
+/**
+ * $1 lane, $2 no, $3 story id. 0 rows: the spot is taken; offer another.
+ * Lasts 30 minutes: the shortest Stripe Checkout session, whose expires_at
+ * must be set to match, so a payment can't arrive after the release.
+ */
 export const reserveSpot = `
   update spots
-     set status = 'reserved', reserved_until = now() + interval '15 minutes', story_id = $3
+     set status = 'reserved', reserved_until = now() + interval '30 minutes', story_id = $3
    where lane = $1 and no = $2 and status = 'vacant'
+  returning lane, no`;
+
+/**
+ * After creating the Checkout session, $1 story id, $2 the session's
+ * expires_at (unix seconds). The session is created a moment after the
+ * reservation, so this moves the release to the exact moment Stripe stops
+ * accepting payment.
+ */
+export const holdUntilCheckoutExpires = `
+  update spots
+     set reserved_until = to_timestamp($2)
+   where story_id = $1 and status = 'reserved'
   returning lane, no`;
 
 /** Stripe webhook, $1 story id. 0 rows: the reservation was already released. */
@@ -27,7 +43,14 @@ export const goLive = `
    where story_id in (select id from live)
   returning lane, no`;
 
-/** Every minute: abandoned checkouts free their number. */
+/** Stripe `checkout.session.expired`, $1 story id: free the number now. */
+export const releaseReservation = `
+  update spots
+     set status = 'vacant', reserved_until = null, story_id = null
+   where story_id = $1 and status = 'reserved'
+  returning lane, no`;
+
+/** Every minute: abandoned checkouts free their number (if the webhook was missed). */
 export const releaseStaleReservations = `
   update spots
      set status = 'vacant', reserved_until = null, story_id = null

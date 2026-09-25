@@ -5,6 +5,8 @@ import { PGlite } from "@electric-sql/pglite";
 import {
   freeExpiredSpots,
   goLive,
+  holdUntilCheckoutExpires,
+  releaseReservation,
   releaseStaleReservations,
   reserveSpot,
 } from "./queries.mjs";
@@ -89,13 +91,36 @@ describe("spot lifecycle", () => {
     assert.deepEqual(spot.rows[0], { status: "vacant", story_id: null });
   });
 
-  test("an abandoned checkout frees the number after 15 minutes", async () => {
+  test("an abandoned checkout frees the number after 30 minutes", async () => {
     const id = await story("letters", 300);
     await db.query(reserveSpot, ["letters", 300, id]);
+    const { rows: held } = await db.query(
+      "select extract(epoch from reserved_until - now())::int / 60 as minutes from spots where story_id = $1",
+      [id],
+    );
+    assert.equal(held[0].minutes, 30, "matches the Stripe Checkout session");
     assert.equal((await db.query(releaseStaleReservations)).rows.length, 0);
     await db.query("update spots set reserved_until = now() - interval '1 second' where story_id = $1", [id]);
     assert.deepEqual((await db.query(releaseStaleReservations)).rows, [{ lane: "letters", no: 300 }]);
     assert.equal((await db.query(goLive, [id])).rows.length, 0, "a late webhook does not go live");
+  });
+
+  test("the reservation ends exactly when the Checkout session does", async () => {
+    const id = await story("music", 12);
+    await db.query(reserveSpot, ["music", 12, id]);
+    const expiresAt = Math.floor(Date.now() / 1000) + 30 * 60 + 2;
+    assert.equal((await db.query(holdUntilCheckoutExpires, [id, expiresAt])).rows.length, 1);
+    const { rows } = await db.query("select extract(epoch from reserved_until)::bigint as at from spots where story_id = $1", [id]);
+    assert.equal(Number(rows[0].at), expiresAt);
+  });
+
+  test("an expired Checkout session frees the number straight away", async () => {
+    const id = await story("music", 13);
+    await db.query(reserveSpot, ["music", 13, id]);
+    assert.deepEqual((await db.query(releaseReservation, [id])).rows, [{ lane: "music", no: 13 }]);
+    assert.equal((await db.query(goLive, [id])).rows.length, 0);
+    const next = await story("music", 13, { name: "Paper Engines" });
+    assert.equal((await db.query(reserveSpot, ["music", 13, next])).rows.length, 1);
   });
 
   test("status and story stay consistent", async () => {
