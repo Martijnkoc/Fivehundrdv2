@@ -3,6 +3,7 @@ import { NAV } from "../../lib/wall/model";
 import { TabBadge } from "./Card";
 import { ClaimContent } from "./Claim";
 import { LaneNav } from "./LaneNav";
+export { IndexStrip } from "./IndexStrip";
 import { SheetContent } from "./SheetContent";
 import { ShareContent, Toast } from "./Sheets";
 
@@ -116,22 +117,6 @@ export function Footer() {
         </div>
       </div>
     </footer>
-  );
-}
-
-/** The reading line and the index strip of all 500 spots. */
-export function IndexStrip() {
-  return (
-    <>
-      <div className="head" aria-hidden="true"></div>
-      <div className="code" id="code" aria-label="Index of all 500 spots. Drag to travel.">
-        <canvas id="codeCanvas"></canvas>
-        <i className="mk mk-e"></i>
-        <i className="mk mk-r"></i>
-        <i className="mk mk-o"></i>
-      </div>
-      <div className="scrub" id="scrub"></div>
-    </>
   );
 }
 

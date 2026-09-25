@@ -530,3 +530,70 @@ test.describe("desktop: Create your story (§13)", () => {
     await expect(page.locator(`#s-${no} .bk-strip b`)).toHaveText("Lowtide Club");
   });
 });
+
+test.describe("desktop: index strip, audio, keys, search (§5, §8, §9)", () => {
+  test.use({ viewport: { width: desktop.width, height: desktop.height }, viewportSpec: desktop });
+
+  test("the index strip stays hidden, as in the approved design", async ({ wall, page }) => {
+    /* reference.html switches it off: .code,.scrub{display:none!important} */
+    await wall.goto();
+    await expect(page.locator("#code")).toBeHidden();
+    await expect(page.locator("#scrub")).toBeHidden();
+  });
+
+  test("j and k step through the filled spots", async ({ wall, page }) => {
+    await wall.goto();
+    const first = await page.locator("#rack .panel").getAttribute("data-no");
+    await page.keyboard.press("j");
+    await expect(page.locator("#rack .panel")).not.toHaveAttribute("data-no", first!);
+    await page.keyboard.press("k");
+    await expect(page.locator("#rack .panel")).toHaveAttribute("data-no", first!);
+  });
+
+  test("the preview player plays and stops", async ({ wall, page }) => {
+    await wall.goto();
+    const player = page.locator("#rack .panel [data-player]");
+    await expect(player).toBeVisible();
+    await player.locator("[data-play]").click();
+    await expect(player).toHaveClass(/\bplaying\b/);
+    await expect(player.locator("[data-ptime]")).not.toHaveText("0:00 / 0:30", { timeout: 5_000 });
+    await player.locator("[data-play]").click();
+    await expect(player).not.toHaveClass(/\bplaying\b/);
+    await expect(player.locator("[data-ptime]")).toHaveText("0:00 / 0:30");
+  });
+
+  test("search matches names, lane labels and lines, and hides open spots", async ({ wall, page }) => {
+    await wall.goto();
+    await page.locator("#q").fill("podcasts");
+    await expect(page.locator("#rack .spot.vacant")).toHaveCount(0);
+    const lanes = await page.locator("#rack .spot:not(.filler) .bk-strip small").allTextContents();
+    expect(lanes.length).toBeGreaterThan(0);
+    expect(new Set(lanes)).toEqual(new Set(["Podcasts"]));
+    await page.locator("#q").fill("lighthouse");
+    await expect(page.locator("#rack .spot:not(.filler)").first()).toBeVisible();
+    await page.locator("#q").fill("zzzz");
+    await expect(page.locator("#rack .no-hits b")).toHaveText("zzzz");
+    await page.locator("#rack .no-hits button").click();
+    await expect(page.locator("#q")).toHaveValue("");
+    await expect(page.locator("#rack .no-hits")).toHaveCount(0);
+  });
+
+  test("the brand clears the search and returns to the whole wall", async ({ wall, page }) => {
+    await wall.goto();
+    await page.locator('#lanes [data-lane="games"]').click();
+    await expect(page.locator('#lanes [data-lane="games"]')).toHaveClass(/is-active/);
+    await page.locator("#q").fill("tiny");
+    await page.locator("#brand").click();
+    await expect(page.locator('#lanes [data-lane="all"]')).toHaveClass(/is-active/);
+    await expect(page.locator("#q")).toHaveValue("");
+    await expect(page.locator("#rack .spot.vacant").first()).toBeVisible();
+  });
+
+  test("one visitor keeps the same entry point for the day (§17)", async ({ wall, page }) => {
+    await wall.goto();
+    const entry = await page.locator("#card .lc-entry b").textContent();
+    await page.reload();
+    await page.waitForSelector("#rack .spot");
+    await expect(page.locator("#card .lc-entry b")).toHaveText(entry!);
+  });
+});

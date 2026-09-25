@@ -7,7 +7,7 @@ let started = false;
 
 /**
  * Starts the wall's behaviour once the page has hydrated: fixture mode first
- * (it patches the clock and Math.random), then the remaining prototype script.
+ * (it patches the clock and Math.random), then the controller.
  * Guarded so React's development double-mount does not start it twice.
  */
 export function WallRuntime() {
@@ -16,7 +16,7 @@ export function WallRuntime() {
     started = true;
     (async () => {
       await import("../../scripts/fixture.js");
-      const { startWall } = await import("./legacy");
+      const { startWall } = await import("./controller");
       startWall(bridge);
     })();
   }, []);

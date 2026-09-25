@@ -6,17 +6,17 @@ import type { ClaimStart, ClaimView, Draft } from "./Claim";
 import type { ShareView } from "./Sheets";
 
 /*
- * The state React renders while the rest of the prototype script
- * (./legacy.js) is still being ported. The script decides what happens; React
- * renders it synchronously, because the script measures and animates the new
- * DOM straight away (as it did after innerHTML).
+ * The state React renders. The controller (./controller.ts) decides what
+ * happens; React renders it synchronously, because the controller measures
+ * and animates the new DOM straight away (as the reference did after
+ * innerHTML).
  */
 export type WallState = {
   lane: NavId;
   laneVersion: number;
   rack: Rack | null;
   version: number;
-  /** The wall's spots. The script mutates their counters, then calls refresh(). */
+  /** The wall's spots. The controller mutates their counters, then calls refresh(). */
   wall: Spot[];
   /** The open spot and how it is shown (§6 inline panel, §7 phone sheet). */
   openNo: number | null;
@@ -27,7 +27,7 @@ export type WallState = {
   saved: ReadonlySet<string>;
   /** Bumped every minute, so time left and ageing re-render. */
   minute: number;
-  /** Bumped when the script changed spot counters. */
+  /** Bumped when the controller changed spot counters. */
   rev: number;
   /** The Fivehundrd card (§10); rebuilt on every change, like innerHTML. */
   card: CardData | null;
@@ -116,7 +116,7 @@ export const bridge = {
   tickMinute() {
     set({ minute: state.minute + 1 });
   },
-  /** Fills #shareSheet; the script shows its veil. */
+  /** Fills #shareSheet; the controller shows its veil. */
   openShare(share: ShareView) {
     set({ share, shareVersion: state.shareVersion + 1 });
   },
@@ -125,14 +125,14 @@ export const bridge = {
     set({ toast: { msg, on: true } });
     toastTimer = setTimeout(() => set({ toast: { msg, on: false } }), 2400);
   },
-  /** Fills #claimSheet with a fresh Create form; the script shows its veil. */
+  /** Fills #claimSheet with a fresh Create form; the controller shows its veil. */
   openClaim(start: ClaimStart) {
     set({ claim: { kind: "form", start }, claimVersion: state.claimVersion + 1 });
   },
   claimDone(spot: FilledSpot) {
     set({ claim: { kind: "done", spot }, claimVersion: state.claimVersion + 1 });
   },
-  /** Things React asks the script to do, registered by the script. */
+  /** Things React asks the controller to do, registered by the controller. */
   actions: {} as {
     keepCard: (via: string, remind: boolean, byEmail: boolean) => void;
     randomVacant: () => number | null;
@@ -142,6 +142,8 @@ export const bridge = {
     share: (spot: FilledSpot) => void;
     seeOnWall: (no: number) => void;
     spotURL: (spot: FilledSpot) => string;
+    openSpot: (el: HTMLElement | null, opts: { align: boolean; auto?: boolean }) => void;
+    cancelGlide: () => void;
   },
 };
 

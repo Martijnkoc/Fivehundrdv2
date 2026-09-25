@@ -6,6 +6,7 @@ import { parseLink } from "../../lib/wall/links";
 import { LANES, PRICE, pad, type FilledSpot, type LaneId, type Link, type Palette } from "../../lib/wall/model";
 import { drawCard } from "../../lib/wall/socialCard";
 import { until } from "../../lib/wall/time";
+import { playingIn, stopAudio } from "./audio";
 import { Cover } from "./Cover";
 import { bridge, wallStore } from "./store";
 import { GenArt } from "./Tile";
@@ -54,6 +55,12 @@ function ClaimForm({ start }: { start: ClaimStart }) {
     const t = setTimeout(() => nameRef.current?.focus(), 50);
     return () => clearTimeout(t);
   }, []);
+
+  /* editing the form stops a preview that is playing, as in the reference */
+  const prevRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (playingIn(prevRef.current)) stopAudio();
+  }, [no, lane, name, snip, links, img, logo, audio, exT, ex, trailer]);
 
   const parsedLinks = links.map(parseLink).filter((l): l is Link => !!l);
   const t = parseLink(trailer);
@@ -328,7 +335,7 @@ function ClaimForm({ start }: { start: ClaimStart }) {
         {ws(3)}
         <div className="preview">
           <p className="cap">How it slides out on the wall</p>
-          <div id="fPrev" onClick={(e) => bridge.actions.previewClick(e.nativeEvent, preview)}>
+          <div id="fPrev" ref={prevRef} onClick={(e) => bridge.actions.previewClick(e.nativeEvent, preview)}>
             <Cover s={preview} saved={false} preview />
           </div>
         </div>

@@ -21,29 +21,28 @@ stays untouched. The copy differs from it in two ways:
 
 ## Porting status
 
-`/` is a Next.js page (`app/page.tsx`). The prototype is being moved into
-typed modules and React components piece by piece. After each piece the
-visual suite must still match the reference.
+`/` is a Next.js page (`app/page.tsx`). The prototype has been fully moved
+into typed modules and React components; no prototype script remains. The
+visual suite must still match the reference after every change.
 
-| Part | Where it lives now |
+| Part | Where it lives |
 |---|---|
 | CSS | `app/wall/wall.css`, copied verbatim from `reference.html` and inlined as-is (not through the CSS pipeline, which rewrites values) |
-| Demo data, lanes, time, artwork, icons | `lib/wall/*` (typed) |
+| Demo data, lanes, time, artwork, icons, links, images, social card | `lib/wall/*` (typed) |
 | Wall order: lanes, search, ring, rows | `lib/wall/rack.ts` |
-| Header, footer, tab bar, overlays | `app/wall/Chrome.tsx` (React) |
-| Lane tabs, tiles | `app/wall/LaneNav.tsx`, `Rack.tsx`, `Tile.tsx` (React) |
-| Open spot: inline panel and phone sheet content, per-lane blocks | `app/wall/Cover.tsx`, `SheetContent.tsx` (React) |
-| Fivehundrd card, saves list, My card badge | `app/wall/Card.tsx` (React), `lib/wall/saves.ts` |
-| Share sheet, Keep my card sheet, toast | `app/wall/Sheets.tsx` (React) |
-| Create your story, success screen | `app/wall/Claim.tsx` (React); `lib/wall/links.ts`, `image.ts`, `socialCard.ts` |
-| Open/close choreography (scroll, notch, ghost, drag, back), fly-to-card, audio, index strip | `app/wall/legacy.js`, the rest of the prototype script, still to port |
+| Header, footer, tab bar, overlays | `app/wall/Chrome.tsx` |
+| Lane tabs, tiles, inline panel | `app/wall/LaneNav.tsx`, `Rack.tsx`, `Tile.tsx` |
+| Open spot (panel and phone sheet), per-lane blocks | `app/wall/Cover.tsx`, `SheetContent.tsx` |
+| Fivehundrd card, saves, My card badge | `app/wall/Card.tsx`, `lib/wall/saves.ts` |
+| Share sheet, Keep my card, toast | `app/wall/Sheets.tsx` |
+| Create your story, success screen | `app/wall/Claim.tsx` |
+| Index strip (hidden by the approved CSS) | `app/wall/IndexStrip.tsx` |
+| Preview player and demo synth | `app/wall/audio.ts` |
+| Behaviour: glide, open/close, sheet ghost/drag/back, fly-to-card, tab bar, claims, minute tick | `app/wall/controller.ts` |
 
-The remaining script owns the wall's state for now. It hands React the lane
-and the rack through `app/wall/store.ts`, and React renders synchronously.
-
-`/reference.html` serves the same copy as the fixed reference for the visual
-suite. It returns 404 in production, so the prototype-only code (the WebAudio
-synth, seeded demo data) does not ship from there.
+The controller decides what happens and hands React the state through
+`app/wall/store.ts`; React renders it synchronously, so the controller can
+measure and animate the new DOM straight away, as the reference did.
 
 ## Database
 

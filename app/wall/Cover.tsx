@@ -26,7 +26,7 @@ function Live({ s }: { s: FilledSpot }) {
   );
 }
 
-/** §8 Music, Podcasts: preview player (the audio itself is still in legacy.js). */
+/** §8 Music, Podcasts: preview player (playback is app/wall/audio.ts). */
 function Player({ s }: { s: FilledSpot }) {
   const r = rng(s.seed ^ 77);
   const heights = Array.from({ length: 52 }, () => 22 + r() * 78);
