@@ -12,6 +12,7 @@ import { PAL, seedWall } from "../../lib/wall/demo";
 import { genArt } from "../../lib/wall/art";
 import { ICON, LICON } from "../../lib/wall/icons";
 import { buildRack } from "../../lib/wall/rack";
+import { skey } from "../../lib/wall/saves";
 import { left, long, short, spotStyle, styleFor, until } from "../../lib/wall/time";
 
 export function startWall(bridge){
@@ -20,6 +21,7 @@ const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 let WALL=seedWall();
 try{const mine=JSON.parse(localStorage.getItem("fh-claims")||"[]");mine.forEach(s=>{if(Date.now()-s.start<LIFE)WALL[s.no-1]=s})}catch(e){}
+bridge.setWall(WALL);
 
 const artHTML=s=>s.img?`<img src="${s.img}" alt="Artwork for ${esc(s.name)}">`:genArt(s.seed,s.pal);
 
@@ -89,9 +91,10 @@ function coverHTML(s,preview){
 }
 /* saves are kept per story (spot number + start), with a small snapshot so they survive the spot ending */
 let SAVES=[];try{SAVES=JSON.parse(localStorage.getItem("fh-saves")||"[]")}catch(e){}
-const skey=s=>s.no+":"+Math.round(s.start);
+bridge.setSaved(SAVES.map(x=>x.k));
 const isSaved=s=>SAVES.some(x=>x.k===skey(s));
-function persistSaves(){try{localStorage.setItem("fh-saves",JSON.stringify(SAVES))}catch(e){}}
+/* React shows saved state and counters (Save buttons, tile pills) from the store */
+function persistSaves(){try{localStorage.setItem("fh-saves",JSON.stringify(SAVES))}catch(e){}bridge.setSaved(SAVES.map(x=>x.k))}
 let ACCOUNT=null;try{ACCOUNT=JSON.parse(localStorage.getItem("fh-account")||"null")}catch(e){}
 let savesShown=12;
 const OPENED=new Set();
@@ -103,7 +106,6 @@ function toggleSave(li,s,btn){
   if(on)SAVES.unshift({k:skey(s),no:s.no,name:s.name,lane:s.lane,start:s.start,link:s.links?.[0]||null,logo:s.logo||null,seed:s.seed,pal:s.pal,savedAt:Date.now()});
   else SAVES=SAVES.filter(x=>x.k!==skey(s));
   s.saves=Math.max(0,(s.saves||0)+(on?1:-1));persistSaves();
-  btn.setAttribute("aria-pressed",on);btn.textContent=on?"Saved":"Save";const v=li.querySelector("[data-v]");if(v)v.textContent=fmt(s.saves);
   const from=on&&!sheetOn?li.querySelector(".book").getBoundingClientRect():null;
   if(on&&!mobileCard()){const all=savesOrder(),idx=all.findIndex(x=>x.k===skey(s));if(idx>=savesShown)savesShown=Math.ceil((idx+1)/12)*12}
   renderCard();
@@ -113,7 +115,8 @@ function coverClick(e,s,root){
   const a=e.target.closest("a[data-demo]");if(a){e.preventDefault();toast("Demo spot. Real makers link out to their own pages.");return true}
   const pl=e.target.closest("[data-play]");if(pl){togglePlay(pl.closest("[data-player]"),s);return true}
   const wv=e.target.closest("[data-wave]");if(wv){const r=wv.getBoundingClientRect();startPlay(wv.closest("[data-player]"),s,Math.max(0,Math.min(.98,(e.clientX-r.left)/r.width))*30);return true}
-  const mo=e.target.closest("[data-more]");if(mo){const rd=mo.closest(".read");const f=rd.classList.toggle("full");mo.textContent=f?"Show less":"Keep reading";return true}
+  /* the open view's "Keep reading" is React now; the Create preview's is still here */
+  const mo=e.target.closest("#fPrev [data-more]");if(mo){const rd=mo.closest(".read");const f=rd.classList.toggle("full");mo.textContent=f?"Show less":"Keep reading";return true}
   return false;
 }
 const headY=()=>$("#top").getBoundingClientRect().bottom+12;
@@ -139,13 +142,11 @@ function swapTo(el){
   const s=WALL[el.dataset.no-1];if(el===open)return;
   const before=el.getBoundingClientRect().top;
   stopAudio();
-  if(!OPENED.has(s.no)){OPENED.add(s.no);s.opens=(s.opens||0)+1;const o=el.querySelector("[data-o]");if(o)o.textContent=fmt(s.opens)}
+  if(!OPENED.has(s.no)){OPENED.add(s.no);s.opens=(s.opens||0)+1}
   markSeen(s.no);
-  if(open){open.classList.remove("open");open.querySelector(".book").setAttribute("aria-expanded","false")}
-  rack.querySelector(".panel")?.remove();
-  el.classList.add("open");el.querySelector(".book").setAttribute("aria-expanded","true");
-  const panel=document.createElement("li");panel.className="panel";panel.dataset.no=s.no;panel.setAttribute("style",styleFor(s));panel.innerHTML=coverHTML(s);
-  rowOf(el).after(panel);placeNotch(el,panel);
+  /* React renders the panel under the row (app/wall/Rack.tsx) */
+  bridge.open(s.no,"panel");
+  placeNotch(el,rack.querySelector(".panel"));
   const shift=el.getBoundingClientRect().top-before;if(shift)window.scrollTo(0,scrollY+shift);
   open=el;
   try{history.replaceState(null,"","#"+pad(s.no))}catch(e){}
@@ -176,7 +177,7 @@ function closeSpot(){
   if(sheetOn)return hideSheet();
   if(!open)return;stopAudio();const el=open;
   const before=el.getBoundingClientRect().top;
-  el.classList.remove("open");el.querySelector(".book").setAttribute("aria-expanded","false");rack.querySelector(".panel")?.remove();open=null;
+  bridge.close();open=null;
   const shift=el.getBoundingClientRect().top-before;if(shift)window.scrollTo(0,scrollY+shift);
   try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}
   updateMarks();
@@ -319,16 +320,14 @@ const dsheet=$("#dsheet"),dveil=$("#dveil"),dscroll=dsheet.querySelector(".dshee
 let sheetOn=false,sheetPushed=false,sheetAnim=null;
 function fillSheet(s){
   const tr=dsheet.style.transform;dsheet.setAttribute("style",styleFor(s));if(tr)dsheet.style.transform=tr;dsheet.dataset.no=s.no;
-  dscroll.innerHTML=coverHTML(s);dscroll.scrollTop=0;
+  bridge.fillSheet(s.no);dscroll.scrollTop=0;
   dsheet.setAttribute("aria-label",`${s.name}, ${LANE[s.lane]}, spot ${s.no}`);
 }
 function markOpen(el){
   const s=WALL[el.dataset.no-1];stopAudio();
-  if(!OPENED.has(s.no)){OPENED.add(s.no);s.opens=(s.opens||0)+1;const o=el.querySelector("[data-o]");if(o)o.textContent=fmt(s.opens)}
+  if(!OPENED.has(s.no)){OPENED.add(s.no);s.opens=(s.opens||0)+1}
   markSeen(s.no);
-  if(open&&open!==el){open.classList.remove("open");open.querySelector(".book")?.setAttribute("aria-expanded","false")}
-  rack.querySelector(".panel")?.remove();
-  el.classList.add("open");el.querySelector(".book").setAttribute("aria-expanded","true");open=el;
+  bridge.open(s.no,"sheet");open=el;
   updateMarks();renderCard();
   return s;
 }
@@ -363,9 +362,9 @@ function hideSheet(fromPop){
   if(!sheetOn)return;
   sheetOn=false;stopAudio();
   const el=open;
-  if(open){open.classList.remove("open");open.querySelector(".book")?.setAttribute("aria-expanded","false");open=null}
+  if(open){bridge.close();open=null}
   dveil.classList.remove("on");document.documentElement.classList.remove("sheet-lock");
-  const done=()=>{dsheet.hidden=true;dsheet.style.transform="translateY(105%)";dscroll.innerHTML=""};
+  const done=()=>{dsheet.hidden=true;dsheet.style.transform="translateY(105%)";bridge.fillSheet(null)};
   if(reduce)done();else{const cur=getComputedStyle(dsheet).transform;dsheet.animate([{transform:cur==="none"?"none":cur},{transform:"translateY(105%)"}],{duration:280,easing:"cubic-bezier(.4,0,.6,1)"}).onfinish=done}
   if(sheetPushed&&!fromPop){sheetPushed=false;try{history.back()}catch(e){}}else{sheetPushed=false;try{history.replaceState(null,"",location.pathname+location.search)}catch(e){}}
   updateMarks();
@@ -457,7 +456,7 @@ document.addEventListener("click",e=>{
   const card=e.target.closest("#card");
   if(card){
     const un=e.target.closest("[data-unsave]");if(un){e.preventDefault();const k=un.dataset.unsave,x=SAVES.find(y=>y.k===k);SAVES=SAVES.filter(y=>y.k!==k);persistSaves();
-      const cur=x&&WALL[x.no-1];if(cur&&!cur.vacant&&skey(cur)===k){cur.saves=Math.max(0,(cur.saves||0)-1);const li=document.getElementById("s-"+pad(cur.no));const v=li?.querySelector("[data-v]");if(v)v.textContent=fmt(cur.saves);const sb=li?.querySelector("[data-save]");if(sb){sb.setAttribute("aria-pressed","false");sb.textContent="Save"}}
+      const cur=x&&WALL[x.no-1];if(cur&&!cur.vacant&&skey(cur)===k){cur.saves=Math.max(0,(cur.saves||0)-1);bridge.refresh()}
       renderCard();return}
     if(e.target.closest("[data-more-saves]")){savesShown+=12;renderCard();return}
     if(e.target.closest("[data-less-saves]")){savesShown=12;renderCard();return}
@@ -504,14 +503,11 @@ document.addEventListener("click",e=>{
   if(!el){lane="all";query="";const q=$("#q");if(q)q.value="";renderLanes();renderRack();el=document.getElementById("s-"+pad(+g.dataset.go))}
   if(el){if(el===open)glideTo(alignY(el));else openSpot(el,{align:true})}
 });
-function tick(){
-  if(open){const s=WALL[open.dataset.no-1];const el=open.querySelector("[data-live]");if(el)el.textContent=long(left(s))+" left"}
-}
-setInterval(tick,1000);
+/* the open view's countdown ticks in React (app/wall/Cover.tsx) */
 setInterval(()=>{
   let changed=false;WALL.forEach((s,i)=>{if(!s.vacant&&left(s)<=0){WALL[i]={no:s.no,vacant:true};changed=true}});
   if(changed){const keep=open?.dataset.no;renderRack();if(keep)openSpot(document.getElementById("s-"+pad(keep)),{align:false})}
-  else rack.querySelectorAll(".spot:not(.vacant):not(.filler)").forEach(li=>{const s=WALL[li.dataset.no-1];li.setAttribute("style",spotStyle(s));const t=li.querySelector(".t");if(t)t.textContent=short(left(s))+(li.closest(".msp")?"":" left");const pg=li.querySelector(".prog");if(pg)pg.style.width=(left(s)/LIFE*100).toFixed(1)+"%"});
+  else bridge.tickMinute();
   stats();drawCode();
 },60e3);
 

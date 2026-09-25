@@ -28,8 +28,8 @@ export class Wall {
     return this.viewport.width < 980;
   }
 
-  async goto() {
-    await this.page.goto(`${this.path}?fixture=1`);
+  async goto(hash = "") {
+    await this.page.goto(`${this.path}?fixture=1${hash}`);
     await this.page.waitForSelector("#rack .spot");
     await this.page.evaluate(() => document.fonts.ready);
     await this.settle();

@@ -1,4 +1,4 @@
-import { createElement, type CSSProperties } from "react";
+import { createElement, memo, type CSSProperties } from "react";
 import { artShapes } from "../../lib/wall/art";
 import { BOOKMARK, EYE, LANE_ICON_PATHS } from "../../lib/wall/icons";
 import { LANE, LIFE, PRICE, fmt, pad, type FilledSpot, type LaneId, type Palette, type Spot } from "../../lib/wall/model";
@@ -17,7 +17,7 @@ export function cssVars(style: string) {
   ) as CSSProperties;
 }
 
-export function GenArt({ seed, pal }: { seed: number; pal: Palette }) {
+export const GenArt = memo(function GenArt({ seed, pal }: { seed: number; pal: Palette }) {
   const { bg, shapes } = artShapes(seed, pal);
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice">
@@ -25,7 +25,7 @@ export function GenArt({ seed, pal }: { seed: number; pal: Palette }) {
       {shapes.map((s, i) => createElement(s.tag, { key: i, ...Object.fromEntries(s.attrs) }))}
     </svg>
   );
-}
+});
 
 export function LaneIcon({ lane }: { lane: LaneId }) {
   return (
@@ -63,13 +63,13 @@ function Front({ s }: { s: FilledSpot }) {
 const NL6 = "\n      ";
 const NL4 = "\n    ";
 
-function Filled({ s }: { s: FilledSpot }) {
+function Filled({ s, open }: { s: FilledSpot; open: boolean }) {
   const l = left(s),
     fresh = LIFE - l < 3 * 3600e3;
   return (
     <>
       <div className="stand">
-        <button className="book" aria-expanded="false" aria-label={`${s.name}, ${LANE[s.lane]}, spot ${s.no}`}>
+        <button className="book" aria-expanded={open} aria-label={`${s.name}, ${LANE[s.lane]}, spot ${s.no}`}>
           {NL6}
           <span className="bk-art">
             <Front s={s} />
@@ -125,14 +125,24 @@ function Vacant({ s }: { s: Spot }) {
   );
 }
 
+type TileProps = {
+  s: Spot;
+  open: boolean;
+  /* Not read directly: they change when the spot's counters or the minute do,
+     so the memoised tile re-renders then (the spot object is mutated in place). */
+  opens?: number;
+  saves?: number;
+  minute: number;
+};
+
 /** One spot on the wall (§6): a filled tile or an open spot. */
-export function Tile({ s }: { s: Spot }) {
+export const Tile = memo(function Tile({ s, open }: TileProps) {
   return (
-    <div className={`spot${s.vacant ? " vacant" : ""}`} id={`s-${pad(s.no)}`} data-no={s.no} style={cssVars(spotStyle(s))}>
-      {s.vacant ? <Vacant s={s} /> : <Filled s={s} />}
+    <div className={`spot${s.vacant ? " vacant" : ""}${open ? " open" : ""}`} id={`s-${pad(s.no)}`} data-no={s.no} style={cssVars(spotStyle(s))}>
+      {s.vacant ? <Vacant s={s} /> : <Filled s={s} open={open} />}
     </div>
   );
-}
+});
 
 export function Filler() {
   return (

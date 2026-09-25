@@ -32,7 +32,8 @@ visual suite must still match the reference.
 | Wall order: lanes, search, ring, rows | `lib/wall/rack.ts` |
 | Header, footer, tab bar, overlays | `app/wall/Chrome.tsx` (React) |
 | Lane tabs, tiles | `app/wall/LaneNav.tsx`, `Rack.tsx`, `Tile.tsx` (React) |
-| Open tile (panel, phone sheet), card, saves, audio, index strip, Create, sharing | `app/wall/legacy.js`, the rest of the prototype script, still to port |
+| Open spot: inline panel and phone sheet content, per-lane blocks | `app/wall/Cover.tsx`, `SheetContent.tsx` (React) |
+| Open/close choreography (scroll, notch, ghost, drag, back), card, saves list, audio, index strip, Create, sharing | `app/wall/legacy.js`, the rest of the prototype script, still to port |
 
 The remaining script owns the wall's state for now. It hands React the lane
 and the rack through `app/wall/store.ts`, and React renders synchronously.
@@ -66,9 +67,14 @@ pnpm test:e2e
    (`pnpm test:visual`).
 
 Both run at 390×844, 700×900 and 1400×900, in light and dark mode, for every
-state in BUILD_BRIEF §1.3. The allowed difference is `maxDiffPixelRatio: 0.001`
-with a per-pixel `threshold` of 0. Baselines are regenerated from the
-reference on each run and are not committed.
+state in BUILD_BRIEF §1.3, against the production build. The allowed
+difference is 0 pixels. Baselines are regenerated from the reference on each
+run and are not committed.
+
+`tests/behaviour.spec.ts` checks what screenshots cannot see (§6, §7, §17):
+the sheet's open and close paths (×, backdrop, Escape, back, drag, flick),
+Next spot in place, Save, deep links, rotation, the ghost animation and
+reduced motion. It runs on both projects, and both must pass.
 
 To use an already installed Chromium instead of Playwright's download, set
 `CHROMIUM_PATH=/path/to/chrome`.

@@ -76,6 +76,19 @@ for (const viewport of viewports) {
         await expect(page).toHaveScreenshot(shot("create-done"));
       });
 
+      test("after Next spot ten times and closing", async ({ wall, page }) => {
+        await wall.goto();
+        await wall.openTile(0);
+        for (let i = 0; i < 10; i++) {
+          const no = await wall.openView.getAttribute("data-no");
+          await wall.openView.locator("[data-next]").click();
+          await expect(wall.openView).not.toHaveAttribute("data-no", no ?? "");
+        }
+        await wall.closeOpenTile();
+        await wall.quiet();
+        await expect(page).toHaveScreenshot(shot("next-then-close"));
+      });
+
       test("share sheet", async ({ wall, page }) => {
         await wall.goto();
         await wall.openTile(0);

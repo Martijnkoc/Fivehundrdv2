@@ -1,6 +1,7 @@
 /* The fixed parts of the wall page, markup as in reference.html. */
 import { NAV } from "../../lib/wall/model";
 import { LaneNav } from "./LaneNav";
+import { SheetContent } from "./SheetContent";
 
 /** §9: brand and slogan, lane tabs, live search, Create, avatar. */
 export function Header() {
@@ -149,7 +150,9 @@ export function Overlays() {
         <button className="dclose" type="button" aria-label="Close">
           &times;
         </button>
-        <div className="dsheet-scroll"></div>
+        <div className="dsheet-scroll">
+          <SheetContent />
+        </div>
       </div>
     </>
   );
