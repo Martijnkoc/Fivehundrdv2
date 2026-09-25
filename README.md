@@ -19,9 +19,23 @@ stays untouched. The copy differs from it in two ways:
   freezes the clock at `2026-09-24T12:00:00Z` and seeds `Math.random`, so the
   ring entry point and "Create your story" numbers are identical on every run.
 
-The root route initially serves that document byte-for-byte, establishing a
-zero-diff baseline while the implementation is incrementally extracted into
-typed React components.
+## Porting status
+
+`/` is a Next.js page (`app/page.tsx`). The prototype is being moved into
+typed modules and React components piece by piece. After each piece the
+visual suite must still match the reference.
+
+| Part | Where it lives now |
+|---|---|
+| CSS | `app/wall.css`, copied verbatim from `reference.html` |
+| Demo data, lanes, time, artwork, icons | `lib/wall/*` (typed) |
+| Wall order: lanes, search, ring, rows | `lib/wall/rack.ts` |
+| Header, footer, tab bar, overlays | `app/wall/Chrome.tsx` (React) |
+| Lane tabs, tiles | `app/wall/LaneNav.tsx`, `Rack.tsx`, `Tile.tsx` (React) |
+| Open tile (panel, phone sheet), card, saves, audio, index strip, Create, sharing | `app/wall/legacy.js`, the rest of the prototype script, still to port |
+
+The remaining script owns the wall's state for now. It hands React the lane
+and the rack through `app/wall/store.ts`, and React renders synchronously.
 
 `/reference.html` serves the same copy as the fixed reference for the visual
 suite. It returns 404 in production, so the prototype-only code (the WebAudio
