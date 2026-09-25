@@ -10,8 +10,8 @@ pnpm dev
 ```
 
 Open <http://localhost:3000>. The prepare script builds the served copy of
-the approved prototype in `public/`. `reference.html` itself stays untouched.
-The copy differs from it in two ways:
+the approved prototype in `.generated/` (not public). `reference.html` itself
+stays untouched. The copy differs from it in two ways:
 
 - Inter and Fraunces are self-hosted from `public/fonts/` (copied from the
   `@fontsource-variable` packages) instead of loaded from Google Fonts.
@@ -23,10 +23,22 @@ The root route initially serves that document byte-for-byte, establishing a
 zero-diff baseline while the implementation is incrementally extracted into
 typed React components.
 
+`/reference.html` serves the same copy as the fixed reference for the visual
+suite. It returns 404 in production, so the prototype-only code (the WebAudio
+synth, seeded demo data) does not ship from there.
+
+## Database
+
+The Neon schema is `db/migrations/0001_init.sql`: 500 spots per lane, keyed
+by `(lane, no)`. `db/queries.mjs` holds the spot lifecycle (reserve, go live,
+release, expire). `pnpm test:db` runs both against an in-process Postgres
+(PGlite); no database server needed.
+
 ## Checks
 
 ```bash
 pnpm lint
+pnpm test:db
 pnpm build
 pnpm exec playwright install chromium
 pnpm test:e2e
