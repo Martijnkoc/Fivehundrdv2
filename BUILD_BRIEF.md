@@ -8,17 +8,17 @@ Open `reference.html` directly in a browser first, on both a phone-width and a d
 
 ---
 
-## 0. One decision before you start
+## 0. Confirmed product decision
 
-The prototype has **500 spots in total**. Lanes (Music, Books, Games, Creators, Podcasts, Newsletters) are filters over that one wall.
+The production product has **500 spots per lane**: 3,000 spots across Music, Books, Games, Creators, Podcasts and Newsletters. The prototype remains a 500-spot visual and interaction reference.
 
-An earlier plan had **500 spots per lane**. This brief is written for **500 in total**. If Martijn chooses per-lane pools instead, the only things that change are:
+The per-lane pools mean:
 
-- `spots.no` becomes unique per `(lane, no)`;
+- `spots.no` is unique per `(lane, no)`;
 - the ring entry point and per-lane entry work per lane;
-- the "Wall" tab shows a blended view.
+- the "Wall" tab shows a deterministic, balanced blend of at most 500 spots, so no view mounts all 3,000 tiles.
 
-Confirm this with Martijn before creating the schema.
+This decision was confirmed by Martijn before implementation began.
 
 ---
 
