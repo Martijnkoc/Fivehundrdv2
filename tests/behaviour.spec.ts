@@ -244,3 +244,112 @@ test.describe("desktop: a tile opens inline under its row (§6)", () => {
     await expect(saves).toHaveText(String(before));
   });
 });
+
+test.describe("desktop: the Fivehundrd card (§10, §11, §12)", () => {
+  test.use({ viewport: { width: desktop.width, height: desktop.height }, viewportSpec: desktop });
+
+  test("shows 12 saves, then more in steps of 12, then Show less", async ({ wall, page }) => {
+    await wall.goto();
+    await wall.save(14);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    const tiles = page.locator("#card .msp");
+    await expect(page.locator("#card .sv-head b")).toHaveText("14");
+    /* saving expands the list so the new save is visible (as in the reference) */
+    const shown = await tiles.count();
+    if (shown > 12) {
+      await expect(page.locator("#card [data-less-saves]")).toHaveText("Show less");
+      await page.locator("#card [data-less-saves]").click();
+    }
+    await expect(tiles).toHaveCount(12);
+    await expect(page.locator("#card [data-more-saves]")).toHaveText("Show 2 more");
+    await page.locator("#card [data-more-saves]").click();
+    await expect(tiles).toHaveCount(14);
+    await expect(page.locator("#card [data-less-saves]")).toHaveText("Show less");
+  });
+
+  test("saves are ordered leaving first", async ({ wall, page }) => {
+    await wall.goto();
+    await wall.save(5);
+    const left = await page.locator("#card .msp .sq-t").allTextContents();
+    const hours = left.map((t) => (t.endsWith("m") ? 0 : parseInt(t, 10)));
+    expect(hours).toEqual([...hours].sort((a, b) => a - b));
+  });
+
+  test("× removes a save and updates the tile's count", async ({ wall, page }) => {
+    await wall.goto();
+    const no = (await page.locator("#rack .panel").getAttribute("data-no"))!;
+    const count = page.locator(`#s-${no.padStart(3, "0")} [data-v]`);
+    const before = await count.textContent();
+    await wall.save(1);
+    await expect(page.locator("#card .msp")).toHaveCount(1);
+    await page.locator("#card .sv-x").click();
+    await expect(page.locator("#card .msp")).toHaveCount(0);
+    await expect(page.locator("#card .sv-empty")).toBeVisible();
+    await expect(count).toHaveText(before!);
+  });
+
+  test("Take me back opens the spot the visitor walked in at", async ({ wall, page }) => {
+    await wall.goto();
+    await wall.openTile(5);
+    const entry = await page.locator("#card .lc-entry").getAttribute("data-go");
+    await page.locator("#card .lc-entry").click();
+    await expect(page.locator("#rack .panel")).toHaveAttribute("data-no", entry!);
+  });
+
+  test("Keep my card appears with a save and opens the login sheet", async ({ wall, page }) => {
+    await wall.goto();
+    await expect(page.locator("#card [data-keep]")).toHaveCount(0);
+    await wall.save(1);
+    await page.locator("#card [data-keep]").click();
+    await expect(page.locator("#shareVeil")).toHaveClass(/\bon\b/);
+    await expect(page.locator("#shareSheet h2")).toHaveText("Keep your card");
+    await expect(page.locator("#kRemind")).toBeChecked();
+  });
+
+  test("saves survive a reload (§17)", async ({ wall, page }) => {
+    await wall.goto();
+    await wall.save(3);
+    await page.reload();
+    await page.waitForSelector("#rack .spot");
+    await expect(page.locator("#card .msp")).toHaveCount(3);
+    await expect(page.locator("#card .sv-head b")).toHaveText("3");
+  });
+});
+
+test.describe("phone: the card behind the tab bar (§10)", () => {
+  test.use({ viewport: { width: phone.width, height: phone.height }, viewportSpec: phone, hasTouch: true });
+
+  test("My card opens the card sheet; Wall, the backdrop and Escape close it", async ({ wall, page }) => {
+    await wall.goto();
+    const card = page.locator("#card");
+    const tab = page.locator('.tabbar [data-tab="card"]');
+    for (const close of [
+      () => page.locator('.tabbar [data-tab="wall"]').click(),
+      () => page.locator("#cardVeil").click({ position: { x: 195, y: 10 } }),
+      () => page.keyboard.press("Escape"),
+      () => tab.click(),
+    ]) {
+      await tab.click();
+      await expect(card).toHaveClass(/\bon\b/);
+      await expect(tab).toHaveAttribute("aria-expanded", "true");
+      await close();
+      await expect(card).not.toHaveClass(/\bon\b/);
+      await expect(tab).toHaveAttribute("aria-expanded", "false");
+    }
+  });
+
+  test("the My card badge counts saves", async ({ wall, page }) => {
+    await wall.goto();
+    await expect(page.locator("#tbN")).toBeHidden();
+    await wall.save(2);
+    await expect(page.locator("#tbN")).toHaveText("2");
+    await expect(page.locator("#tbN")).toBeVisible();
+  });
+
+  test("Create in the tab bar opens Create your story", async ({ wall, page }) => {
+    await wall.goto();
+    await page.locator('.tabbar [data-tab="create"]').click();
+    await expect(page.locator("#claimVeil")).toHaveClass(/\bon\b/);
+    await expect(page.locator("#claimH")).toHaveText("Create your story");
+  });
+});

@@ -1,6 +1,7 @@
 import { flushSync } from "react-dom";
 import type { NavId, Spot } from "../../lib/wall/model";
 import type { Rack } from "../../lib/wall/rack";
+import type { CardData } from "./Card";
 
 /*
  * The state React renders while the rest of the prototype script
@@ -26,6 +27,9 @@ export type WallState = {
   minute: number;
   /** Bumped when the script changed spot counters. */
   rev: number;
+  /** The Fivehundrd card (§10); rebuilt on every change, like innerHTML. */
+  card: CardData | null;
+  cardVersion: number;
 };
 
 const initial: WallState = {
@@ -40,6 +44,8 @@ const initial: WallState = {
   saved: new Set(),
   minute: 0,
   rev: 0,
+  card: null,
+  cardVersion: 0,
 };
 let state = initial;
 const listeners = new Set<() => void>();
@@ -88,6 +94,9 @@ export const bridge = {
   },
   refresh() {
     set({ rev: state.rev + 1 });
+  },
+  setCard(card: CardData) {
+    set({ card, cardVersion: state.cardVersion + 1 });
   },
   tickMinute() {
     set({ minute: state.minute + 1 });

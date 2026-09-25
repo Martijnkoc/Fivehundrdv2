@@ -33,7 +33,8 @@ visual suite must still match the reference.
 | Header, footer, tab bar, overlays | `app/wall/Chrome.tsx` (React) |
 | Lane tabs, tiles | `app/wall/LaneNav.tsx`, `Rack.tsx`, `Tile.tsx` (React) |
 | Open spot: inline panel and phone sheet content, per-lane blocks | `app/wall/Cover.tsx`, `SheetContent.tsx` (React) |
-| Open/close choreography (scroll, notch, ghost, drag, back), card, saves list, audio, index strip, Create, sharing | `app/wall/legacy.js`, the rest of the prototype script, still to port |
+| Fivehundrd card, saves list, My card badge | `app/wall/Card.tsx` (React), `lib/wall/saves.ts` |
+| Open/close choreography (scroll, notch, ghost, drag, back), fly-to-card, audio, index strip, Create, sharing | `app/wall/legacy.js`, the rest of the prototype script, still to port |
 
 The remaining script owns the wall's state for now. It hands React the lane
 and the rack through `app/wall/store.ts`, and React renders synchronously.

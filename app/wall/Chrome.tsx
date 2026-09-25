@@ -1,5 +1,6 @@
 /* The fixed parts of the wall page, markup as in reference.html. */
 import { NAV } from "../../lib/wall/model";
+import { TabBadge } from "./Card";
 import { LaneNav } from "./LaneNav";
 import { SheetContent } from "./SheetContent";
 
@@ -176,9 +177,7 @@ export function TabBar() {
             <path d="M7 10h6M7 14h10" />
             <circle cx="17" cy="9" r="1" fill="currentColor" />
           </svg>
-          <b className="tb-n" id="tbN" hidden>
-            0
-          </b>
+          <TabBadge />
         </span>
         My card
       </button>

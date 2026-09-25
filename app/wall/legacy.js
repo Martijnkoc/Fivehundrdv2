@@ -12,7 +12,7 @@ import { PAL, seedWall } from "../../lib/wall/demo";
 import { genArt } from "../../lib/wall/art";
 import { ICON, LICON } from "../../lib/wall/icons";
 import { buildRack } from "../../lib/wall/rack";
-import { skey } from "../../lib/wall/saves";
+import { savesOrder as savesOrderOf, skey } from "../../lib/wall/saves";
 import { left, long, short, spotStyle, styleFor, until } from "../../lib/wall/time";
 
 export function startWall(bridge){
@@ -276,14 +276,12 @@ code.addEventListener("pointerup",endScrub);code.addEventListener("pointercancel
 
 /* ---------- live pulse ---------- */
 function stats(){renderCard()}
-function savesOrder(){
-  const now=SAVES.map(x=>{const cur=WALL[x.no-1];const liveNow=cur&&!cur.vacant&&skey(cur)===x.k&&left(cur)>0;return {...x,liveNow,cur}});
-  return now.filter(x=>x.liveNow).sort((a,b)=>left(a.cur)-left(b.cur)).concat(now.filter(x=>!x.liveNow));
-}
+const savesOrder=()=>savesOrderOf(SAVES,WALL);
 /* the book leaves the shelf and flies into your card, shrinking to the card's width */
 const mobileCard=()=>matchMedia("(max-width:979px)").matches;
 let cardOpen=false;
-function bumpTab(){const n=$("#tbN");if(!n)return;const c=SAVES.length;n.hidden=!c;n.textContent=c;n.classList.remove("pop");void n.offsetWidth;n.classList.add("pop")}
+/* the badge's count is React (TabBadge); this only pops it */
+function bumpTab(){const n=$("#tbN");if(!n)return;n.classList.remove("pop");void n.offsetWidth;n.classList.add("pop")}
 function ghostBook(li,from){
   const g=document.createElement("div");g.className="flyer";g.setAttribute("style",li.getAttribute("style")+`;left:${from.left}px;top:${from.top}px;width:${from.width}px;height:${from.height}px`);
   const b=li.querySelector(".book").cloneNode(true);b.style.cssText="width:100%;height:100%;transform:none;aspect-ratio:auto";g.appendChild(b);document.body.appendChild(g);return g;
@@ -409,34 +407,6 @@ function flyToCard(li,s,from){
   const done=()=>{g.remove();target.classList.remove("landing");target.classList.add("landed")};
   a.onfinish=done;a.oncancel=done;
 }
-function savesHTML(){
-  const all=savesOrder(),shown=all.slice(0,savesShown);
-  /* every save is a mini book spine, the same cloth and bands as the shelf, stacked on your card */
-  /* every save is a small square, the same look as its tile on the wall */
-  const row=x=>{
-    const st=x.liveNow?styleFor(x.cur):styleFor({lane:x.lane,start:x.start,seed:0});
-    const src=x.liveNow?x.cur:x;
-    const art=src.img?`<img src="${src.img}" alt="">`:src.logo?`<span class="bk-logo"><img src="${src.logo}" alt=""></span>`
-      :(src.seed!=null&&src.pal?genArt(src.seed,src.pal):`<span class="sq-ini">${esc(String(x.name).split(/\s+/).filter(w=>/\w/.test(w)).slice(0,2).map(w=>w[0]).join("").toUpperCase())}</span>`);
-    const tl=x.liveNow?`<span class="sq-t${left(x.cur)<6*3600e3?" soon":""}">${short(left(x.cur))}</span>`:`<span class="sq-t off">Ended</span>`;
-    const inner=`<span class="sq-art">${art}</span>${tl}<span class="sq-n">${esc(x.name)}</span>`;
-    const label=`${esc(x.name)}, ${LANE[x.lane]}, No. ${pad(x.no)}${x.liveNow?"":", ended"}`;
-    const tile=x.liveNow?`<button class="sq" data-go="${x.no}" title="${label}" aria-label="${label}">${inner}</button>`
-      :(x.link?`<a class="sq" href="${esc(x.link.url)}" target="_blank" rel="noopener" title="${label}. Find them on ${esc(x.link.label)}" aria-label="${label}">${inner}</a>`:`<span class="sq" title="${label}">${inner}</span>`);
-    return `<li class="msp${x.liveNow?"":" gone"}" data-k="${x.k}" style="${st}">${tile}<button class="sv-x" data-unsave="${x.k}" aria-label="Remove ${esc(x.name)} from your saves">&times;</button></li>`;
-  };
-
-  let h=`<div class="sv-box"><div class="sv-head"><span>Your saves${all.length?`, leaving first`:""}</span><b>${all.length}</b></div>`;
-  if(!all.length)h+=`<p class="sv-empty">Nothing saved yet. Tap Save on a tile and it lands here.</p>`;
-  else{
-    h+=`<ul class="sv-list">${shown.map(row).join("")}</ul>`;
-    if(all.length>savesShown)h+=`<button class="sv-more" data-more-saves>Show ${Math.min(12,all.length-savesShown)} more</button>`;
-    else if(all.length>12)h+=`<button class="sv-more" data-less-saves>Show less</button>`;
-  }
-  if(all.length&&!ACCOUNT)h+=`<div class="keep"><p>Take your card to every device, and we'll remind you before saved spots end.</p><button data-keep>Keep my card</button></div>`;
-  if(ACCOUNT)h+=`<p class="kept">Card kept with ${esc(ACCOUNT.via)}.${ACCOUNT.remind?" Reminders on.":""}</p>`;
-  return h+`</div>`;
-}
 function openKeep(){
   $("#shareSheet").innerHTML=`<button class="x" aria-label="Close" data-close>&times;</button>
   <h2 id="shareH">Keep your card</h2>
@@ -469,32 +439,9 @@ document.addEventListener("click",e=>{
     closeVeils();renderCard();toast(lg.dataset.login==="email"?"Check your inbox for the link. Your card is kept.":"Card kept.");
   }
 });
+/* the card is React (app/wall/Card.tsx); this hands it the visitor's state */
 function renderCard(){
-  const card=$("#card");if(!card)return;
-  const live=WALL.filter(s=>!s.vacant&&left(s)>0),vac=TOTAL-live.length;
-  const next=live.reduce((a,s)=>!a||left(s)<left(a)?s:a,null);
-  const seenLive=live.filter(s=>SEEN.has(s.no)),saved=live.filter(s=>isSaved(s));
-  const leaving=saved.slice().sort((a,b)=>left(a)-left(b))[0];
-  const mine=live.filter(s=>s.mine).sort((a,b)=>b.start-a.start)[0];
-  const day=new Date().toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"long"});
-  const lanes=LANES.map(([k,v])=>{const n=seenLive.filter(s=>s.lane===k).length,b=BIND[k];
-    return `<span class="${n?"":"zero"}" style="--lb:${b.c1};--lt:${lum(b.c1)>.28?"#141210":"#fbf5e6"}" title="${v}: ${n} opened today">${LICON[k]}${n}</span>`}).join("");
-  const n=$("#tbN");if(n){n.hidden=!SAVES.length;n.textContent=SAVES.length}
-  card.innerHTML=`<button class="sheet-handle" type="button" aria-label="Close your card" onclick="document.getElementById('cardVeil').click()"></button><div class="lc">
-    <div class="lc-top"><span>Fivehundrd card</span><span>${day}</span></div>
-    <h2 class="lc-h">Your wall today<span class="bdot">.</span></h2>
-    <button class="lc-entry" data-go="${entryNo}"><span>You walked in at</span><b>No. ${pad(entryNo)}</b><em>Take me back</em></button>
-    <div class="lc-stamps">
-      <div><b>${seenLive.length}</b><span>opened today</span></div>
-      <div><b>${saved.length}</b><span>saved</span></div>
-      <div><b>${live.length-seenLive.length}</b><span>still unseen</span></div>
-    </div>
-    <div class="lc-lanes" aria-label="What you opened today, per lane">${lanes}</div>
-    ${mine?`<button class="lc-row mine" data-go="${mine.no}"><span>Your story</span><b>No. ${pad(mine.no)} ${esc(mine.name)}</b><em>${short(left(mine))} left</em></button>`:""}
-    ${savesHTML()}
-    <div class="lc-wall"><span><b>${live.length}</b> live</span><span><b>${vac}</b> spots open</span>${next?`<span>Next spot frees up in <b>${short(left(next))}</b></span>`:""}</div>
-  </div>
-  <p class="lc-help">The wall is a circle, so everyone starts somewhere else. Tap a tile to open it, tap it again to close.</p>`;
+  bridge.setCard({entryNo,seen:new Set(SEEN),saves:[...SAVES],savesShown,account:ACCOUNT});
 }
 document.addEventListener("click",e=>{
   const g=e.target.closest("#card [data-go]");if(!g)return;
