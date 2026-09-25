@@ -7,3 +7,5 @@ test-results/
 !.env.example
 public/reference.html
 *.tsbuildinfo
+public/fonts/
+tests/__baselines__/

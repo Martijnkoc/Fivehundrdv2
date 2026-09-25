@@ -9,11 +9,19 @@ pnpm install
 pnpm dev
 ```
 
-Open <http://localhost:3000>. The prepare script copies the source-of-truth
-prototype into `public/` before development and production builds. The root
-route initially serves that document byte-for-byte, establishing a zero-diff
-baseline while the implementation is incrementally extracted into typed React
-components.
+Open <http://localhost:3000>. The prepare script builds the served copy of
+the approved prototype in `public/`. `reference.html` itself stays untouched.
+The copy differs from it in two ways:
+
+- Inter and Fraunces are self-hosted from `public/fonts/` (copied from the
+  `@fontsource-variable` packages) instead of loaded from Google Fonts.
+- A fixture bootstrap (`scripts/fixture.js`) is inlined. With `?fixture=1` it
+  freezes the clock at `2026-09-24T12:00:00Z` and seeds `Math.random`, so the
+  ring entry point and "Create your story" numbers are identical on every run.
+
+The root route initially serves that document byte-for-byte, establishing a
+zero-diff baseline while the implementation is incrementally extracted into
+typed React components.
 
 ## Checks
 
@@ -24,5 +32,17 @@ pnpm exec playwright install chromium
 pnpm test:e2e
 ```
 
-The visual test compares the application with the reference at the three
-required viewport sizes in light and dark mode.
+`pnpm test:e2e` runs two Playwright projects:
+
+1. `reference` renders `/reference.html?fixture=1` and writes the baselines
+   (`pnpm test:baseline`).
+2. `app` renders `/?fixture=1` and compares it against them
+   (`pnpm test:visual`).
+
+Both run at 390×844, 700×900 and 1400×900, in light and dark mode, for every
+state in BUILD_BRIEF §1.3. The allowed difference is `maxDiffPixelRatio: 0.001`
+with a per-pixel `threshold` of 0. Baselines are regenerated from the
+reference on each run and are not committed.
+
+To use an already installed Chromium instead of Playwright's download, set
+`CHROMIUM_PATH=/path/to/chrome`.
