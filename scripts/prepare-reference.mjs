@@ -1,8 +1,10 @@
 /*
  * Builds the served copy of the approved prototype.
  *
- * `reference.html` stays byte-for-byte as approved. The copy in `public/`
- * differs in exactly two ways, both required by BUILD_BRIEF §1:
+ * `reference.html` stays byte-for-byte as approved. The copy in
+ * `.generated/` (not public: the root route and, outside production,
+ * `/reference.html` serve it) differs in exactly two ways, both required by
+ * BUILD_BRIEF §1:
  *   1. Inter and Fraunces are self-hosted from `public/fonts/` instead of
  *      Google Fonts (rule 2), with the same axes and weights;
  *   2. the `?fixture=1` bootstrap (scripts/fixture.js) is inlined at the top
@@ -15,8 +17,8 @@ import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const require = createRequire(import.meta.url);
-const publicDir = resolve(root, "public");
-const fontsDir = resolve(publicDir, "fonts");
+const generatedDir = resolve(root, ".generated");
+const fontsDir = resolve(root, "public", "fonts");
 
 /* The same axes the reference requests from Google Fonts:
    Inter wght; Fraunces opsz + wght, roman and italic. */
@@ -71,9 +73,9 @@ async function buildDocument() {
     .replace(GOOGLE_FONTS, () => '<link rel="stylesheet" href="/fonts/fonts.css">')
     .replace('<meta charset="utf-8">', () => `<meta charset="utf-8">\n<script>\n${fixture.trim()}\n</script>`);
 
-  await writeFile(resolve(publicDir, "reference.html"), document);
+  await writeFile(resolve(generatedDir, "reference.html"), document);
 }
 
-await mkdir(publicDir, { recursive: true });
+await mkdir(generatedDir, { recursive: true });
 await buildFonts();
 await buildDocument();

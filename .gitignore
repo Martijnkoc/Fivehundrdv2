@@ -5,7 +5,7 @@ test-results/
 .env
 .env.*
 !.env.example
-public/reference.html
+.generated/
 *.tsbuildinfo
 public/fonts/
 tests/__baselines__/
