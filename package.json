@@ -1,0 +1,31 @@
+{
+  "name": "fivehundrd-wall",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "prepare:reference": "node scripts/prepare-reference.mjs",
+    "predev": "pnpm prepare:reference",
+    "dev": "next dev",
+    "prebuild": "pnpm prepare:reference",
+    "build": "next build",
+    "start": "next start",
+    "lint": "tsc --noEmit",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "next": "16.3.6",
+    "react": "19.3.0",
+    "react-dom": "19.3.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0",
+    "@types/node": "^20.19.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "typescript": "7.0.2"
+  },
+  "packageManager": "pnpm@10.17.1",
+  "engines": {
+    "node": ">=20.9.0"
+  }
+}
