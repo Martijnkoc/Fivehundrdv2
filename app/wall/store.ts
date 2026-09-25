@@ -2,6 +2,7 @@ import { flushSync } from "react-dom";
 import type { NavId, Spot } from "../../lib/wall/model";
 import type { Rack } from "../../lib/wall/rack";
 import type { CardData } from "./Card";
+import type { ShareView } from "./Sheets";
 
 /*
  * The state React renders while the rest of the prototype script
@@ -30,6 +31,10 @@ export type WallState = {
   /** The Fivehundrd card (§10); rebuilt on every change, like innerHTML. */
   card: CardData | null;
   cardVersion: number;
+  /** What #shareSheet shows (§15 share fallback, §12 Keep my card). */
+  share: ShareView | null;
+  shareVersion: number;
+  toast: { msg: string; on: boolean };
 };
 
 const initial: WallState = {
@@ -46,9 +51,13 @@ const initial: WallState = {
   rev: 0,
   card: null,
   cardVersion: 0,
+  share: null,
+  shareVersion: 0,
+  toast: { msg: "", on: false },
 };
 let state = initial;
 const listeners = new Set<() => void>();
+let toastTimer: ReturnType<typeof setTimeout>;
 
 export const wallStore = {
   get: () => state,
@@ -101,6 +110,17 @@ export const bridge = {
   tickMinute() {
     set({ minute: state.minute + 1 });
   },
+  /** Fills #shareSheet; the script shows its veil. */
+  openShare(share: ShareView) {
+    set({ share, shareVersion: state.shareVersion + 1 });
+  },
+  toast(msg: string) {
+    clearTimeout(toastTimer);
+    set({ toast: { msg, on: true } });
+    toastTimer = setTimeout(() => set({ toast: { msg, on: false } }), 2400);
+  },
+  /** Things React asks the script to do, registered by the script. */
+  actions: {} as { keepCard: (via: string, remind: boolean, byEmail: boolean) => void },
 };
 
 export type Bridge = typeof bridge;

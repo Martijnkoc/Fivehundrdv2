@@ -353,3 +353,59 @@ test.describe("phone: the card behind the tab bar (§10)", () => {
     await expect(page.locator("#claimH")).toHaveText("Create your story");
   });
 });
+
+test.describe("desktop: sharing and Keep my card (§12, §15)", () => {
+  test.use({ viewport: { width: desktop.width, height: desktop.height }, viewportSpec: desktop });
+
+  test("Share falls back to a sheet with WhatsApp, Telegram, X, Facebook, Email and Copy link", async ({ wall, page }) => {
+    await wall.goto();
+    await page.locator("#rack .panel [data-share]").click();
+    await expect(page.locator("#shareVeil")).toHaveClass(/\bon\b/);
+    await expect(page.locator("#shareSheet .sharelist > *")).toHaveText(["WhatsApp", "Telegram", "X", "Facebook", "Email", "Copy link"]);
+    const no = (await page.locator("#rack .panel").getAttribute("data-no"))!;
+    await expect(page.locator("#shareSheet .sharelist a").first()).toHaveAttribute("href", new RegExp(`%23${no.padStart(3, "0")}$`));
+    await page.locator("#shareSheet .x").click();
+    await expect(page.locator("#shareVeil")).not.toHaveClass(/\bon\b/);
+  });
+
+  test("Copy link copies the spot's link and says so", async ({ wall, page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await wall.goto();
+    await page.locator("#rack .panel [data-share]").click();
+    await page.locator("#shareSheet [data-copy]").click();
+    await expect(page.locator("#toast")).toHaveText("Link copied");
+    await expect(page.locator("#toast")).toHaveClass(/\bon\b/);
+    expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/\?fixture=1#\d{3}$/);
+  });
+
+  test("demo links explain themselves instead of leaving", async ({ wall, page }) => {
+    await wall.goto();
+    await page.locator("#rack .panel .links a").first().click();
+    await expect(page.locator("#toast")).toHaveText("Demo spot. Real makers link out to their own pages.");
+  });
+
+  test("Keep my card checks the email, then keeps the card with reminders", async ({ wall, page }) => {
+    await wall.goto();
+    await wall.save(1);
+    await page.locator("#card [data-keep]").click();
+    await page.locator("#kEmail").fill("not-an-email");
+    await page.locator('#shareSheet [data-login="email"]').click();
+    await expect(page.locator("#kErr")).toHaveText("That email address doesn't look right. Check it and try again.");
+    await page.locator("#kEmail").fill("maker@example.com");
+    await page.locator('#shareSheet [data-login="email"]').click();
+    await expect(page.locator("#shareVeil")).not.toHaveClass(/\bon\b/);
+    await expect(page.locator("#toast")).toHaveText("Check your inbox for the link. Your card is kept.");
+    await expect(page.locator("#card .kept")).toHaveText("Card kept with maker@example.com. Reminders on.");
+    await expect(page.locator("#card [data-keep]")).toHaveCount(0);
+  });
+
+  test("Continue with Google keeps the card without reminders when unticked", async ({ wall, page }) => {
+    await wall.goto();
+    await wall.save(1);
+    await page.locator("#card [data-keep]").click();
+    await page.locator("#kRemind").uncheck();
+    await page.locator('#shareSheet [data-login="Google"]').click();
+    await expect(page.locator("#toast")).toHaveText("Card kept.");
+    await expect(page.locator("#card .kept")).toHaveText("Card kept with Google.");
+  });
+});

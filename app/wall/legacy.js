@@ -407,21 +407,12 @@ function flyToCard(li,s,from){
   const done=()=>{g.remove();target.classList.remove("landing");target.classList.add("landed")};
   a.onfinish=done;a.oncancel=done;
 }
-function openKeep(){
-  $("#shareSheet").innerHTML=`<button class="x" aria-label="Close" data-close>&times;</button>
-  <h2 id="shareH">Keep your card</h2>
-  <p class="sub">Log in to keep your saves on every device. Browsing the wall never needs an account.</p>
-  <div class="sharelist">
-    <button data-login="Google">Continue with Google</button>
-    <button data-login="Apple">Continue with Apple</button>
-  </div>
-  <div class="f" style="margin-top:14px"><label for="kEmail">Or get a link by email</label><input type="text" id="kEmail" inputmode="email" autocomplete="email" placeholder="you@example.com"></div>
-  <button class="pay" data-login="email">Email me a link</button>
-  <label class="remind"><input type="checkbox" id="kRemind" checked> Remind me an hour before a saved spot ends</label>
-  <p class="err" id="kErr" role="alert"></p>
-  <p class="fine">Prototype. No account is created.</p>`;
-  $("#shareVeil").classList.add("on");
-}
+/* the Keep my card sheet is React (app/wall/Sheets.tsx) */
+function openKeep(){bridge.openShare({kind:"keep"});$("#shareVeil").classList.add("on")}
+bridge.actions.keepCard=(via,remind,byEmail)=>{
+  ACCOUNT={via,remind};try{localStorage.setItem("fh-account",JSON.stringify(ACCOUNT))}catch(e){}
+  closeVeils();renderCard();toast(byEmail?"Check your inbox for the link. Your card is kept.":"Card kept.");
+};
 document.addEventListener("click",e=>{
   const card=e.target.closest("#card");
   if(card){
@@ -431,12 +422,6 @@ document.addEventListener("click",e=>{
     if(e.target.closest("[data-more-saves]")){savesShown+=12;renderCard();return}
     if(e.target.closest("[data-less-saves]")){savesShown=12;renderCard();return}
     if(e.target.closest("[data-keep]")){openKeep();return}
-  }
-  const lg=e.target.closest("#shareSheet [data-login]");if(lg){
-    let via=lg.dataset.login;
-    if(via==="email"){const v=$("#kEmail").value.trim();if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)){$("#kErr").textContent="That email address doesn't look right. Check it and try again.";return}via=v}
-    ACCOUNT={via,remind:$("#kRemind").checked};try{localStorage.setItem("fh-account",JSON.stringify(ACCOUNT))}catch(e){}
-    closeVeils();renderCard();toast(lg.dataset.login==="email"?"Check your inbox for the link. Your card is kept.":"Card kept.");
   }
 });
 /* the card is React (app/wall/Card.tsx); this hands it the visitor's state */
@@ -465,23 +450,11 @@ async function shareSpot(s){
   if(navigator.share){try{await navigator.share(data);return}catch(e){if(e.name==="AbortError")return}}
   shareSheet(data);
 }
-function shareSheet(d){
-  const t=encodeURIComponent(d.text+" "+d.url);
-  $("#shareSheet").innerHTML=`<button class="x" aria-label="Close" data-close>&times;</button><h2 id="shareH">Share this spot</h2><p class="sub">${esc(d.title)}</p>
-  <div class="sharelist">
-    <a href="https://wa.me/?text=${t}" target="_blank" rel="noopener">WhatsApp</a>
-    <a href="https://t.me/share/url?url=${encodeURIComponent(d.url)}&text=${encodeURIComponent(d.text)}" target="_blank" rel="noopener">Telegram</a>
-    <a href="https://x.com/intent/post?text=${t}" target="_blank" rel="noopener">X</a>
-    <a href="https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(d.url)}" target="_blank" rel="noopener">Facebook</a>
-    <a href="mailto:?subject=${encodeURIComponent(d.title)}&body=${t}">Email</a>
-    <button data-copy>Copy link</button>
-  </div>`;
-  $("#shareSheet").querySelector("[data-copy]").onclick=async()=>{try{await navigator.clipboard.writeText(d.url);toast("Link copied")}catch(e){toast(d.url)}};
-  $("#shareVeil").classList.add("on");
-}
+/* the share sheet is React (app/wall/Sheets.tsx) */
+function shareSheet(d){bridge.openShare({kind:"share",data:d});$("#shareVeil").classList.add("on")}
 function closeVeils(){stopAudio();document.querySelectorAll(".veil").forEach(v=>v.classList.remove("on"));document.body.style.overflow=""}
 document.querySelectorAll(".veil").forEach(v=>v.addEventListener("click",e=>{if(e.target===v||e.target.closest("[data-close]"))closeVeils()}));
-let toastT;function toast(m){const t=$("#toast");t.textContent=m;t.classList.add("on");clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove("on"),2400)}
+const toast=m=>bridge.toast(m);
 
 /* ---------- claim a spot ---------- */
 let draft,lastP;

@@ -3,6 +3,7 @@ import { NAV } from "../../lib/wall/model";
 import { TabBadge } from "./Card";
 import { LaneNav } from "./LaneNav";
 import { SheetContent } from "./SheetContent";
+import { ShareContent, Toast } from "./Sheets";
 
 /** §9: brand and slogan, lane tabs, live search, Create, avatar. */
 export function Header() {
@@ -141,9 +142,11 @@ export function Overlays() {
         <div className="sheet" role="dialog" aria-modal="true" aria-labelledby="claimH" id="claimSheet"></div>
       </div>
       <div className="veil" id="shareVeil">
-        <div className="sheet" role="dialog" aria-modal="true" aria-labelledby="shareH" id="shareSheet" style={{ maxWidth: 460 }}></div>
+        <div className="sheet" role="dialog" aria-modal="true" aria-labelledby="shareH" id="shareSheet" style={{ maxWidth: 460 }}>
+          <ShareContent />
+        </div>
       </div>
-      <div className="toast" id="toast" role="status"></div>
+      <Toast />
       <div className="card-veil" id="cardVeil"></div>
       <div className="dveil" id="dveil"></div>
       <div className="dsheet" id="dsheet" role="dialog" aria-modal="true" hidden>
