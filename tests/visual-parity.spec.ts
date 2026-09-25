@@ -111,7 +111,7 @@ for (const viewport of viewports) {
       test("footer in view", async ({ wall, page }) => {
         await wall.goto();
         await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-        await expect(page.locator("body")).toHaveClass(/at-foot/);
+        await expect(page.locator(".site-foot")).toBeInViewport();
         await wall.quiet();
         await expect(page).toHaveScreenshot(shot("footer"));
       });

@@ -3,7 +3,6 @@ import { NAV } from "../../lib/wall/model";
 import { TabBadge } from "./Card";
 import { ClaimContent } from "./Claim";
 import { LaneNav } from "./LaneNav";
-export { IndexStrip } from "./IndexStrip";
 import { SheetContent } from "./SheetContent";
 import { ShareContent, Toast } from "./Sheets";
 

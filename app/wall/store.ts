@@ -142,8 +142,6 @@ export const bridge = {
     share: (spot: FilledSpot) => void;
     seeOnWall: (no: number) => void;
     spotURL: (spot: FilledSpot) => string;
-    openSpot: (el: HTMLElement | null, opts: { align: boolean; auto?: boolean }) => void;
-    cancelGlide: () => void;
   },
 };
 

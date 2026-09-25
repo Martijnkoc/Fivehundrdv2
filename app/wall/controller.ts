@@ -554,7 +554,8 @@ export function startWall(bridge: Bridge) {
     renderCard();
     return s;
   }
-  function showSheet(el: HTMLElement) {
+  /** Brings a spot forward as the sheet; `instant` skips the rise and ghost (rotation). */
+  function showSheet(el: HTMLElement, instant = false) {
     const s = filledOf(el);
     if (sheetOn) {
       /* next spot: slide the new one in */
@@ -596,7 +597,7 @@ export function startWall(bridge: Bridge) {
     } catch {
       sheetPushed = false;
     }
-    if (reduce) {
+    if (reduce || instant) {
       dsheet.style.transform = "none";
       return;
     }
@@ -660,11 +661,9 @@ export function startWall(bridge: Bridge) {
         history.replaceState(null, "", location.pathname + location.search);
       } catch {}
     }
-    /* keep the tile you were on in view behind the sheet */
-    if (el) {
-      const r = el.getBoundingClientRect();
-      if (r.top < headY() || r.bottom > innerHeight - 80) glideTo(alignY(el));
-    }
+    /* back where you were: the wall doesn't move while the sheet is up, so
+       closing it leaves you at the same place (approved change: the
+       reference glided to the last tile and then history.back() undid it) */
     el?.querySelector<HTMLElement>(".book")?.focus({ preventScroll: true });
   }
   addEventListener("popstate", () => {
@@ -725,12 +724,19 @@ export function startWall(bridge: Bridge) {
     dsheet.addEventListener("touchend", end);
     dsheet.addEventListener("touchcancel", end);
   }
-  /* rotating to a wide screen: fall back to the inline panel */
+  /* rotating keeps the open spot open in the form that fits: phone → wide
+     hands the sheet over to the inline panel, and (approved change, as the
+     brief's §7 asks) wide → phone hands the panel over to the sheet */
   addEventListener("resize", () => {
     if (sheetOn && !phoneSheet()) {
       const el = open;
       hideSheet();
       if (el) swapTo(el);
+    } else if (!sheetOn && open && phoneSheet()) {
+      const el = open;
+      bridge.close();
+      open = null;
+      showSheet(el, true);
     }
   });
 
@@ -771,6 +777,9 @@ export function startWall(bridge: Bridge) {
     $("#shareVeil").classList.add("on");
   }
   function openKeep() {
+    /* approved change: on phones the card is a sheet above the veil, so the
+       login sheet opened behind it; close the card first, as Create does */
+    if (cardOpen) setCard(false);
     bridge.openShare({ kind: "keep" });
     $("#shareVeil").classList.add("on");
   }
@@ -869,16 +878,7 @@ export function startWall(bridge: Bridge) {
       closeVeils();
       openSpot(spotEl(no), { align: true });
     },
-    openSpot,
-    cancelGlide: () => cancelTween(false),
   } satisfies Bridge["actions"]);
-
-  /* hide the index strip and reading line once the footer comes up */
-  try {
-    new IntersectionObserver(([en]) => {
-      document.body.classList.toggle("at-foot", en.isIntersecting);
-    }).observe($(".site-foot"));
-  } catch {}
 
   /* ---------- boot ---------- */
   const setHead = () => document.documentElement.style.setProperty("--headY", $("#top").getBoundingClientRect().bottom + 12 + "px");

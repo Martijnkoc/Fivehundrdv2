@@ -1,0 +1,10 @@
+/*
+ * Approved changes on top of reference.html. wall.css stays the reference's
+ * CSS verbatim; everything that deliberately differs lives here, and the
+ * visual suite applies this file to the reference as well, so the baselines
+ * are "the reference plus these approved changes".
+ */
+
+/* Keep my card: the official Google and Apple marks before the button text. */
+.sharelist .login{justify-content:flex-start;align-items:center;gap:12px}
+.sharelist .login svg{width:20px;height:20px;flex:none}

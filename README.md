@@ -36,13 +36,35 @@ visual suite must still match the reference after every change.
 | Fivehundrd card, saves, My card badge | `app/wall/Card.tsx`, `lib/wall/saves.ts` |
 | Share sheet, Keep my card, toast | `app/wall/Sheets.tsx` |
 | Create your story, success screen | `app/wall/Claim.tsx` |
-| Index strip (hidden by the approved CSS) | `app/wall/IndexStrip.tsx` |
 | Preview player and demo synth | `app/wall/audio.ts` |
 | Behaviour: glide, open/close, sheet ghost/drag/back, fly-to-card, tab bar, claims, minute tick | `app/wall/controller.ts` |
 
 The controller decides what happens and hands React the state through
 `app/wall/store.ts`; React renders it synchronously, so the controller can
 measure and animate the new DOM straight away, as the reference did.
+
+## Approved changes on top of the reference
+
+The reference wins where it and the brief disagree, except for these changes,
+which were signed off:
+
+1. The open spot's countdown ticks every second (§6). The reference's stood still.
+2. Closing the phone sheet leaves you exactly where you were on the wall (§7).
+3. Rotating keeps the open spot open both ways: sheet to inline panel, and inline panel to sheet (§7, "and vice versa").
+4. The index strip is removed. The reference only hid it, and it took no space.
+5. Keep my card shows the official Google and Apple marks (§12).
+6. On phones, Keep my card closes the card first, so the login sheet opens in front of it. In the reference it opened behind the card.
+
+CSS for these lives in `app/wall/overrides.css`. The visual suite applies it
+to the reference too, so the baselines are "the reference plus the approved
+changes". Behaviour tests for them run on the app only, with the reason given.
+
+## Deploying
+
+`vercel.json` pins the framework to Next.js. The Vercel project was created
+before the app existed, when it was a plain HTML repository, so it would
+otherwise build with the "Other" preset and serve only `public/`, which gives
+a 404 on `/`.
 
 ## Database
 

@@ -6,6 +6,9 @@ import { expect, test, viewports } from "./wall";
  * test runs on the reference and on the app; both must pass.
  */
 
+/** For approved changes the reference deliberately doesn't have (see app/wall/overrides.css, README). */
+const appOnly = (reason: string) => test.skip(test.info().project.name === "reference", reason);
+
 const phone = viewports[0];
 const desktop = viewports[2];
 
@@ -534,11 +537,10 @@ test.describe("desktop: Create your story (§13)", () => {
 test.describe("desktop: index strip, audio, keys, search (§5, §8, §9)", () => {
   test.use({ viewport: { width: desktop.width, height: desktop.height }, viewportSpec: desktop });
 
-  test("the index strip stays hidden, as in the approved design", async ({ wall, page }) => {
-    /* reference.html switches it off: .code,.scrub{display:none!important} */
+  test("there is no index strip", async ({ wall, page }) => {
+    appOnly("approved change: the index strip is removed (the reference only hid it)");
     await wall.goto();
-    await expect(page.locator("#code")).toBeHidden();
-    await expect(page.locator("#scrub")).toBeHidden();
+    await expect(page.locator("#code, #scrub, .head")).toHaveCount(0);
   });
 
   test("j and k step through the filled spots", async ({ wall, page }) => {
@@ -595,5 +597,94 @@ test.describe("desktop: index strip, audio, keys, search (§5, §8, §9)", () =>
     await page.reload();
     await page.waitForSelector("#rack .spot");
     await expect(page.locator("#card .lc-entry b")).toHaveText(entry!);
+  });
+});
+
+test.describe("approved changes on top of the reference", () => {
+  test.describe("phone", () => {
+    test.use({ viewport: { width: phone.width, height: phone.height }, viewportSpec: phone, hasTouch: true });
+
+    test("closing the sheet leaves you where you were on the wall", async ({ wall, page }) => {
+      await wall.goto();
+      await page.evaluate(() => window.scrollTo(0, 2400));
+      const y = await page.evaluate(() => scrollY);
+      const tile = page.locator("#rack .spot:not(.vacant):not(.filler) .book");
+      const n = await page.evaluate(() => {
+        const all = [...document.querySelectorAll("#rack .spot:not(.vacant):not(.filler)")];
+        return all.findIndex((el) => el.getBoundingClientRect().top > 150);
+      });
+      await tile.nth(n).click();
+      await expect(page.locator("#dsheet")).toBeVisible();
+      for (let i = 0; i < 6; i++) {
+        const no = await page.locator("#dsheet").getAttribute("data-no");
+        await page.locator("#dsheet [data-next]").click();
+        await expect(page.locator("#dsheet")).not.toHaveAttribute("data-no", no!);
+      }
+      await page.locator("#dsheet .dclose").click();
+      await expect(page.locator("#dsheet")).toBeHidden();
+      await page.waitForTimeout(300);
+      expect(await page.evaluate(() => scrollY)).toBe(y);
+    });
+  });
+
+  test.describe("phone card", () => {
+    test.use({ viewport: { width: phone.width, height: phone.height }, viewportSpec: phone, hasTouch: true });
+
+    test("Keep my card opens the login sheet in front, not behind the card", async ({ wall, page }) => {
+      appOnly("approved change: in the reference the login sheet opened behind the phone card");
+      await wall.goto();
+      await wall.save(1);
+      await wall.closeOpenTile();
+      await page.locator('.tabbar [data-tab="card"]').click();
+      await page.locator("#card [data-keep]").click();
+      await expect(page.locator("#card")).not.toHaveClass(/\bon\b/);
+      await expect(page.locator('#shareSheet [data-login="Google"]')).toBeInViewport();
+      await page.locator('#shareSheet [data-login="Google"]').click();
+      await expect(page.locator("#toast")).toHaveText("Card kept.");
+    });
+  });
+
+  test.describe("desktop", () => {
+    test.use({ viewport: { width: desktop.width, height: desktop.height }, viewportSpec: desktop });
+
+    test("the open spot's countdown ticks every second", async ({ wall, page }) => {
+      appOnly("approved change (§6): the reference's countdown stood still");
+      await wall.goto();
+      const live = page.locator("#rack .panel [data-live]");
+      const before = await live.textContent();
+      /* move the frozen fixture clock on by five seconds */
+      await page.evaluate(() => {
+        const now = Date.now();
+        Date.now = () => now + 5000;
+      });
+      await expect(live).not.toHaveText(before!, { timeout: 3_000 });
+    });
+
+    test("rotating to a phone hands the inline panel over to the sheet", async ({ wall, page }) => {
+      appOnly("approved change (§7, 'and vice versa'): the reference kept the inline panel");
+      await wall.goto();
+      await wall.openTile(3);
+      const no = (await page.locator("#rack .panel").getAttribute("data-no"))!;
+      await page.setViewportSize({ width: phone.width, height: phone.height });
+      await expect(page.locator("#dsheet")).toBeVisible();
+      await expect(page.locator("#dsheet")).toHaveAttribute("data-no", no);
+      await expect(page.locator("#rack .panel")).toHaveCount(0);
+      await expect(page.locator(`#s-${no.padStart(3, "0")}`)).toHaveClass(/\bopen\b/);
+      await page.locator("#dsheet .dclose").click();
+      await expect(page.locator("#dsheet")).toBeHidden();
+    });
+
+    test("Keep my card shows the Google and Apple marks", async ({ wall, page }) => {
+      appOnly("approved change (§12): real Google and Apple marks on the login buttons");
+      await wall.goto();
+      await wall.save(1);
+      await page.locator("#card [data-keep]").click();
+      const google = page.locator('#shareSheet [data-login="Google"]');
+      const apple = page.locator('#shareSheet [data-login="Apple"]');
+      await expect(google).toHaveAccessibleName("Continue with Google");
+      await expect(apple).toHaveAccessibleName("Continue with Apple");
+      await expect(google.locator('svg[data-mark="google"] path')).toHaveCount(4);
+      await expect(apple.locator('svg[data-mark="apple"]')).toBeVisible();
+    });
   });
 });

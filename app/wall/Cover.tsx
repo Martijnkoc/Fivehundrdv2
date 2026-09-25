@@ -1,6 +1,6 @@
 "use client";
 
-import { memo, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { ICON } from "../../lib/wall/icons";
 import { LANE, LIFE, pad, rng, type FilledSpot } from "../../lib/wall/model";
 import { left, long } from "../../lib/wall/time";
@@ -13,12 +13,16 @@ const PAUSE = '<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>';
 const ws = (indent: number) => "\n" + " ".repeat(indent);
 
 /**
- * "1d 2h 03m 04s left". The brief (§6) says this ticks every second while
- * open; the reference's tick() looks for it inside the tile instead of the
- * panel, so it stays at the time of opening. The reference wins (brief,
- * intro) until that is decided otherwise.
+ * "1d 2h 03m 04s left", ticking every second while open (§6). Approved change:
+ * the reference's tick() looked inside the tile instead of the panel, so its
+ * countdown stood still.
  */
 function Live({ s }: { s: FilledSpot }) {
+  const [, setNow] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
   return (
     <span className="live" data-live="">
       {`${long(left(s))} left`}

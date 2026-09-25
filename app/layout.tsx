@@ -22,13 +22,17 @@ export const viewport: Viewport = {
  * values (rgba(13,13,13,.5) becomes #0d0d0d80, alpha 0.502) and reorders
  * declarations, which changes pixels.
  */
-const wallCss = readFile(path.join(process.cwd(), "app", "wall", "wall.css"), "utf8");
+const css = (file: string) => readFile(path.join(process.cwd(), "app", "wall", file), "utf8");
+const wallCss = css("wall.css");
+/* Approved changes on top of the reference (see the file's header). */
+const overridesCss = css("overrides.css");
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
         <style dangerouslySetInnerHTML={{ __html: await wallCss }} />
+        <style dangerouslySetInnerHTML={{ __html: await overridesCss }} />
       </head>
       <body>
         {/* Inter and Fraunces, self-hosted (BUILD_BRIEF §1.2); see scripts/prepare-reference.mjs */}

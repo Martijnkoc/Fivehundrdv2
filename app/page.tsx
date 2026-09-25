@@ -1,5 +1,5 @@
 import { Card } from "./wall/Card";
-import { Footer, Header, IndexStrip, Overlays, TabBar } from "./wall/Chrome";
+import { Footer, Header, Overlays, TabBar } from "./wall/Chrome";
 import { Rack } from "./wall/Rack";
 import { WallRuntime } from "./wall/WallRuntime";
 
@@ -17,7 +17,6 @@ export default function WallPage() {
         </main>
       </div>
       <Footer />
-      <IndexStrip />
       <Overlays />
       <TabBar />
       <WallRuntime />

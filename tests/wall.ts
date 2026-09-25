@@ -18,6 +18,10 @@ export class Wall {
     private readonly path: string,
   ) {}
 
+  get isReference() {
+    return this.path.includes("reference");
+  }
+
   /** Below 700px a tile opens as a bottom sheet (§7). */
   get usesSheet() {
     return this.viewport.width < 700;
@@ -30,6 +34,8 @@ export class Wall {
 
   async goto(hash = "") {
     await this.page.goto(`${this.path}?fixture=1${hash}`);
+    /* the baselines are the reference plus the approved changes */
+    if (this.isReference) await this.page.addStyleTag({ path: "app/wall/overrides.css" });
     await this.page.waitForSelector("#rack .spot");
     await this.page.evaluate(() => document.fonts.ready);
     await this.settle();
