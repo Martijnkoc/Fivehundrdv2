@@ -1,7 +1,8 @@
 import { flushSync } from "react-dom";
-import type { NavId, Spot } from "../../lib/wall/model";
+import type { FilledSpot, NavId, Spot } from "../../lib/wall/model";
 import type { Rack } from "../../lib/wall/rack";
 import type { CardData } from "./Card";
+import type { ClaimStart, ClaimView, Draft } from "./Claim";
 import type { ShareView } from "./Sheets";
 
 /*
@@ -35,6 +36,9 @@ export type WallState = {
   share: ShareView | null;
   shareVersion: number;
   toast: { msg: string; on: boolean };
+  /** What #claimSheet shows (§13 form, then the success screen). */
+  claim: ClaimView | null;
+  claimVersion: number;
 };
 
 const initial: WallState = {
@@ -54,6 +58,8 @@ const initial: WallState = {
   share: null,
   shareVersion: 0,
   toast: { msg: "", on: false },
+  claim: null,
+  claimVersion: 0,
 };
 let state = initial;
 const listeners = new Set<() => void>();
@@ -119,8 +125,24 @@ export const bridge = {
     set({ toast: { msg, on: true } });
     toastTimer = setTimeout(() => set({ toast: { msg, on: false } }), 2400);
   },
+  /** Fills #claimSheet with a fresh Create form; the script shows its veil. */
+  openClaim(start: ClaimStart) {
+    set({ claim: { kind: "form", start }, claimVersion: state.claimVersion + 1 });
+  },
+  claimDone(spot: FilledSpot) {
+    set({ claim: { kind: "done", spot }, claimVersion: state.claimVersion + 1 });
+  },
   /** Things React asks the script to do, registered by the script. */
-  actions: {} as { keepCard: (via: string, remind: boolean, byEmail: boolean) => void },
+  actions: {} as {
+    keepCard: (via: string, remind: boolean, byEmail: boolean) => void;
+    randomVacant: () => number | null;
+    /** Starts placing the spot; returns an error message, or null. */
+    placeClaim: (draft: Draft) => string | null;
+    previewClick: (e: MouseEvent, spot: FilledSpot) => void;
+    share: (spot: FilledSpot) => void;
+    seeOnWall: (no: number) => void;
+    spotURL: (spot: FilledSpot) => string;
+  },
 };
 
 export type Bridge = typeof bridge;

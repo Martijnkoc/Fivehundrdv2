@@ -1,6 +1,7 @@
 /* The fixed parts of the wall page, markup as in reference.html. */
 import { NAV } from "../../lib/wall/model";
 import { TabBadge } from "./Card";
+import { ClaimContent } from "./Claim";
 import { LaneNav } from "./LaneNav";
 import { SheetContent } from "./SheetContent";
 import { ShareContent, Toast } from "./Sheets";
@@ -139,7 +140,9 @@ export function Overlays() {
   return (
     <>
       <div className="veil" id="claimVeil">
-        <div className="sheet" role="dialog" aria-modal="true" aria-labelledby="claimH" id="claimSheet"></div>
+        <div className="sheet" role="dialog" aria-modal="true" aria-labelledby="claimH" id="claimSheet">
+          <ClaimContent />
+        </div>
       </div>
       <div className="veil" id="shareVeil">
         <div className="sheet" role="dialog" aria-modal="true" aria-labelledby="shareH" id="shareSheet" style={{ maxWidth: 460 }}>

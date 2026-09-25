@@ -409,3 +409,124 @@ test.describe("desktop: sharing and Keep my card (§12, §15)", () => {
     await expect(page.locator("#card .kept")).toHaveText("Card kept with Google.");
   });
 });
+
+/** A 2×2 red PNG, for upload tests. */
+const PNG_2x2 = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAYAAABytg0kAAAAFklEQVR4nGP4z8DwHwyBDAYGBgYGAAG+Af9xXw1IAAAAAElFTkSuQmCC",
+  "base64",
+);
+
+test.describe("desktop: Create your story (§13)", () => {
+  test.use({ viewport: { width: desktop.width, height: desktop.height }, viewportSpec: desktop });
+
+  test("asks for a name, then a link, then a real web address", async ({ wall, page }) => {
+    await wall.goto();
+    await wall.openCreate();
+    const err = page.locator("#fErr");
+    await page.locator("#fPay").click();
+    await expect(err).toHaveText("Add your name so people know who they're looking at.");
+    await expect(page.locator("#fName")).toBeFocused();
+    await page.locator("#fName").fill("Lowtide Club");
+    await page.locator("#fPay").click();
+    await expect(err).toHaveText("Add at least one link, so visitors can go and find you.");
+    await expect(page.locator("[data-link]").first()).toBeFocused();
+    await page.locator("[data-link]").first().fill("not a link");
+    await page.locator("#fPay").click();
+    await expect(err).toHaveText("That link doesn't look like a web address. Try something like instagram.com/yourname.");
+  });
+
+  test("the preview follows the form: name, line, link label, lane block", async ({ wall, page }) => {
+    await wall.goto();
+    await wall.openCreate();
+    const prev = page.locator("#fPrev");
+    await expect(prev.locator(".title")).toHaveText("Your name here");
+    await page.locator("#fName").fill("Paper Engines");
+    await expect(prev.locator(".title")).toHaveText("Paper Engines");
+    await page.locator("#fSnip").fill("Brass and tape hiss.");
+    await expect(prev.locator(".snip")).toHaveText("Brass and tape hiss.");
+    await expect(page.locator("#fCount")).toHaveText("120 left");
+    await page.locator("[data-link]").first().fill("open.spotify.com/artist/x");
+    await expect(prev.locator(".links a").first()).toContainText("Spotify");
+    await page.locator('#fLane [data-l="writers"]').click();
+    await expect(page.locator('#fLane [data-l="writers"]')).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("#fExtra label")).toContainText("First pages");
+    await page.locator("#fEx").fill("First paragraph.\n\nSecond paragraph.");
+    await expect(prev.locator(".read .page p")).toHaveCount(2);
+    await page.locator('#fLane [data-l="games"]').click();
+    await expect(page.locator("#fExtra label")).toContainText("Trailer link");
+    await page.locator("#fTrailer").fill("youtube.com/watch?v=x");
+    await expect(prev.locator(".trailer")).toBeVisible();
+    await page.locator('#fLane [data-l="podcasts"]').click();
+    await expect(page.locator("#fExtra .lbl")).toContainText("Episode trailer");
+  });
+
+  test("Pick another number offers a different open spot", async ({ wall, page }) => {
+    await wall.goto();
+    await wall.openCreate();
+    const first = await page.locator("#claimNo").textContent();
+    await page.locator("#reroll").click();
+    await expect(page.locator("#claimNo")).not.toHaveText(first!);
+    const no = Number(await page.locator("#claimNo").textContent());
+    await expect(page.locator(`#s-${String(no).padStart(3, "0")}`)).toHaveClass(/\bvacant\b/);
+  });
+
+  test("an open spot on the wall opens Create for that number", async ({ wall, page }) => {
+    await wall.goto();
+    const vacant = page.locator("#rack .spot.vacant").first();
+    const no = (await vacant.getAttribute("data-no"))!;
+    await vacant.locator(".book").click();
+    await expect(page.locator("#claimVeil")).toHaveClass(/\bon\b/);
+    await expect(page.locator("#claimNo")).toHaveText(no.padStart(3, "0"));
+  });
+
+  test("uploaded artwork and logo show in the form and the preview", async ({ wall, page }) => {
+    await wall.goto();
+    await wall.openCreate();
+    await page.locator("#fArt").setInputFiles({ name: "art.png", mimeType: "image/png", buffer: PNG_2x2 });
+    await expect(page.locator("#fTh img")).toHaveAttribute("src", /^data:image\/jpeg/);
+    await expect(page.locator("#fPrev .art img")).toHaveAttribute("src", /^data:image\/jpeg/);
+    await page.locator("#fLogo").setInputFiles({ name: "logo.png", mimeType: "image/png", buffer: PNG_2x2 });
+    await expect(page.locator("#fLogoTh img")).toHaveAttribute("src", /^data:image\/jpeg/);
+    await expect(page.locator("#fErr")).toHaveText("");
+  });
+
+  test("an audio clip over 4 MB is refused", async ({ wall, page }) => {
+    await wall.goto();
+    await wall.openCreate();
+    await page.locator("#fAudio").setInputFiles({ name: "big.mp3", mimeType: "audio/mpeg", buffer: Buffer.alloc(4_000_001) });
+    await expect(page.locator("#fErr")).toHaveText("That audio file is over 4 MB. Trim it to about 30 seconds.");
+  });
+
+  test("paying places the story on the wall and shows the social card", async ({ wall, page }) => {
+    await wall.goto();
+    await wall.openCreate();
+    const no = (await page.locator("#claimNo").textContent())!;
+    await page.locator("#fName").fill("Lowtide Club");
+    await page.locator("[data-link]").first().fill("open.spotify.com/artist/lowtide");
+    await page.locator("#fPay").click();
+    await expect(page.locator("#fPay")).toHaveText("Placing you on the wall…");
+    await expect(page.locator("#fPay")).toBeDisabled();
+    await expect(page.locator("#claimH")).toHaveText("You're on the wall.");
+    await expect(page.locator("#claimSheet .sub").first()).toContainText(`Spot ${no} is yours until`);
+    await expect(page.locator("#dCard .card-img")).toBeVisible({ timeout: 10_000 });
+    expect(await page.locator("#dCard .card-img").evaluate((img: HTMLImageElement) => [img.naturalWidth, img.naturalHeight])).toEqual([1080, 1350]);
+    await page.locator("#dSee").click();
+    await expect(page.locator("#claimVeil")).not.toHaveClass(/\bon\b/);
+    await expect(page.locator("#rack .panel")).toHaveAttribute("data-no", String(Number(no)));
+    await expect(page.locator("#rack .panel .title")).toHaveText("Lowtide Club");
+    await expect(page.locator("#card .mine")).toContainText(`No. ${no} Lowtide Club`);
+  });
+
+  test("a claimed spot stays on the wall after a reload", async ({ wall, page }) => {
+    await wall.goto();
+    await wall.openCreate();
+    const no = (await page.locator("#claimNo").textContent())!;
+    await page.locator("#fName").fill("Lowtide Club");
+    await page.locator("[data-link]").first().fill("lowtide.example");
+    await page.locator("#fPay").click();
+    await expect(page.locator("#claimH")).toHaveText("You're on the wall.");
+    await page.reload();
+    await page.waitForSelector("#rack .spot");
+    await expect(page.locator(`#s-${no} .bk-strip b`)).toHaveText("Lowtide Club");
+  });
+});

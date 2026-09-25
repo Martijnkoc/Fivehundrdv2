@@ -100,9 +100,10 @@ function Trailer({ s }: { s: FilledSpot }) {
 
 /**
  * The full view of an open spot (§6, coverHTML in the reference): the same
- * content inline on desktop and in the phone sheet.
+ * content inline on desktop and in the phone sheet; `preview` is the Create
+ * form's live preview, without the actions.
  */
-export const Cover = memo(function Cover({ s, saved }: { s: FilledSpot; saved: boolean }) {
+export const Cover = memo(function Cover({ s, saved, preview }: { s: FilledSpot; saved: boolean; preview?: boolean }) {
   return (
     <div className="cover">
       {ws(4)}
@@ -138,17 +139,19 @@ export const Cover = memo(function Cover({ s, saved }: { s: FilledSpot; saved: b
           ))}
         </div>
         {ws(6)}
-        <div className="acts">
-          <button className="act solid" data-share="">
-            Share
-          </button>
-          <button className="act" data-save="" aria-pressed={saved}>
-            {saved ? "Saved" : "Save"}
-          </button>
-          <button className="act" data-next="">
-            Next spot
-          </button>
-        </div>
+        {!preview && (
+          <div className="acts">
+            <button className="act solid" data-share="">
+              Share
+            </button>
+            <button className="act" data-save="" aria-pressed={saved}>
+              {saved ? "Saved" : "Save"}
+            </button>
+            <button className="act" data-next="">
+              Next spot
+            </button>
+          </div>
+        )}
         {ws(4)}
       </div>
     </div>

@@ -23,7 +23,6 @@ let WALL=seedWall();
 try{const mine=JSON.parse(localStorage.getItem("fh-claims")||"[]");mine.forEach(s=>{if(Date.now()-s.start<LIFE)WALL[s.no-1]=s})}catch(e){}
 bridge.setWall(WALL);
 
-const artHTML=s=>s.img?`<img src="${s.img}" alt="Artwork for ${esc(s.name)}">`:genArt(s.seed,s.pal);
 
 
 /* ---------- lanes ---------- */
@@ -62,33 +61,6 @@ function renderRack(){
   bridge.renderRack(r);
   drawCode();stats();
 }
-function extraHTML(s){
-  if((s.lane==="music"||s.lane==="podcasts")&&(s.audio||s.demo)){
-    const r=rng(s.seed^77),bars=Array.from({length:52},()=>`<span style="height:${22+r()*78}%"></span>`).join("");
-    const src=s.links?.[0]?.label||"";
-    return `<div class="player" data-player><button class="pp" data-play aria-label="Play preview">${ICON.play.replace("<svg","<svg class=\"pl\"")}${ICON.pause.replace("<svg","<svg class=\"pa\"")}</button><div class="wave" data-wave><div class="bars">${bars}</div><div class="bars on">${bars}</div></div><span class="ptime" data-ptime>0:00 / 0:30</span></div><p class="pcap">${s.lane==="podcasts"?"Episode trailer":"30-second preview"}${src?". Full version on "+esc(src)+".":""}</p>`;
-  }
-  if((s.lane==="writers"||s.lane==="letters")&&s.excerpt&&s.excerpt.x){
-    return `<div class="read"><h3><b>${esc(s.excerpt.t||(s.lane==="writers"?"First pages":"Latest issue"))}</b><span>${s.lane==="writers"?"Read the first pages":"Read the latest issue"}</span></h3><div class="page">${s.excerpt.x.split(/\n\s*\n/).map(p=>`<p>${esc(p.trim())}</p>`).join("")}</div><button class="more" data-more>Keep reading</button></div>`;
-  }
-  return "";
-}
-function trailerHTML(s){
-  if(!((s.lane==="art"||s.lane==="games")&&s.trailer&&s.trailer.url))return "";
-  return `<a class="trailer" href="${esc(s.trailer.url)}" target="_blank" rel="noopener"${s.demo?" data-demo":""} aria-label="Watch the ${s.lane==="games"?"trailer":"video"} on YouTube"><span class="play">${ICON.play}</span><span class="len">${s.lane==="games"?"Trailer":"Watch"} ${esc(s.trailer.len||"")}</span></a>`;
-}
-function coverHTML(s,preview){
-  return `<div class="cover">
-    <div class="art">${artHTML(s)}${trailerHTML(s)}${LIFE-left(s)<3*3600e3?'<span class="stamp">Just arrived</span>':""}</div>
-    <div class="body">
-      <div class="issue"><strong>No. ${pad(s.no)}</strong><span class="lane">${LICON[s.lane]||""}${LANE[s.lane]}</span><span class="live" data-live>${long(left(s))} left</span></div>
-      <h2 class="title">${esc(s.name)}</h2>
-      <p class="snip">${esc(s.snippet)}</p>
-      ${extraHTML(s)}
-      <div class="links">${s.links.map(k=>`<a href="${esc(k.url)}" target="_blank" rel="noopener"${s.demo?" data-demo":""}>${esc(k.label)}<span>${esc(k.url.replace(/^https?:\/\//,""))}</span></a>`).join("")}</div>
-      ${preview?"":`<div class="acts"><button class="act solid" data-share>Share</button><button class="act" data-save aria-pressed="${isSaved(s)}">${isSaved(s)?"Saved":"Save"}</button><button class="act" data-next>Next spot</button></div>`}
-    </div></div>`;
-}
 /* saves are kept per story (spot number + start), with a small snapshot so they survive the spot ending */
 let SAVES=[];try{SAVES=JSON.parse(localStorage.getItem("fh-saves")||"[]")}catch(e){}
 bridge.setSaved(SAVES.map(x=>x.k));
@@ -115,8 +87,6 @@ function coverClick(e,s,root){
   const a=e.target.closest("a[data-demo]");if(a){e.preventDefault();toast("Demo spot. Real makers link out to their own pages.");return true}
   const pl=e.target.closest("[data-play]");if(pl){togglePlay(pl.closest("[data-player]"),s);return true}
   const wv=e.target.closest("[data-wave]");if(wv){const r=wv.getBoundingClientRect();startPlay(wv.closest("[data-player]"),s,Math.max(0,Math.min(.98,(e.clientX-r.left)/r.width))*30);return true}
-  /* the open view's "Keep reading" is React now; the Create preview's is still here */
-  const mo=e.target.closest("#fPrev [data-more]");if(mo){const rd=mo.closest(".read");const f=rd.classList.toggle("full");mo.textContent=f?"Show less":"Keep reading";return true}
   return false;
 }
 const headY=()=>$("#top").getBoundingClientRect().bottom+12;
@@ -456,139 +426,30 @@ function closeVeils(){stopAudio();document.querySelectorAll(".veil").forEach(v=>
 document.querySelectorAll(".veil").forEach(v=>v.addEventListener("click",e=>{if(e.target===v||e.target.closest("[data-close]"))closeVeils()}));
 const toast=m=>bridge.toast(m);
 
-/* ---------- claim a spot ---------- */
-let draft,lastP;
+/* ---------- claim a spot: the form and success screen are React (app/wall/Claim.tsx) ---------- */
 function randomVacant(){const v=WALL.filter(s=>s.vacant);return v.length?v[Math.floor(Math.random()*v.length)].no:null}
 function openClaim(no){
   const n=no||randomVacant();if(!n){toast("All 500 spots are taken. Check back soon.");return}
-  draft={no:n,lane:lane==="all"?"music":lane,name:"",snippet:"",links:[{},{},{}],img:null,seed:Math.floor(Math.random()*1e9),pal:PAL[Math.floor(Math.random()*PAL.length)]};
-  $("#claimSheet").innerHTML=`<button class="x" aria-label="Close" data-close>&times;</button>
-  <h2 id="claimH">Create your story</h2>
-  <p class="sub">Spot <b id="claimNo">${pad(n)}</b>. ${PRICE}, live straight away for three days. <button class="chip" id="reroll" style="padding:3px 10px">Pick another number</button></p>
-  <p class="promise">There's no front row. Every visitor starts somewhere else on the wall, so every spot gets its turn at the top.</p>
-  <div class="claim-grid">
-   <form id="cf" novalidate>
-    <div class="f"><label for="fName">Name</label><input type="text" id="fName" maxlength="40" placeholder="Your name, band or project" autocomplete="off"></div>
-    <div class="f"><span class="lbl">Lane</span><div class="lanepick" id="fLane">${LANES.map(([k,v])=>`<button type="button" class="chip" data-l="${k}" aria-pressed="${k===draft.lane}">${v}</button>`).join("")}</div></div>
-    <div class="f"><span class="lbl">Artwork or logo</span>
-      <label class="drop-art"><span class="th" id="fTh">${genArt(draft.seed,draft.pal)}</span><span><input type="file" id="fArt" accept="image/*"><br><span class="hint">Square or landscape works best. No image yet? We'll print a pattern for you.</span></span></label></div>
-    <div class="f"><span class="lbl">Logo <span class="hint">(optional)</span></span>
-      <label class="drop-art"><span class="th" id="fLogoTh" style="width:40px;height:40px"></span><span><input type="file" id="fLogo" accept="image/*"><br><span class="hint">Shown small on your spine in the rack. Without one we use your artwork.</span></span></label></div>
-    <div id="fExtra"></div>
-    <div class="f"><span class="lbl">Where people find you</span><span class="hint">Up to three links. Spotify, Steam, Substack, your site, anything.</span>
-      ${[0,1,2].map(i=>`<input type="url" data-link="${i}" placeholder="${["open.spotify.com/artist/…","instagram.com/yourname","yourwebsite.com"][i]}" inputmode="url" autocapitalize="off">`).join("")}</div>
-    <div class="f"><label for="fSnip">Preview line</label><textarea id="fSnip" maxlength="140" placeholder="One line that makes someone click. What should they hear, read or play first?"></textarea><span class="hint" id="fCount">140 left</span></div>
-    <p class="err" id="fErr" role="alert"></p>
-    <button class="pay" id="fPay" type="submit">Pay ${PRICE} and go live</button>
-    <p class="fine">Prototype. No payment is taken.</p>
-   </form>
-   <div class="preview"><p class="cap">How it slides out on the wall</p><div id="fPrev"></div></div>
-  </div>`;
-  const sh=$("#claimSheet");
-  const upd=()=>{
-    draft.name=$("#fName").value.trim();draft.snippet=$("#fSnip").value.trim();
-    $("#fCount").textContent=(140-$("#fSnip").value.length)+" left";
-    draft.links=[...sh.querySelectorAll("[data-link]")].map(i=>parseLink(i.value)).filter(Boolean);
-    if($("#fEx")){draft.excerpt={t:$("#fExT").value.trim(),x:$("#fEx").value.trim()}}
-    if($("#fTrailer")){const t=parseLink($("#fTrailer").value);draft.trailer=t?{url:t.url,len:""}:null}
-    if(player&&$("#fPrev").contains(player.root))stopAudio();
-    const p=lastP={...draft,name:draft.name||"Your name here",snippet:draft.snippet||"Your preview line shows up here.",links:draft.links.length?draft.links:[{label:"Your link",url:"yourpage.com"}],start:Date.now()};
-    $("#fPrev").innerHTML=coverHTML(p,true);
-  };
-  const extra=()=>{
-    const l=draft.lane;let h="";
-    if(l==="music"||l==="podcasts")h=`<div class="f"><span class="lbl">${l==="music"?"Song preview":"Episode trailer"} <span class="hint">(optional)</span></span><label class="drop-art"><span class="th" style="display:grid;place-items:center;font-weight:900">${draft.audio?"♪":"+"}</span><span><input type="file" id="fAudio" accept="audio/*"><br><span class="hint">A clip of up to 30 seconds, max 4 MB. Visitors hear it right on the wall.</span></span></label></div>`;
-    if(l==="writers"||l==="letters")h=`<div class="f"><label for="fEx">${l==="writers"?"First pages":"Latest issue"} <span class="hint">(optional)</span></label><input type="text" id="fExT" maxlength="60" placeholder="${l==="writers"?"Chapter one":"Issue 12: what I learned this week"}" value="${esc(draft.excerpt?.t||"")}"><textarea id="fEx" maxlength="2500" style="min-height:130px" placeholder="Paste the opening. Leave an empty line between paragraphs.">${esc(draft.excerpt?.x||"")}</textarea></div>`;
-    if(l==="art"||l==="games")h=`<div class="f"><label for="fTrailer">${l==="games"?"Trailer":"Video"} link <span class="hint">(optional)</span></label><input type="url" id="fTrailer" placeholder="youtube.com/watch?v=…" inputmode="url" autocapitalize="off" value="${esc(draft.trailer?.url||"")}"><span class="hint">A play button appears on your artwork and opens the video.</span></div>`;
-    $("#fExtra").innerHTML=h;
-  };
-  $("#fPrev").onclick=e=>{if(lastP)coverClick(e,lastP)};
-  sh.addEventListener("change",async e=>{
-    if(e.target.id==="fLogo"){const f=e.target.files[0];if(!f)return;try{draft.logo=await shrink(f,160);$("#fLogoTh").innerHTML=`<img src="${draft.logo}" alt="">`}catch(err){$("#fErr").textContent="That logo couldn't be read. Try a JPG or PNG."}}
-    if(e.target.id==="fAudio"){const f=e.target.files[0];if(!f)return;if(f.size>4e6){$("#fErr").textContent="That audio file is over 4 MB. Trim it to about 30 seconds.";return}
-      draft.audio=await new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(f)});$("#fErr").textContent="";extra();upd()}
-  });
-  extra();
-  sh.addEventListener("input",upd);
-  $("#fLane").addEventListener("click",e=>{const b=e.target.closest("[data-l]");if(!b)return;draft.lane=b.dataset.l;extra();$("#fLane").querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b));upd()});
-  $("#reroll").onclick=()=>{const n2=randomVacant();if(n2){draft.no=n2;$("#claimNo").textContent=pad(n2);upd()}};
-  $("#fArt").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;try{draft.img=await shrink(f);$("#fTh").innerHTML=`<img src="${draft.img}" alt="">`;upd()}catch(err){$("#fErr").textContent="That file couldn't be read. Try a JPG or PNG."}});
-  $("#cf").addEventListener("submit",e=>{e.preventDefault();submitClaim()});
-  upd();$("#claimVeil").classList.add("on");document.body.style.overflow="hidden";setTimeout(()=>$("#fName").focus(),50);
+  bridge.openClaim({no:n,lane:lane==="all"?"music":lane,seed:Math.floor(Math.random()*1e9),pal:PAL[Math.floor(Math.random()*PAL.length)]});
+  $("#claimVeil").classList.add("on");document.body.style.overflow="hidden";
 }
-function parseLink(v){
-  v=(v||"").trim();if(!v)return null;
-  try{const u=new URL(/^https?:\/\//i.test(v)?v:"https://"+v);if(!u.hostname.includes("."))return null;
-    const h=u.hostname.replace(/^www\./,"");
-    const map=[["spotify","Spotify"],["bandcamp","Bandcamp"],["soundcloud","SoundCloud"],["music.apple","Apple Music"],["podcasts.apple","Apple Podcasts"],["youtube","YouTube"],["youtu.be","YouTube"],["instagram","Instagram"],["tiktok","TikTok"],["substack","Substack"],["steampowered","Steam"],["itch.io","itch.io"],["goodreads","Goodreads"],["x.com","X"],["twitter","X"],["discord","Discord"],["patreon","Patreon"],["behance","Behance"],["webtoons","Webtoon"]];
-    const hit=map.find(([k])=>h.includes(k));return{label:hit?hit[1]:h,url:u.href};
-  }catch(e){return null}
-}
-function shrink(file,m=900){return new Promise((res,rej)=>{const fr=new FileReader();fr.onerror=rej;fr.onload=()=>{const im=new Image();im.onerror=rej;im.onload=()=>{sc=Math.min(1,m/Math.max(im.width,im.height)),c=document.createElement("canvas");c.width=im.width*sc;c.height=im.height*sc;c.getContext("2d").drawImage(im,0,0,c.width,c.height);res(c.toDataURL("image/jpeg",.85))};im.src=fr.result};fr.readAsDataURL(file)})}
-function submitClaim(){
-  const err=$("#fErr");
-  if(!draft.name){err.textContent="Add your name so people know who they're looking at.";$("#fName").focus();return}
-  const raw=[...document.querySelectorAll("[data-link]")].filter(i=>i.value.trim());
-  if(!draft.links.length){err.textContent=raw.length?"That link doesn't look like a web address. Try something like instagram.com/yourname.":"Add at least one link, so visitors can go and find you.";document.querySelector("[data-link]").focus();return}
-  if(!WALL[draft.no-1].vacant){const n=randomVacant();if(!n){err.textContent="Someone just took the last spot.";return}draft.no=n}
-  err.textContent="";const b=$("#fPay");b.disabled=true;b.textContent="Placing you on the wall…";
+bridge.actions.randomVacant=randomVacant;
+bridge.actions.previewClick=(e,p)=>coverClick(e,p);
+bridge.actions.share=s=>shareSpot(s);
+bridge.actions.spotURL=s=>spotURL(s);
+bridge.actions.seeOnWall=no=>{closeVeils();const li=document.getElementById("s-"+pad(no));openSpot(li,{align:true})};
+bridge.actions.placeClaim=draft=>{
+  if(!WALL[draft.no-1].vacant){const n=randomVacant();if(!n)return "Someone just took the last spot.";draft.no=n}
   setTimeout(()=>{
     const L=draft.lane,s={no:draft.no,lane:L,name:draft.name,snippet:draft.snippet||"New on the wall.",links:draft.links,img:draft.img,logo:draft.logo,seed:draft.seed,pal:draft.pal,start:Date.now(),mine:true,opens:0,saves:0,
       audio:(L==="music"||L==="podcasts")?draft.audio:null,excerpt:(L==="writers"||L==="letters")&&draft.excerpt?.x?draft.excerpt:null,trailer:(L==="art"||L==="games")?draft.trailer:null};
     WALL[s.no-1]=s;
     try{const mine=JSON.parse(localStorage.getItem("fh-claims")||"[]").filter(m=>m.no!==s.no);mine.push(s);localStorage.setItem("fh-claims",JSON.stringify(mine))}catch(e){}
     if(lane!=="all"&&lane!==s.lane){lane="all";renderLanes()}
-    renderRack();showDone(s);
+    renderRack();bridge.claimDone(s);
   },900);
-}
-async function showDone(s){
-  $("#claimSheet").innerHTML=`<button class="x" aria-label="Close" data-close>&times;</button>
-   <div class="done"><div>
-    <h2 id="claimH">You're on the wall.</h2>
-    <p class="sub">Spot ${pad(s.no)} is yours until ${until(s)}. Here's your card to tell people where to find you.</p>
-    <div class="sharerow"><button class="act solid" id="dShare">Share my card</button><button class="act" id="dLink">Share link</button><button class="act" id="dSee">See it on the wall</button></div>
-    <p class="sub" id="dHint" style="font-size:13px">On your phone, press and hold the card to save it to your photos.</p>
-   </div><div id="dCard"><p class="sub">Printing your card…</p></div></div>`;
-  $("#dSee").onclick=()=>{closeVeils();const li=document.getElementById("s-"+pad(s.no));openSpot(li,{align:true})};
-  $("#dLink").onclick=()=>shareSpot(s);
-  let blob=null;
-  try{const c=await drawCard(s);const url=c.toDataURL("image/png");$("#dCard").innerHTML=`<img class="card-img" src="${url}" alt="Social card for ${esc(s.name)}, spot ${pad(s.no)}">`;blob=await new Promise(r=>c.toBlob(r,"image/png"))}
-  catch(e){$("#dCard").innerHTML=`<p class="sub">The card couldn't be drawn in this browser. Share the link instead.</p>`}
-  $("#dShare").onclick=async()=>{
-    const f=blob&&new File([blob],`fivehundrd-${pad(s.no)}.png`,{type:"image/png"});
-    if(f&&navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f],text:`I'm on spot ${pad(s.no)} of fivehundrd. ${spotURL(s)}`});return}catch(e){if(e.name==="AbortError")return}}
-    toast("Press and hold the card to save it, then post it anywhere.");
-  };
-}
-function loadImg(src){return new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=j;i.src=src})}
-async function drawCard(s){
-  try{await document.fonts.ready}catch(e){}
-  const W=1080,H=1350,c=document.createElement("canvas");c.width=W;c.height=H;const x=c.getContext("2d");
-  x.fillStyle="#ebe5d8";x.fillRect(0,0,W,H);
-  // wordmark sticker
-  x.save();x.translate(80,70);x.transform(1,0,-.1405,1,0,0);x.fillStyle="#0d0d0d";x.fillRect(0,0,330,84);
-  x.font="900 60px Inter, Arial, sans-serif";x.textBaseline="alphabetic";let cx=22;
-  for(const [t,col] of [["f","#ff7bc3"],["ive","#fffdf8"],["h","#ff7bc3"],["undrd","#fffdf8"],[".","#d8ff45"]]){x.fillStyle=col;x.letterSpacing="-3px";x.fillText(t,cx,62);cx+=x.measureText(t).width}
-  x.restore();
-  x.fillStyle="#0d0d0d";x.textAlign="right";x.font="700 34px Inter, Arial, sans-serif";x.fillText(`No. ${pad(s.no)} / 500`,W-80,126);x.textAlign="left";
-  // artwork
-  const ax=80,ay=200,aw=920,ah=700;
-  const img=await loadImg(s.img||"data:image/svg+xml;charset=utf-8,"+encodeURIComponent(genArt(s.seed,s.pal)));
-  const sc=Math.max(aw/img.width,ah/img.height),iw=img.width*sc,ih=img.height*sc;
-  x.save();x.beginPath();x.rect(ax,ay,aw,ah);x.clip();x.drawImage(img,ax+(aw-iw)/2,ay+(ah-ih)/2,iw,ih);
-  x.globalAlpha=.16;x.fillStyle="#000";for(let yy=ay;yy<ay+ah;yy+=8)for(let xx=ax;xx<ax+aw;xx+=8){x.beginPath();x.arc(xx+4,yy+4,1.5,0,7);x.fill()}x.restore();
-  x.fillStyle="#d8ff45";x.save();x.translate(ax+24,ay+ah-70);x.rotate(-.035);x.fillRect(0,0,300,52);x.fillStyle="#0d0d0d";x.font="800 28px Inter, Arial, sans-serif";x.fillText("Live for 3 days",20,36);x.restore();
-  // name
-  x.fillStyle="#0d0d0d";let fs=120;x.font=`900 ${fs}px Inter, Arial, sans-serif`;x.letterSpacing="-6px";
-  while(x.measureText(s.name).width>920&&fs>54){fs-=4;x.font=`900 ${fs}px Inter, Arial, sans-serif`}
-  x.fillText(s.name,76,ay+ah+40+fs*.82);x.letterSpacing="0px";
-  x.fillStyle="#ff7bc3";x.fillRect(80,ay+ah+80+fs*.82,60,8);
-  x.fillStyle="#0d0d0d";x.font="600 32px Inter, Arial, sans-serif";x.fillText(`${LANE[s.lane]}. On the wall until ${until(s)}.`,160,ay+ah+92+fs*.82);
-  // footer band
-  x.fillStyle="#0d0d0d";x.fillRect(0,H-120,W,120);x.fillStyle="#fffdf8";x.font="700 36px Inter, Arial, sans-serif";x.fillText("Find me on the wall at fivehundrd.",80,H-48);
-  x.fillStyle="#d8ff45";x.beginPath();x.arc(W-110,H-60,22,0,7);x.fill();
-  return c;
-}
+  return null;
+};
 $("#claimTop").onclick=()=>openClaim();
 
 /* hide the index strip and reading line once the black footer comes up */
