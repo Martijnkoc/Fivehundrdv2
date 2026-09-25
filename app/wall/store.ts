@@ -8,9 +8,9 @@ import type { Rack } from "../../lib/wall/rack";
  * hands React what to show; React renders it synchronously, because the
  * script reads the new DOM straight away (as it did after innerHTML).
  */
-export type WallState = { lane: NavId; rack: Rack | null; version: number };
+export type WallState = { lane: NavId; laneVersion: number; rack: Rack | null; version: number };
 
-const initial: WallState = { lane: "all", rack: null, version: 0 };
+const initial: WallState = { lane: "all", laneVersion: 0, rack: null, version: 0 };
 let state = initial;
 const listeners = new Set<() => void>();
 
@@ -31,8 +31,9 @@ function set(patch: Partial<WallState>) {
 }
 
 export const bridge = {
+  /** Replaces the lane tabs, like the reference's innerHTML did (focus leaves the tab). */
   setLane(lane: NavId) {
-    set({ lane });
+    set({ lane, laneVersion: state.laneVersion + 1 });
   },
   /** Replaces the whole rack, like the reference's innerHTML did. */
   renderRack(rack: Rack) {

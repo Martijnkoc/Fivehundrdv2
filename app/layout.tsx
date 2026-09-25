@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import "./wall.css";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 
 export const metadata: Metadata = {
   title: "fivehundrd. the wall",
@@ -15,9 +16,20 @@ export const viewport: Viewport = {
   themeColor: "#ffffff",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+/*
+ * The reference's CSS, inlined byte for byte as in reference.html. It is not
+ * imported through Next's CSS pipeline on purpose: Lightning CSS rewrites
+ * values (rgba(13,13,13,.5) becomes #0d0d0d80, alpha 0.502) and reorders
+ * declarations, which changes pixels.
+ */
+const wallCss = readFile(path.join(process.cwd(), "app", "wall", "wall.css"), "utf8");
+
+export default async function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
+      <head>
+        <style dangerouslySetInnerHTML={{ __html: await wallCss }} />
+      </head>
       <body>
         {/* Inter and Fraunces, self-hosted (BUILD_BRIEF §1.2); see scripts/prepare-reference.mjs */}
         <link rel="stylesheet" href="/fonts/fonts.css" precedence="default" />

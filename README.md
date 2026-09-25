@@ -27,7 +27,7 @@ visual suite must still match the reference.
 
 | Part | Where it lives now |
 |---|---|
-| CSS | `app/wall.css`, copied verbatim from `reference.html` |
+| CSS | `app/wall/wall.css`, copied verbatim from `reference.html` and inlined as-is (not through the CSS pipeline, which rewrites values) |
 | Demo data, lanes, time, artwork, icons | `lib/wall/*` (typed) |
 | Wall order: lanes, search, ring, rows | `lib/wall/rack.ts` |
 | Header, footer, tab bar, overlays | `app/wall/Chrome.tsx` (React) |

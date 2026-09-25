@@ -19,8 +19,11 @@ export default defineConfig<WallOptions>({
   snapshotPathTemplate: "{testDir}/__baselines__/{testFilePath}/{arg}{ext}",
   expect: {
     toHaveScreenshot: {
-      maxDiffPixelRatio: 0.001,
-      /* Playwright defaults to 0.2, which accepts #0d0d0d rendered as #3a3a3a. */
+      /* Zero tolerance: not one pixel may differ from the reference.
+         (Stricter than the brief's maxDiffPixelRatio 0.001.) Playwright's
+         default per-pixel threshold of 0.2 would even accept #0d0d0d
+         rendered as #3a3a3a. */
+      maxDiffPixels: 0,
       threshold: 0,
       animations: "disabled",
       caret: "hide",
@@ -32,19 +35,27 @@ export default defineConfig<WallOptions>({
     reducedMotion: "reduce",
     timezoneId: "UTC",
     locale: "en-GB",
-    /* Use a preinstalled Chromium instead of Playwright's download. */
-    launchOptions: process.env.CHROMIUM_PATH
-      ? { executablePath: process.env.CHROMIUM_PATH }
-      : {},
+    launchOptions: {
+      /* Chrome re-rasters only the changed part of a layer on repaint. The
+         anti-aliasing at that part's edge then depends on the page's paint
+         history, which moved a search-box corner by one colour step between
+         otherwise identical pages. Full-tile raster makes the pixels depend
+         on the content alone. */
+      args: ["--disable-partial-raster"],
+      /* Use a preinstalled Chromium instead of Playwright's download. */
+      ...(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {}),
+    },
   },
   projects: [
     { name: "reference", use: { wallPath: "/reference.html" } },
     { name: "app", use: { wallPath: "/" } },
   ],
+  /* The production build, as visitors get it; SERVE_REFERENCE=1 lets it
+     serve /reference.html for the baselines. */
   webServer: {
-    command: "pnpm dev",
+    command: "pnpm build && SERVE_REFERENCE=1 pnpm start",
     url: "http://127.0.0.1:3000",
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    timeout: 300_000,
   },
 });
