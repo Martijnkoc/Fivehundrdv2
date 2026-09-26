@@ -1,0 +1,303 @@
+/*
+ * Approved changes on top of reference.html. wall.css stays the reference's
+ * CSS verbatim; everything that deliberately differs lives here, and the
+ * visual suite applies this file to the reference as well, so the baselines
+ * are "the reference plus these approved changes".
+ */
+
+/* Keep my card: the official Google and Apple marks before the button text. */
+.sharelist .login{justify-content:flex-start;align-items:center;gap:12px}
+.sharelist .login svg{width:20px;height:20px;flex:none}
+
+/* Live wall only (never in the reference or fixture): Report sits apart from the other actions. */
+.act.report{margin-left:auto;border-color:transparent;color:var(--ink2);font-weight:600}
+.act.report:hover{color:var(--ink);border-color:var(--line)}
+.reasons{display:flex;flex-direction:column;margin:4px 0 12px}
+.reason{display:flex;gap:10px;align-items:center;padding:11px 4px;border-bottom:1px solid var(--line);font-weight:600;font-size:15px;cursor:pointer}
+.reason input{accent-color:var(--ink);width:18px;height:18px;margin:0}
+
+/*
+ * Art direction (approved change): the same wall, printed. A light, fresh
+ * page; warm paper cards that sit on it; ink that reads as printed rather
+ * than screen black; a little grain and halftone on cards and artwork.
+ * Layout, sizes, spacing and hierarchy are untouched.
+ */
+:root{
+  --bg:#fbf9f4;          /* the page: very light warm off-white */
+  --paper:#f6efe1;       /* cream: the open story's text side, fields, text on ink */
+  --card:#f3e9d6;        /* warm paper: spot cards */
+  --ink:#1c1b18;         /* washed charcoal, like printed ink */
+  --ink2:#5d564a;
+  --line:#e2d8c4;
+  --grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%' height='100%' filter='url(%23g)'/></svg>");
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#15130f;--paper:#1f1c17;--card:#211d17;--ink:#f2ede2;--ink2:#a0977f;--line:#39342b}
+}
+:root[data-theme="dark"]{--bg:#15130f;--paper:#1f1c17;--card:#211d17;--ink:#f2ede2;--ink2:#a0977f;--line:#39342b}
+
+/* spot cards: warm paper with a little tooth, lifted off the page */
+.book{background:var(--card);border-color:color-mix(in oklab,var(--line),var(--ink) 6%);box-shadow:0 1px 0 rgba(28,27,24,.05)}
+.book::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background-image:var(--grain);background-size:160px;opacity:.07;mix-blend-mode:multiply}
+.book.vbook{background:transparent;box-shadow:none}
+.book.vbook::after{display:none}
+.bk-no{background:#fbf7ee;color:#1c1b18;box-shadow:0 0 0 1px rgba(28,27,24,.12)}
+
+/* artwork: a fine halftone screen and slightly softer colour, as if offset printed */
+.bk-art img,.bk-art svg{filter:saturate(.94) contrast(1.03)}
+.bk-art::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.11;mix-blend-mode:multiply;
+  background-image:radial-gradient(circle at center,#1c1b18 .7px,transparent 1.1px);background-size:3px 3px}
+.art img,.art svg{filter:saturate(.95) contrast(1.03)}
+.art::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background-image:var(--grain);background-size:180px;opacity:.12;mix-blend-mode:multiply}
+
+/* the Fivehundrd card: the same paper, a touch of grain */
+.lc{box-shadow:4px 4px 0 #1c1b18;border-color:#1c1b18}
+.lc::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background-image:var(--grain);background-size:160px;opacity:.09;mix-blend-mode:multiply}
+
+/* dark UI in washed charcoal, never screen black */
+.btn-create{background-color:#1d1c19;color:#fbf7ee;background-image:var(--grain);background-size:120px;background-blend-mode:soft-light;box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
+.btn-create:hover{background-color:var(--pink);color:#1c1b18}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn-create{background-color:#f2ede2;color:#1c1b18}}
+:root[data-theme="dark"] .btn-create{background-color:#f2ede2;color:#1c1b18}
+
+/*
+ * One spot, everywhere (approved change): the Create preview and share cards
+ * show the wall's own tile. .still is that tile as a picture: no hover, no
+ * clicks. The Create sheet's caption style must not reach the tile's caption.
+ */
+.spot.still{pointer-events:none}
+.preview .spot .cap{font-size:inherit;color:inherit;margin:0}
+.prev-tile{margin:0 0 18px}
+
+/*
+ * Share cards (app/wall/shareCard.tsx): the wall's tile on a social canvas,
+ * always in the light paper look whatever the viewer's theme.
+ */
+.sc{--bg:#fbf9f4;--paper:#f6efe1;--card:#f3e9d6;--ink:#1c1b18;--ink2:#5d564a;--line:#e2d8c4;
+  position:relative;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;
+  background:#fbf9f4;color:#1c1b18;font-family:var(--font);padding:20px 20px 18px}
+.sc::after{content:"";position:absolute;inset:0;pointer-events:none;background-image:var(--grain);background-size:120px;opacity:.06;mix-blend-mode:multiply}
+.sc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.sc-brand{display:flex;flex-direction:column;gap:3px;font-family:"Fraunces",Georgia,serif;font-weight:800;font-size:18px;line-height:1;letter-spacing:-.01em;white-space:nowrap}
+.sc-brand small{font-style:italic;font-weight:500;font-size:9.5px;letter-spacing:0;color:#5d564a}
+.sc-id{align-self:flex-start;font-size:9px;font-weight:800;line-height:1;white-space:nowrap;background:#1c1b18;color:#fbf7ee;border-radius:999px;padding:5px 8px}
+.sc-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;min-height:0}
+.sc-tile{transform:rotate(-1.6deg);filter:drop-shadow(0 14px 16px rgba(28,27,24,.22))}
+.sc-snip{margin:0;max-width:270px;text-align:center;font-family:"Fraunces",Georgia,serif;font-style:italic;font-weight:500;font-size:15px;line-height:1.3;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.sc-foot{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.sc-url{min-width:0;font-size:9.5px;font-weight:800;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#d8ff45;color:#1c1b18;border-radius:999px;padding:5px 9px}
+.sc-cta{flex:none;font-size:9.5px;font-weight:700;color:#5d564a}
+.sc-square{padding:16px 16px 14px}
+.sc-square .sc-main{gap:0}
+.sc-wide{flex-direction:row;align-items:center;gap:22px;padding:10px 22px 10px 26px}
+.sc-wide .sc-side{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.sc-wide .sc-brand{font-size:15px;margin-bottom:4px}
+.sc-name{font-size:26px;font-weight:900;letter-spacing:-.05em;line-height:.95;max-width:100%;overflow-wrap:anywhere}
+.sc-wide .sc-snip{text-align:left;font-size:12px;max-width:none;-webkit-line-clamp:2}
+.sc-wide .sc-url{max-width:100%}
+
+/* the share sheet: pick a size, see the card, share or save it */
+.sc-pick{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 14px}
+.sc-pick .chip{display:flex;flex-direction:column;align-items:flex-start;gap:1px;line-height:1.15;text-align:left}
+.sc-pick .chip small{font-size:11px;font-weight:600;opacity:.7}
+.sc-preview{display:grid;place-items:center;min-height:160px;margin:0 0 14px;padding:14px;border-radius:12px;background:color-mix(in oklab,var(--paper),var(--ink) 5%)}
+.sc-preview img{display:block;max-width:100%;max-height:min(52vh,460px);width:auto;height:auto;border-radius:6px;box-shadow:0 18px 34px -22px rgba(0,0,0,.55)}
+.sc-actions{display:flex;flex-direction:column;gap:10px;margin:0 0 10px}
+.sc-row{display:flex;flex-wrap:wrap;gap:8px}
+.sc-row .act:disabled,.sc-actions .pay:disabled{opacity:.5}
+.card-img{max-height:72vh;width:auto;max-width:100%;margin:0 auto}
+.sc-pick .chip{border-radius:12px;padding:7px 12px}
+
+/*
+ * Phones (approved change): an open spot is an overlay above the wall, not a
+ * bottom sheet. It grows out of its tile and shrinks back into it; the wall
+ * stays put behind it, and there is room around it to tap to close.
+ */
+@media (max-width:699px){
+  .dsheet{left:10px;right:10px;top:calc(env(safe-area-inset-top,0px) + 52px);bottom:auto;
+    max-height:calc(100dvh - 52px - 12px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));
+    border-radius:18px;padding:6px;box-shadow:0 30px 60px -20px rgba(0,0,0,.55)}
+  .dsheet .grab{margin:2px auto 6px}
+  .dclose{top:20px;right:16px}
+}
+
+/* a story's lasting link after its 72 hours (app/s/[lane]/[no]/[slug]) */
+.disc{min-height:100dvh}
+.disc-top{display:flex;justify-content:space-between;align-items:center;gap:12px;max-width:1080px;margin:0 auto;padding:18px clamp(16px,2.6vw,36px) 10px}
+.disc-main{max-width:1080px;margin:0 auto;padding:8px clamp(16px,2.6vw,36px) 60px}
+.disc-note{font-size:15px;line-height:1.45;max-width:62ch;margin:0 0 18px;color:var(--ink2)}
+.disc-note b{color:var(--ink)}
+.disc-spot::before{display:none}
+.disc-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.disc-acts .act{text-decoration:none;display:inline-flex;align-items:center}
+.disc-gone{text-align:center;padding-top:14vh}
+.disc-gone h1{font-size:clamp(30px,6vw,48px);letter-spacing:-.04em;line-height:1;margin:0 0 12px}
+.disc-gone p{color:var(--ink2);margin:0 0 24px}
+.disc-cta{display:inline-block;width:auto;padding:14px 26px;text-decoration:none}
+.disc .btn-create{text-decoration:none}
+
+/*
+ * Phones and tablets (approved change, mobile audit): sheets open above the
+ * tab bar and above an open spot; the tab bar is in the paper look (light
+ * and dark) and keeps clear of the iPhone home indicator.
+ */
+@media (max-width:979px){
+  .veil{z-index:96;touch-action:none}
+  .veil .sheet{touch-action:pan-y;padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))}
+  .tabbar{background:var(--bg);color:var(--ink);border-top-color:var(--line);box-shadow:0 -8px 20px -16px rgba(28,27,24,.35)}
+  .tabbar button{color:color-mix(in oklab,var(--ink),transparent 45%);min-height:48px}
+  .tabbar button.on{color:var(--ink)}
+  .tabbar .tb-create{background:#d8ff45;color:#1c1b18}
+  .tb-n{box-shadow:0 0 0 2px var(--bg)}
+  .card-veil,.dveil{touch-action:none}
+}
+
+/*
+ * Phones (approved change, mobile audit): a compact header. One line with
+ * the brand and a search button, then the lanes with thumb-sized tabs. The
+ * avatar was a desktop decoration; search opens in place of the brand.
+ */
+.search-toggle,.intro{display:none}
+@media (max-width:699px){
+  .site{padding-block:8px 0;column-gap:10px;row-gap:0}
+  #brand{gap:2px}
+  #brand .slogan{font-size:11px}
+  .who{display:none}
+  .header-actions{gap:0}
+  .search-toggle{all:unset;box-sizing:border-box;display:grid;place-items:center;width:44px;height:44px;margin-right:-10px;border-radius:999px;color:var(--ink);cursor:pointer}
+  .search-toggle svg{width:21px;height:21px}
+  .search-toggle .st-close,.top.searching .search-toggle .st-open{display:none}
+  .top.searching .search-toggle .st-close{display:block}
+  .searchbox{display:none}
+  .top.searching #brand{display:none}
+  .top.searching .searchbox{display:flex;order:1;flex:1 1 0;min-width:0;max-width:none;height:42px;margin:1px 0}
+  .top.searching .header-actions{order:2}
+  nav.primary{gap:22px;margin:0 calc(-1 * clamp(16px,2.6vw,36px));padding:0 clamp(16px,2.6vw,36px);
+    -webkit-mask-image:linear-gradient(90deg,#000 86%,transparent);mask-image:linear-gradient(90deg,#000 86%,transparent)}
+  nav.primary a{padding:13px 0 11px;font-size:15px}
+
+  /* one line that says what this is, for a first visit */
+  .intro{display:flex;align-items:flex-start;gap:8px;margin:12px 0 2px;padding:11px 6px 11px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line)}
+  .intro p{margin:0;font-size:14px;line-height:1.4;color:var(--ink2);flex:1}
+  .intro b{color:var(--ink)}
+  .intro button{all:unset;box-sizing:border-box;flex:none;display:grid;place-items:center;width:44px;height:44px;margin:-11px 0 -11px;font-size:22px;color:var(--ink2);cursor:pointer}
+
+  /* thumb-sized controls: 44px or more */
+  .dsheet .act{min-height:44px;padding:11px 18px}
+  .dclose{width:44px;height:44px}
+  .player .pp{width:44px;height:44px}
+  .claim-grid .chip,.sheet .chip{min-height:44px;padding:10px 14px}
+  .sv-x::before{content:"";position:absolute;inset:-12px}
+  .links a{min-height:48px}
+}
+/* the smallest phones: the price label fits its column */
+@media (max-width:359px){
+  .vacant .v2{font-size:10px;padding:3px 7px}
+  .vacant .vno{font-size:11px}
+}
+@media (max-width:699px){
+  #q::-webkit-search-cancel-button{display:none}
+}
+
+/*
+ * Phones (mobile audit): the wall scrolls on the compositor. Rows out of view
+ * skip layout and paint (sized from the first row, so nothing jumps), with a
+ * few pixels of room so an open tile's ring isn't clipped. Grain and halftone
+ * are plain see-through layers instead of blend modes, and the backdrop is a
+ * tint instead of a blur, which costs every frame of the overlay's motion.
+ */
+@media (max-width:699px){
+  .shelf-row{content-visibility:auto;contain-intrinsic-size:auto var(--row-est,240px);padding:4px 3px;margin:-4px -3px 10px}
+  .book::after,.lc::after,.art::before{mix-blend-mode:normal;background-image:var(--grain-a);opacity:.06}
+  .bk-art::after,.art::after{mix-blend-mode:normal;opacity:.09}
+  .dveil{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(20,18,15,.55)}
+  .dsheet{will-change:transform,opacity}
+}
+:root{--grain-a:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -1.2 0 0 0 1.1'/></filter><rect width='100%' height='100%' filter='url(%23g)'/></svg>")}
+@media (max-width:699px){
+  /* the wall holds a screen's height from the first paint, so nothing below it jumps when it fills */
+  .rack{min-height:100dvh}
+}
+
+/* Create on phones, one step at a time (app/wall/Claim.tsx, Steps) */
+.steps{display:flex;flex-direction:column;gap:12px;min-height:min(560px,78dvh)}
+.st-top{display:flex;align-items:center;gap:6px;margin:-4px -8px 0}
+.st-top .x{position:static;flex:none;width:44px;height:44px}
+.st-back{all:unset;box-sizing:border-box;display:grid;place-items:center;width:44px;height:44px;border-radius:999px;cursor:pointer;color:var(--ink)}
+.st-back[hidden]{visibility:hidden;display:grid}
+.st-back svg{width:22px;height:22px}
+.st-where{flex:1;text-align:center;font-size:13px;color:var(--ink2)}
+.st-where b{color:var(--ink)}
+.st-bar{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.st-bar i{height:4px;border-radius:2px;background:var(--line)}
+.st-bar i.on{background:var(--ink)}
+.st-live{align-self:center;margin:6px 0 2px;pointer-events:none}
+.st-body{display:flex;flex-direction:column;gap:10px;outline:none}
+.st-h{font-size:26px;line-height:1.05;letter-spacing:-.035em;font-weight:900;margin:4px 0 0}
+.st-sub{margin:0 0 4px;font-size:15px;color:var(--ink2);line-height:1.4}
+.st-body input[type=text],.st-body input[type=url],.st-body textarea{border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:13px 14px;font-size:16px;width:100%}
+.st-body textarea{min-height:96px;resize:vertical}
+.st-lanes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.st-lane{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;min-height:56px;padding:12px 14px;border:1.5px solid var(--line);border-radius:14px;background:var(--card);font-weight:800;font-size:16px;cursor:pointer;color:var(--ink)}
+.st-lane svg{width:20px;height:20px;flex:none}
+.st-lane[aria-checked="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.st-lane:focus-visible{outline:2px solid var(--pink);outline-offset:2px}
+.st-note{margin:4px 0 0;font-size:14px;color:var(--ink2);line-height:1.5}
+.st-link{all:unset;cursor:pointer;font-weight:700;color:var(--ink);text-decoration:underline;text-underline-offset:3px;padding:10px 0}
+.st-upload{position:relative;display:block;cursor:pointer}
+.st-upload input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+.st-btn{display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:999px;background:var(--ink);color:var(--paper);font-weight:800;font-size:16px}
+.st-quiet span{display:flex;align-items:center;justify-content:center;min-height:48px;border:1.5px dashed var(--line);border-radius:12px;font-weight:700;font-size:15px;color:var(--ink2)}
+.st-upload:focus-within .st-btn,.st-upload:focus-within span{outline:2px solid var(--pink);outline-offset:2px}
+.st-next{margin-top:auto}
+.st-prev{align-self:center}
+.st-cover{position:static}
+.steps .err{margin:0;min-height:0}
+.steps .err:empty{display:none}
+.st-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:start}
+.st-head .st-live{margin:2px 0 0}
+.st-next.alt{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.st-pay{position:sticky;bottom:calc(-22px - env(safe-area-inset-bottom,0px));margin:0 -18px calc(-22px - env(safe-area-inset-bottom,0px));padding:12px 18px calc(10px + env(safe-area-inset-bottom,0px));background:var(--bg);box-shadow:0 -10px 18px -14px rgba(28,27,24,.35);z-index:3}
+.st-pay .fine{margin:8px 0 0}
+/* the opened preview in Create is framed exactly like the phone's overlay (.dsheet) */
+.st-cover{background:var(--c1);border-radius:18px;padding:6px;box-shadow:0 30px 60px -28px rgba(0,0,0,.45)}
+.st-cover .cover{margin:0;padding:0;background:none;box-shadow:none;animation:none;border-radius:14px;overflow:hidden;grid-template-columns:1fr}
+.st-cover .cover::before,.st-cover .cover::after{display:none}
+.st-cover .cover>.art,.st-cover .cover>.body{box-shadow:none}
+.st-cover .art{aspect-ratio:1/1}
+.st-cover .body{padding:18px 16px 20px}
+.st-cover .title{font-size:clamp(32px,10vw,44px)}
+@media (max-width:699px){
+  #brand{min-height:44px;justify-content:center}
+}
+
+/* the footer (approved change): what Fivehundrd is, in plain words, and real links */
+.site-foot .what{max-width:44ch;margin:14px 0 0;font-size:14px;line-height:1.5;color:#3d3830}
+.site-foot .facts{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 0;padding:0}
+.site-foot .facts span{display:inline-flex;align-items:center;height:24px;padding:0 9px;border:1px solid #0d0d0d;border-radius:999px;font-size:11.5px;font-weight:600;letter-spacing:.01em}
+.site-foot ul a[href^="mailto:"]{font-weight:400;color:#615a4d;word-break:break-all}
+@media (max-width:699px){.site-foot .cols{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:24px}.site-foot ul a{display:inline-block;padding:3px 0}}
+
+/* info pages: How it works, Pricing, Rules, Questions, About, Contact, Terms, Privacy */
+.info{min-height:100dvh;display:flex;flex-direction:column;background:var(--bg);color:var(--ink)}
+.info-top{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;max-width:1080px;margin:0 auto;padding:18px clamp(16px,2.6vw,36px) 10px}
+.info-top .brand{font-size:26px;text-decoration:none;color:var(--ink)}
+.info-top nav{display:flex;gap:8px;align-items:center}
+.info-top nav a{display:inline-flex;align-items:center;min-height:40px;padding:0 16px;border-radius:999px;font-size:14px;font-weight:700;text-decoration:none;border:1px solid var(--ink);color:var(--ink)}
+.info-top nav a.info-claim{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.info-main{flex:1;width:100%;max-width:760px;margin:0 auto;padding:18px clamp(16px,2.6vw,36px) 56px}
+.info-main .crumbs{font-size:13px;color:var(--ink2);margin:0 0 18px}
+.info-main .crumbs a{color:var(--ink2)}
+.info-main h1{font-family:"Fraunces",Georgia,serif;font-weight:800;font-size:clamp(34px,6vw,52px);line-height:1.02;letter-spacing:-.02em;margin:0 0 16px}
+.info-main .lede{font-size:clamp(18px,2.4vw,21px);line-height:1.45;margin:0 0 30px;max-width:60ch}
+.info-main h2{font-size:20px;font-weight:800;letter-spacing:-.01em;margin:34px 0 10px}
+.info-main p,.info-main li{font-size:16px;line-height:1.6;max-width:66ch}
+.info-main ol,.info-main ul{padding-left:1.2em;margin:0 0 8px;display:flex;flex-direction:column;gap:8px}
+.info-main article a{color:var(--ink);text-decoration:underline;text-underline-offset:3px}
+.info-main .muted{color:var(--ink2);font-size:14px}
+.info-main .qa h2{font-size:18px;margin-top:28px}
+.info-main .price-box{display:inline-flex;flex-direction:column;gap:4px;padding:18px 22px;border:1px solid var(--ink);border-radius:14px;background:var(--card)}
+.info-main .price-box b{font-family:"Fraunces",Georgia,serif;font-size:44px;line-height:1}
+.info-main .price-box span{font-size:14px;color:var(--ink2)}
+@media (max-width:520px){.info-top nav a.info-wall{display:none}}

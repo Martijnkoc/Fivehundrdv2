@@ -230,45 +230,14 @@ Opened from the header Create button (desktop) or the tab bar (phone), or by tap
 
 ## 14. Data model (Neon)
 
-```sql
-create table spots (
-  no          int primary key check (no between 1 and 500),
-  status      text not null default 'vacant',   -- vacant | reserved | live
-  reserved_until timestamptz,
-  story_id    uuid references stories(id)
-);
-create table stories (
-  id uuid primary key default gen_random_uuid(),
-  spot_no int not null,
-  lane text not null check (lane in ('music','podcasts','games','art','writers','letters')),
-  name text not null check (char_length(name) <= 40),
-  snippet text check (char_length(snippet) <= 140),
-  artwork_key text, logo_key text, audio_key text,
-  excerpt_title text, excerpt text check (char_length(excerpt) <= 2500),
-  trailer_url text, trailer_len text,
-  links jsonb not null,               -- [{label,url}] 1–3
-  seed bigint not null,               -- demo-pattern seed (unused once artwork is required)
-  maker_email text not null,
-  starts_at timestamptz, ends_at timestamptz,
-  stripe_session_id text unique,
-  opens int not null default 0, saves int not null default 0
-);
-create table events (
-  story_id uuid, kind text,           -- open | save | unsave | link_click | share
-  visitor text, ip_hash text, at timestamptz default now()
-);
-create table saves (
-  visitor text, account_id uuid, story_id uuid,
-  saved_at timestamptz default now(),
-  primary key (visitor, story_id)
-);
-create table accounts (
-  id uuid primary key default gen_random_uuid(),
-  email text unique, provider text, remind boolean default true
-);
-```
+The schema lives in [`supabase/migrations/`](supabase/migrations/) (Supabase replaces Neon, R2 and the login provider) and is tested by `pnpm test:db`. The spot lifecycle from §15 is the checkout functions there (`checkout_reserve`, `checkout_attach`, `checkout_complete`, `checkout_release`, and the minute tick). Compared with the first draft of this section:
 
----
+- **500 spots per lane (§0).** `spots` is keyed by `(lane, no)`, and the migration seeds all 3,000 rows. A composite foreign key ensures the story on a spot has the same lane and number as that spot.
+- **Creation order.** `stories` is created before `spots`, which references it. The draft had them the other way round, so it could not run.
+- **`lanes` table.** Lane ids, labels (`art` → Creators, `writers` → Books) and tab order are stored once and referenced everywhere.
+- **Per-lane content (§8).** `audio_embed_url` holds the Spotify/Apple fallback. Check constraints keep audio on Music/Podcasts, excerpts on Books/Newsletters and trailers on Games/Creators.
+- **Integrity.** A story needs artwork or a logo (§6), has 1–3 links, and is either pending (no times) or live for exactly 72 hours. A vacant spot holds no story; a reserved or live one does. Only reservations carry `reserved_until`.
+- **Events.** A `day` column plus a partial unique index count an `open` once per visitor per story per day, so the wrap-up mail's numbers can't be inflated by reloading. `entry` records the spot a visitor's wall started on (§15 wrap-up).
 
 ## 15. API and flows
 
@@ -277,9 +246,9 @@ create table accounts (
 - `POST /api/uploads/sign`: signed R2 upload for artwork, logo or audio, with type/size limits.
 - `POST /api/checkout`:
   1. Validate the form (same rules and error copy as the reference).
-  2. **Reserve the spot number:** `update spots set status='reserved', reserved_until=now()+15min where no=$1 and status='vacant'`. If 0 rows update, offer another vacant number.
-  3. Create the Stripe Checkout session for $9.95, with the reservation in its metadata.
-- `POST /api/stripe/webhook`: on `checkout.session.completed`, set the spot live (`starts_at=now()`, `ends_at=now()+72h`), revalidate the wall, send the "You're on the wall" mail.
+  2. **Reserve the spot number** in its lane (`checkout_reserve`): `update spots set status='reserved', reserved_until=now()+30min, story_id=$3 where lane=$1 and no=$2 and status='vacant'`. If 0 rows update, offer another vacant number.
+  3. Create the Stripe Checkout session for $9.95, with the reservation in its metadata and `expires_at` 30 minutes out (Stripe's minimum). Then set the reservation to end at the session's `expires_at` (`checkout_attach`), so no payment can arrive after the number is released.
+- `POST /api/stripe/webhook`: on `checkout.session.completed`, set the spot live (`starts_at=now()`, `ends_at=now()+72h`), revalidate the wall, send the "You're on the wall" mail. On `checkout.session.expired`, free the number straight away (`checkout_release`).
 - `POST /api/events`: record opens/saves/clicks. Rate-limit per cookie and per IP hash; drop bots except Googlebot.
 
 **Jobs**
@@ -307,7 +276,7 @@ create table accounts (
 - [ ] Visual regression passes at 390, 700 and 1400px, light and dark, for every state in §1.
 - [ ] Two browsers get different ring entry points; one browser keeps its entry point for the whole day.
 - [ ] A double purchase of the same spot number is impossible under concurrent checkouts.
-- [ ] A spot goes live only after the Stripe webhook; an abandoned checkout frees the number after 15 minutes.
+- [ ] A spot goes live only after the Stripe webhook; an abandoned checkout frees the number after 30 minutes.
 - [ ] `/s/217` renders a correct link preview in WhatsApp, iMessage and X.
 - [ ] Open/save counters and saves survive reloads; saves persist without an account and sync correctly once one is created.
 - [ ] The phone sheet: opens on tap, ghost-animates from the tile, closes via ×/backdrop/Escape/back-gesture/drag, and Next-spot swaps content in place.

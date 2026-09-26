@@ -10,14 +10,30 @@
     "build": "next build",
     "start": "next start",
     "lint": "tsc --noEmit",
-    "test:e2e": "playwright test"
+    "test:e2e": "pnpm test:baseline && pnpm test:visual",
+    "test:baseline": "playwright test --project=reference --update-snapshots=all",
+    "test:visual": "playwright test --project=app",
+    "test:db": "node --test db/schema.test.mjs",
+    "test:unit": "node --import ./scripts/ts-resolve.mjs --test \"lib/**/*.test.mjs\"",
+    "test:approve": "playwright test tests/visual-parity.spec.ts --project=app --update-snapshots=all -g \"approved|phone (light|dark)|breakpoint (light|dark)\""
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.128.0",
+    "@react-pdf/renderer": "^4.9.0",
+    "@supabase/supabase-js": "^2.117.2",
+    "exceljs": "^4.4.0",
+    "html-to-image": "^1.11.13",
     "next": "16.3.6",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "server-only": "^0.0.1",
+    "stripe": "^22.6.2",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
+    "@fontsource-variable/fraunces": "^5.3.0",
+    "@fontsource-variable/inter": "^5.3.0",
     "@playwright/test": "1.63.0",
     "@types/node": "^20.19.0",
     "@types/react": "^19.2.0",

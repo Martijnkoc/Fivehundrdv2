@@ -1,0 +1,123 @@
+/* The fixed parts of the wall page, markup as in reference.html. */
+import { NAV } from "../../lib/wall/model";
+import { TabBadge } from "./Card";
+import { ClaimContent } from "./Claim";
+import { LaneNav } from "./LaneNav";
+import { SheetContent } from "./SheetContent";
+import { ShareContent, Toast } from "./Sheets";
+export { Footer } from "./Footer";
+
+/** §9: brand and slogan, lane tabs, live search, Create, avatar. */
+export function Header() {
+  return (
+    <header className="top" id="top">
+      <div className="site-wrap">
+        <div className="site">
+          <a className="brand" href="/" id="brand">
+            <span className="bn">
+              Fivehundrd<span className="bdot">.</span>
+            </span>
+            <span className="slogan">Discover before the crowd.</span>
+          </a>
+          <LaneNav />
+          <label className="searchbox">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m21 21-4.3-4.3" />
+            </svg>
+            <input type="search" id="q" placeholder="Search for people, topics, or vibes…" autoComplete="off" aria-label="Search the wall" />
+          </label>
+          <div className="header-actions">
+            <button className="btn-create" type="button" id="claimTop">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M13 2 3 14h7l-1 8 11-13h-7z" />
+              </svg>
+              Create
+            </button>
+            {/* phones: search sits behind this button, so the header stays one line of brand */}
+            <button className="search-toggle" type="button" id="searchToggle" aria-label="Search the wall" aria-expanded="false" aria-controls="q">
+              <svg className="st-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" />
+                <path d="m21 21-4.3-4.3" />
+              </svg>
+              <svg className="st-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                <path d="M6 6l12 12M18 6 6 18" />
+              </svg>
+            </button>
+            <div className="who">
+              <div className="avatar-fallback"></div>
+              <small>
+                Good taste
+                <br />
+                lives here.
+              </small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+
+/** Containers for sheets, the toast and the phone detail sheet (§7). */
+export function Overlays() {
+  return (
+    <>
+      <div className="veil" id="claimVeil">
+        <div className="sheet" role="dialog" aria-modal="true" aria-labelledby="claimH" id="claimSheet">
+          <ClaimContent />
+        </div>
+      </div>
+      <div className="veil" id="shareVeil">
+        <div className="sheet" role="dialog" aria-modal="true" aria-labelledby="shareH" id="shareSheet" style={{ maxWidth: 460 }}>
+          <ShareContent />
+        </div>
+      </div>
+      <Toast />
+      <div className="card-veil" id="cardVeil"></div>
+      <div className="dveil" id="dveil"></div>
+      <div className="dsheet" id="dsheet" role="dialog" aria-modal="true" hidden>
+        <div className="grab" aria-hidden="true"></div>
+        <button className="dclose" type="button" aria-label="Close">
+          &times;
+        </button>
+        <div className="dsheet-scroll">
+          <SheetContent />
+        </div>
+      </div>
+    </>
+  );
+}
+
+/** §10: the phone tab bar. */
+export function TabBar() {
+  return (
+    <nav className="tabbar" aria-label="Main">
+      <button type="button" data-tab="wall" className="on" aria-current="page">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+          <path d="M3 6h18M3 12h18M3 18h18" />
+          <path d="M6 3v6M16 9v6M10 15v6" />
+        </svg>
+        Wall
+      </button>
+      <button type="button" data-tab="card" aria-expanded="false" aria-controls="card">
+        <span className="tb-ic">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <path d="M7 10h6M7 14h10" />
+            <circle cx="17" cy="9" r="1" fill="currentColor" />
+          </svg>
+          <TabBadge />
+        </span>
+        Finds
+      </button>
+      <button type="button" data-tab="create" className="tb-create">
+        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+          <path d="M13 2 3 14h7l-1 8 11-13h-7z" />
+        </svg>
+        Create
+      </button>
+    </nav>
+  );
+}
