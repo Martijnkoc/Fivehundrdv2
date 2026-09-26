@@ -1,5 +1,6 @@
 import type Stripe from "stripe";
 import { env, hasDatabase, hasPayments, json, rpc, stripe } from "../../../../lib/server/backend";
+import { refundStory } from "../../../../lib/server/refunds";
 
 /**
  * Stripe tells us how each checkout ended. Paid → the spot goes live for 72
@@ -24,10 +25,20 @@ export async function POST(req: Request) {
   try {
     switch (event.type) {
       case "checkout.session.completed":
-      case "checkout.session.async_payment_succeeded":
-        if (session.payment_status === "paid" || session.payment_status === "no_payment_required")
-          await rpc("checkout_complete", { p_story: story });
+      case "checkout.session.async_payment_succeeded": {
+        if (session.payment_status !== "paid" && session.payment_status !== "no_payment_required") break;
+        const pi = typeof session.payment_intent === "string" ? session.payment_intent : (session.payment_intent?.id ?? null);
+        await rpc("checkout_complete", {
+          p_story: story,
+          p_payment_intent: pi,
+          p_amount: session.amount_total,
+          p_currency: session.currency,
+        });
+        /* no spot, no charge: paid for a spot that was taken off the wall or let go in the meantime */
+        const st = await rpc<{ status: string; startsAt: string | null; refunded: boolean } | null>("checkout_status", { p_story: story });
+        if (pi && st && !st.startsAt && !st.refunded) await refundStory(story, pi, "requested_by_customer");
         break;
+      }
       case "checkout.session.expired":
       case "checkout.session.async_payment_failed":
         await rpc("checkout_release", { p_story: story });

@@ -7,7 +7,7 @@ import { bridge, wallStore } from "./store";
 const ws = (indent: number) => "\n" + " ".repeat(indent);
 
 export type ShareData = { title: string; text: string; url: string };
-export type ShareView = { kind: "share"; data: ShareData } | { kind: "keep" };
+export type ShareView = { kind: "share"; data: ShareData } | { kind: "keep" } | { kind: "report"; id: string; name: string };
 
 /** §15: the share fallback when there is no native share sheet. */
 function Share({ d }: { d: ShareData }) {
@@ -81,6 +81,71 @@ function AppleMark() {
   );
 }
 
+const REPORT_REASONS = [
+  ["sexual", "Sexual content or nudity"],
+  ["child", "Puts a child at risk"],
+  ["scam", "Scam, phishing or fake"],
+  ["hate", "Hate or harassment"],
+  ["violence", "Violence or self-harm"],
+  ["illegal", "Illegal goods or activity"],
+  ["copyright", "Uses my work without permission"],
+  ["spam", "Spam or misleading"],
+  ["other", "Something else"],
+] as const;
+
+/** Reporting a live story: a person looks at every report. */
+function Report({ id, name }: { id: string; name: string }) {
+  const [reason, setReason] = useState("");
+  const [note, setNote] = useState("");
+  const [email, setEmail] = useState("");
+  const [err, setErr] = useState("");
+  const [sending, setSending] = useState(false);
+  const send = async () => {
+    if (!reason) return setErr("Pick what's wrong.");
+    setSending(true);
+    const problem = await bridge.actions.report(id, reason, note.trim(), email.trim());
+    if (problem) {
+      setErr(problem);
+      setSending(false);
+    }
+  };
+  return (
+    <>
+      <button className="x" aria-label="Close" data-close="">
+        &times;
+      </button>
+      <h2 id="shareH">Report this story</h2>
+      <p className="sub">{`What's wrong with ${name}? A person looks at every report.`}</p>
+      <div className="reasons" role="radiogroup" aria-label="What's wrong">
+        {REPORT_REASONS.map(([k, label]) => (
+          <label key={k} className="reason">
+            <input type="radio" name="reportReason" value={k} checked={reason === k} onChange={() => setReason(k)} />
+            {label}
+          </label>
+        ))}
+      </div>
+      <div className="f">
+        <label htmlFor="rNote">
+          More detail <span className="hint">(optional)</span>
+        </label>
+        <textarea id="rNote" maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} style={{ minHeight: 70 }} />
+      </div>
+      <div className="f">
+        <label htmlFor="rEmail">
+          Your email <span className="hint">(optional, if we may follow up)</span>
+        </label>
+        <input type="text" id="rEmail" inputMode="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+      </div>
+      <p className="err" role="alert">
+        {err}
+      </p>
+      <button className="pay" onClick={send} disabled={sending}>
+        {sending ? "Sending…" : "Send report"}
+      </button>
+    </>
+  );
+}
+
 /** §12: Keep my card. Browsing and saving never need this. */
 function Keep() {
   const email = useRef<HTMLInputElement>(null);
@@ -147,7 +212,12 @@ function Keep() {
 export function ShareContent() {
   const st = useSyncExternalStore(wallStore.subscribe, wallStore.get, wallStore.getServer);
   if (!st.share) return null;
-  return <Fragment key={st.shareVersion}>{st.share.kind === "keep" ? <Keep /> : <Share d={st.share.data} />}</Fragment>;
+  const v = st.share;
+  return (
+    <Fragment key={st.shareVersion}>
+      {v.kind === "keep" ? <Keep /> : v.kind === "report" ? <Report id={v.id} name={v.name} /> : <Share d={v.data} />}
+    </Fragment>
+  );
 }
 
 /** The status toast; its text stays after it fades, as in the reference. */

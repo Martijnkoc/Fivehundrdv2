@@ -1,6 +1,7 @@
 import { checkClaim } from "../../../lib/wall/claimRules";
 import { LANE } from "../../../lib/wall/model";
-import { hasDatabase, hasPayments, json, rpc, stripe } from "../../../lib/server/backend";
+import { hasDatabase, hasPayments, humanCheck, ipHash, json, rpc, stripe } from "../../../lib/server/backend";
+import { moderate } from "../../../lib/server/moderation";
 
 const PRICE_CENTS = 995;
 /** Stripe's shortest allowed session; the spot is held for exactly as long. */
@@ -22,13 +23,27 @@ export async function POST(req: Request) {
   }
   const claim = checkClaim(body);
   if ("error" in claim) return json(claim, { status: 400 });
+  if (!(await humanCheck((body as { human?: unknown }).human, req)))
+    return json({ error: "We couldn't check you're human. Reload the page and try again." }, { status: 403 });
+
+  /* the automatic check, before any money moves */
+  const moderation = await moderate(claim);
+  if (moderation.verdict === "block")
+    return json({ error: `This can't go on the wall as it is. ${moderation.reason}` }, { status: 422 });
 
   let spot: Reserved;
   try {
-    spot = await rpc<Reserved>("checkout_reserve", { p_story: claim });
+    spot = await rpc<Reserved>("checkout_reserve", { p_story: { ...claim, ipHash: ipHash(req), moderation } });
   } catch (e) {
-    const full = e instanceof Error && e.message.includes("lane_full");
-    return json({ error: full ? `Every ${LANE[claim.lane]} spot is taken right now.` : "Something went wrong. Try again." }, { status: full ? 409 : 502 });
+    const m = e instanceof Error ? e.message : "";
+    const [status, error] = m.includes("lane_full")
+      ? [409, `Every ${LANE[claim.lane]} spot is taken right now.`]
+      : m.includes("too_many_holds")
+        ? [429, "You're already holding spots. Finish paying for one, or wait 30 minutes."]
+        : m.includes("rate_limited")
+          ? [429, "Too many tries. Wait a little and try again."]
+          : [502, "Something went wrong. Try again."];
+    return json({ error }, { status });
   }
 
   const origin = new URL(req.url).origin;
@@ -64,4 +79,4 @@ export async function POST(req: Request) {
   }
 }
 
-export const maxDuration = 20;
+export const maxDuration = 60;

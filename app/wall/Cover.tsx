@@ -154,6 +154,12 @@ export const Cover = memo(function Cover({ s, saved, preview }: { s: FilledSpot;
             <button className="act" data-next="">
               Next spot
             </button>
+            {/* live stories only: anyone can flag one for a person to look at */}
+            {s.id && (
+              <button className="act report" data-report="" aria-label={`Report ${s.name}`}>
+                Report
+              </button>
+            )}
           </div>
         )}
         {ws(4)}

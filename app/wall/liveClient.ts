@@ -98,12 +98,63 @@ async function upload(bucket: "art" | "audio", dataURL: string | null | undefine
   if (!dataURL) return null;
   const blob = await (await fetch(dataURL)).blob();
   const type = blob.type === "audio/mp3" ? "audio/mpeg" : blob.type === "audio/wave" ? "audio/wav" : blob.type;
-  const ext = EXT[type];
-  if (!ext) throw new Error(bucket === "audio" ? "That audio file type isn't supported. Try an MP3." : "That image type isn't supported. Try a JPG or PNG.");
-  const path = `pending/${randomId()}.${ext}`;
-  const { error } = await (await supabase()).storage.from(bucket).upload(path, blob, { contentType: type, upsert: false });
+  if (!EXT[type]) throw new Error(bucket === "audio" ? "That audio file type isn't supported. Try an MP3." : "That image type isn't supported. Try a JPG or PNG.");
+  /* the server hands out a one-time upload link (and limits how many) */
+  const r = await fetch("/api/uploads", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ type, size: blob.size }),
+  });
+  const t = (await r.json().catch(() => ({}))) as { bucket?: "art" | "audio"; path?: string; token?: string; error?: string };
+  if (!r.ok || !t.path || !t.token || !t.bucket) throw new Error(t.error || "Your files couldn't be uploaded. Try again.");
+  const { error } = await (await supabase()).storage.from(t.bucket).uploadToSignedUrl(t.path, t.token, blob, { contentType: type });
   if (error) throw new Error("Your files couldn't be uploaded. Try again.");
-  return path;
+  return t.path;
+}
+
+/* ---------- Cloudflare Turnstile: an invisible "are you human" check before paying ---------- */
+
+const TURNSTILE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
+type Turnstile = {
+  render: (el: HTMLElement, o: Record<string, unknown>) => string;
+  execute: (id: string) => void;
+  reset: (id: string) => void;
+};
+let turnstile: Promise<Turnstile> | null = null;
+function loadTurnstile() {
+  turnstile ??= new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+    s.async = true;
+    s.onload = () => resolve((window as unknown as { turnstile: Turnstile }).turnstile);
+    s.onerror = () => {
+      turnstile = null;
+      reject(new Error("We couldn't check you're human. Check your connection and try again."));
+    };
+    document.head.appendChild(s);
+  });
+  return turnstile;
+}
+/** A fresh token, or undefined when Turnstile isn't set up. Only asks the visitor something if Cloudflare is unsure. */
+async function humanToken(): Promise<string | undefined> {
+  if (!TURNSTILE_KEY) return undefined;
+  const ts = await loadTurnstile();
+  const box = document.createElement("div");
+  box.style.cssText = "position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:1000";
+  document.body.appendChild(box);
+  try {
+    return await new Promise<string>((resolve, reject) => {
+      ts.render(box, {
+        sitekey: TURNSTILE_KEY,
+        appearance: "interaction-only",
+        callback: resolve,
+        "error-callback": () => reject(new Error("We couldn't check you're human. Try again.")),
+        "timeout-callback": () => reject(new Error("The check timed out. Try again.")),
+      });
+    });
+  } finally {
+    box.remove();
+  }
 }
 
 /** Uploads the draft's files, holds the spot and sends the maker to Stripe. Returns an error message on failure. */
@@ -115,6 +166,7 @@ export async function checkout(draft: Draft): Promise<string | null> {
       draft.lane === "music" || draft.lane === "podcasts" ? upload("audio", draft.audio) : null,
     ]);
     const reads = draft.lane === "writers" || draft.lane === "letters";
+    const human = await humanToken();
     const r = await fetch("/api/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -133,6 +185,7 @@ export async function checkout(draft: Draft): Promise<string | null> {
         seed: draft.seed,
         pal: Math.max(0, PAL.findIndex((p) => p.join() === draft.pal.join())),
         visitor: visitorId(),
+        human,
       }),
     });
     const out = (await r.json().catch(() => ({}))) as { url?: string; id?: string; error?: string };
@@ -225,4 +278,21 @@ export async function unsaveForAccount(story: string) {
   const sb = await supabase();
   const { data } = await sb.auth.getSession();
   if (data.session) await sb.from("saves").delete().eq("story_id", story);
+}
+
+/* ---------- reporting a story ---------- */
+
+export type ReportReason = "sexual" | "child" | "scam" | "hate" | "violence" | "illegal" | "copyright" | "spam" | "other";
+/** Sends a report. Returns true when it was received. */
+export async function report(story: string, reason: ReportReason, note: string, email: string): Promise<boolean> {
+  try {
+    const r = await fetch("/api/reports", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ story, reason, note, email, visitor: visitorId() }),
+    });
+    return r.ok;
+  } catch {
+    return false;
+  }
 }

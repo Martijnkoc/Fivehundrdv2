@@ -347,6 +347,7 @@ export function startWall(bridge: Bridge, live?: Live) {
       if (sv) return toggleSave(el, s, sv);
       if (t.closest("[data-share]")) return shareSpot(s);
       if (t.closest("[data-next]")) return step(1);
+      if (t.closest("[data-report]")) return openReport(s);
       return;
     }
     if (el.classList.contains("vacant")) {
@@ -714,6 +715,10 @@ export function startWall(bridge: Bridge, live?: Live) {
     if (sv) return toggleSave(el, s, sv);
     if (t.closest("[data-share]")) return shareSpot(s);
     if (t.closest("[data-next]")) return step(1);
+    if (t.closest("[data-report]")) {
+      hideSheet();
+      return openReport(s);
+    }
   });
   /* pull the sheet down to put it away: past 120px, or a fast flick */
   {
@@ -830,6 +835,11 @@ export function startWall(bridge: Bridge, live?: Live) {
        login sheet opened behind it; close the card first, as Create does */
     if (cardOpen) setCard(false);
     bridge.openShare({ kind: "keep" });
+    $("#shareVeil").classList.add("on");
+  }
+  function openReport(s: FilledSpot) {
+    if (!s.id) return;
+    bridge.openShare({ kind: "report", id: s.id, name: s.name });
     $("#shareVeil").classList.add("on");
   }
   function closeVeils() {
@@ -952,6 +962,12 @@ export function startWall(bridge: Bridge, live?: Live) {
   }
 
   Object.assign(bridge.actions, {
+    async report(id: string, reason: string, note: string, email: string) {
+      if (!(await liveApi.report(id, reason as liveApi.ReportReason, note, email))) return "That didn't send. Try again.";
+      closeVeils();
+      toast("Thanks. A person will look at it.");
+      return null;
+    },
     keepCard(via: string, remind: boolean, byEmail: boolean) {
       if (live) {
         liveApi.signIn(via, remind).then((err) => {

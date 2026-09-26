@@ -135,6 +135,8 @@ export const bridge = {
   /** Things React asks the controller to do, registered by the controller. */
   actions: {} as {
     keepCard: (via: string, remind: boolean, byEmail: boolean) => void;
+    /** Sends a report; returns an error message, or null once it was sent. */
+    report: (id: string, reason: string, note: string, email: string) => Promise<string | null>;
     randomVacant: (lane?: LaneId) => number | null;
     numberFor: (lane: LaneId, no: number) => number;
     /** Starts placing the spot; returns an error message, or null (on the live wall, once Checkout fails or opens). */

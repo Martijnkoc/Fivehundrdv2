@@ -8,3 +8,10 @@
 /* Keep my card: the official Google and Apple marks before the button text. */
 .sharelist .login{justify-content:flex-start;align-items:center;gap:12px}
 .sharelist .login svg{width:20px;height:20px;flex:none}
+
+/* Live wall only (never in the reference or fixture): Report sits apart from the other actions. */
+.act.report{margin-left:auto;border-color:transparent;color:var(--ink2);font-weight:600}
+.act.report:hover{color:var(--ink);border-color:var(--line)}
+.reasons{display:flex;flex-direction:column;margin:4px 0 12px}
+.reason{display:flex;gap:10px;align-items:center;padding:11px 4px;border-bottom:1px solid var(--line);font-weight:600;font-size:15px;cursor:pointer}
+.reason input{accent-color:var(--ink);width:18px;height:18px;margin:0}

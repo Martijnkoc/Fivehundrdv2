@@ -95,9 +95,13 @@ from the reference. A spot's address is `/s/{lane}/{no}`, e.g. `/s/music/217`.
 | `POST /api/checkout/cancel` | the maker backed out: ends the session, frees the number |
 | `POST /api/stripe/webhook` | paid → live for 72 hours; expired or failed → number free |
 | `POST /api/events` | opens, saves, shares, link clicks, entries |
+| `POST /api/uploads` | a one-time upload link for a draft file (15 an hour per person) |
+| `POST /api/reports` | a visitor reports a story |
+| `GET/POST /api/admin` | the admin screen's data and actions |
+| `GET /api/cron/cleanup` | daily: removes draft uploads nobody paid for |
 
 Media is uploaded from the browser to Storage (`art`, `audio`, under
-`pending/`) before paying. Keep my card uses Supabase Auth: an email link
+`pending/`) through one-time links the server hands out, before paying. Keep my card uses Supabase Auth: an email link
 always; Google and Apple once they are switched on under Authentication →
 Providers.
 
@@ -111,9 +115,39 @@ Environment variables (Vercel → Settings → Environment Variables):
 | `STRIPE_SECRET_KEY` | Stripe → Developers → API keys |
 | `STRIPE_WEBHOOK_SECRET` | the webhook endpoint for `/api/stripe/webhook` |
 
+Optional, for keeping the wall safe (each is skipped when unset):
+
+| Variable | What it does |
+| --- | --- |
+| `SUPABASE_SECRET_KEY` | upload links and the daily clean-up (needed for uploads) |
+| `ANTHROPIC_API_KEY` | the automatic check of names, texts and images before payment |
+| `GOOGLE_SAFE_BROWSING_KEY` | checks links against Google's list of harmful sites |
+| `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | Cloudflare's invisible robot check before paying |
+| `ADMIN_EMAILS` | who may open `/admin` (comma separated) |
+| `CRON_SECRET` | lets Vercel's daily clean-up in |
+
 The webhook listens for `checkout.session.completed`,
 `checkout.session.async_payment_succeeded`, `checkout.session.expired` and
 `checkout.session.async_payment_failed`.
+
+## Keeping the wall safe
+
+- **Before payment** every story is checked: links against simple rules (no
+  short links, bare server addresses or hidden logins) and Google Safe
+  Browsing; the name, texts and images by Claude. Clear violations are
+  refused before any money moves; doubtful ones go live and wait on the
+  admin screen.
+- **Reports**: a Report button on every live story. Three people reporting
+  it, or one report of a child at risk, takes it off the wall until a person
+  looks.
+- **Limits**: one person holds at most 3 spots at once and starts at most 10
+  checkouts an hour; 15 uploads an hour; an invisible robot check before
+  paying. Uploads nobody paid for are removed daily.
+- **No spot, no charge**: a payment for a story that was taken off the wall
+  (or let go) before it went live is refunded automatically.
+- **`/admin`**: live stories, what needs a look, reports, takings per day,
+  week and month; hide, keep, remove, refund. Sign in with an email link;
+  only `ADMIN_EMAILS` get in.
 
 ## Checks
 

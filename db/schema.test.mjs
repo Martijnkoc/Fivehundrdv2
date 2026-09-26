@@ -9,7 +9,7 @@ import { PGlite } from "@electric-sql/pglite";
  * the wall does goes through the same functions the app calls.
  */
 /* every migration but the platform one (pg_cron, Storage: Supabase only) */
-const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card"];
+const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation"];
 const schema = (
   await Promise.all(MIGRATIONS.map((m) => readFile(new URL(`../supabase/migrations/${m}.sql`, import.meta.url), "utf8")))
 ).join("\n");
@@ -26,6 +26,8 @@ const STUBS = `
   insert into vault.decrypted_secrets values ('fivehundrd_server_key', '${KEY}');
   create table public.early_access_signups (id bigint);
   create table public.early_access_events (id bigint);
+  create schema storage;
+  create table storage.objects (id bigint);
 `;
 
 let db;
@@ -239,5 +241,121 @@ describe("keep my card", () => {
     assert.deepEqual(saves.map((x) => x.no).sort((p, q) => p - q), [5, 217]);
     await db.exec("reset role");
     assert.equal((await one("select remind from public.profiles where user_id = $1", [user])).remind, false);
+  });
+});
+
+describe("safety", () => {
+  const hold = (extra = {}) => reserve(story({ no: null, ipHash: "ip-a", ...extra }));
+  const paid = async (s) => (await one("select public.checkout_complete($1, $2, 'pi_1', 995, 'usd') r", [KEY, s.id])).r;
+  const report = async (id, ip, reason = "scam") =>
+    (await one("select public.report_story($1, $2, $3, 'note', '', 'v', $4) r", [KEY, id, reason, ip])).r;
+  const onWall = async (id) => (await wall()).stories.some((s) => s.id === id);
+
+  test("one person can hold at most 3 spots, and start at most 10 checkouts an hour", async () => {
+    for (let i = 0; i < 3; i++) await hold();
+    await rejects(hold(), /too_many_holds/);
+    await reserve(story({ no: null, ipHash: "ip-b" }));
+    for (let i = 0; i < 7; i++) {
+      const s = await hold({ ipHash: "ip-c" });
+      await release(s.id);
+    }
+    await hold({ ipHash: "ip-c" });
+    await hold({ ipHash: "ip-c" });
+    await hold({ ipHash: "ip-c" });
+    await rejects(hold({ ipHash: "ip-c" }), /too_many_holds|rate_limited/);
+  });
+
+  test("paying keeps the payment with the story", async () => {
+    const s = await hold();
+    assert.deepEqual(await paid(s), { lane: "music", no: s.no });
+    const st = await one("select payment_intent, amount_total, currency from public.stories where id = $1", [s.id]);
+    assert.deepEqual([st.payment_intent, st.amount_total, st.currency], ["pi_1", 995, "usd"]);
+  });
+
+  test("three reports take a story off the wall; a child-safety report does it at once", async () => {
+    const a = await hold();
+    await paid(a);
+    assert.equal((await report(a.id, "r1")).hidden, false);
+    assert.equal((await report(a.id, "r1")).hidden, false, "the same person twice counts once");
+    assert.equal((await report(a.id, "r2")).hidden, false);
+    assert.ok(await onWall(a.id));
+    assert.equal((await report(a.id, "r3")).hidden, true);
+    assert.ok(!(await onWall(a.id)), "hidden stories are not on the wall");
+    const spot = await one("select status from public.spots where story_id = $1", [a.id]);
+    assert.equal(spot.status, "live", "the spot stays taken while hidden");
+
+    const b = await hold();
+    await paid(b);
+    assert.equal((await report(b.id, "r9", "child")).hidden, true);
+  });
+
+  test("approving puts it back and settles the reports; later reports start again from zero", async () => {
+    const a = await hold();
+    await paid(a);
+    for (const ip of ["r1", "r2", "r3"]) await report(a.id, ip);
+    assert.equal(await one("select public.admin_approve($1, $2) r", [KEY, a.id]).then((x) => x.r), true);
+    assert.ok(await onWall(a.id));
+    assert.equal((await report(a.id, "r4")).hidden, false);
+    assert.equal((await report(a.id, "r5")).hidden, false);
+    assert.equal((await report(a.id, "r6")).hidden, true);
+  });
+
+  test("removing frees the number and returns the payment to refund", async () => {
+    const a = await hold();
+    await paid(a);
+    await report(a.id, "r1");
+    const r = (await one("select public.admin_remove($1, $2, 'scam') r", [KEY, a.id])).r;
+    assert.equal(r.paymentIntent, "pi_1");
+    assert.equal(r.amount, 995);
+    const spot = await one("select status from public.spots where lane = 'music' and no = $1", [a.no]);
+    assert.equal(spot.status, "vacant");
+    const open = await one("select count(*)::int n from public.reports where story_id = $1 and resolved_at is null", [a.id]);
+    assert.equal(open.n, 0);
+    assert.equal((await one("select public.checkout_status($1, $2) r", [KEY, a.id])).r.status, "removed");
+    await one("select public.record_refund($1, $2, 995)", [KEY, a.id]);
+    const o = (await one("select public.admin_overview($1) r", [KEY])).r;
+    assert.equal(o.revenue.all, 0, "refunds come off the takings");
+    assert.equal(o.revenue.refunds, 995);
+  });
+
+  test("a story removed before payment never goes live", async () => {
+    const a = await hold();
+    await one("select public.admin_remove($1, $2, 'scam')", [KEY, a.id]);
+    assert.equal(await paid(a), null);
+  });
+
+  test("the admin lists: needs attention, live, removed", async () => {
+    const a = await hold({ moderation: { verdict: "review" } });
+    const b = await hold();
+    const c = await hold();
+    for (const s of [a, b, c]) await paid(s);
+    await one("select public.admin_remove($1, $2, 'spam')", [KEY, c.id]);
+    const list = async (f, q = "") => (await one("select public.admin_stories($1, $2, $3) r", [KEY, f, q])).r.map((x) => x.id);
+    assert.deepEqual(await list("attention"), [a.id]);
+    assert.deepEqual((await list("live")).sort(), [a.id, b.id].sort());
+    assert.deepEqual(await list("removed"), [c.id]);
+    assert.equal((await list("all")).length, 3);
+    assert.deepEqual(await list("all", "maker@example"), (await list("all")));
+    const o = (await one("select public.admin_overview($1) r", [KEY])).r;
+    assert.equal(o.live, 2);
+    assert.equal(o.attention, 1);
+    assert.equal(o.revenue.all, 3 * 995);
+    assert.equal(o.lanes.music, 2);
+  });
+
+  test("uploads: 15 an hour per person; only files of paid or held stories are kept", async () => {
+    for (let i = 0; i < 15; i++) assert.equal((await one("select public.issue_upload($1, 'ip-u') r", [KEY])).r, true);
+    assert.equal((await one("select public.issue_upload($1, 'ip-u') r", [KEY])).r, false);
+    const a = await hold({ artwork: "pending/aaaaaaaaaaaaaaaa.jpg" });
+    const b = await hold({ artwork: "pending/bbbbbbbbbbbbbbbb.jpg" });
+    await release(b.id);
+    const used = (await one("select public.media_in_use($1, $2) r", [KEY, ["pending/aaaaaaaaaaaaaaaa.jpg", "pending/bbbbbbbbbbbbbbbb.jpg", "pending/cccccccccccccccc.jpg"]])).r;
+    assert.deepEqual(used, ["pending/aaaaaaaaaaaaaaaa.jpg"]);
+    void a;
+  });
+
+  test("everything here needs the server key", async () => {
+    await rejects(db.query("select public.admin_overview('nope')"), /forbidden/);
+    await rejects(db.query("select public.report_story('nope', gen_random_uuid(), 'scam', '', '', '', 'x')"), /forbidden/);
   });
 });
