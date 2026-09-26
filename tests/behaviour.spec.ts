@@ -117,7 +117,7 @@ test.describe("phone: the tile comes forward as a sheet (§7)", () => {
     await page.locator('#lanes [data-lane="music"]').click();
     await wall.settle();
     await expect(sheet(page)).toBeHidden();
-    await page.locator("#q").fill("lowtide");
+    await wall.search("lowtide");
     await page.waitForTimeout(300);
     await expect(sheet(page)).toBeHidden();
   });
@@ -369,7 +369,8 @@ test.describe("phone: the card behind the tab bar (§10)", () => {
     await wall.goto();
     await page.locator('.tabbar [data-tab="create"]').click();
     await expect(page.locator("#claimVeil")).toHaveClass(/\bon\b/);
-    await expect(page.locator("#claimH")).toHaveText("Create your story");
+    /* approved change: phones create in steps */
+    await expect(page.locator("#claimH")).toHaveText(wall.isReference ? "Create your story" : "Step 1 of 6 · Lane");
   });
 });
 
@@ -770,3 +771,122 @@ test.describe("one spot everywhere (approved change)", () => {
     expect(await img.evaluate((i: HTMLImageElement) => [i.naturalWidth, i.naturalHeight])).toEqual([1080, 1920]);
   });
 });
+
+/*
+ * The mobile audit (approved changes): on every common phone width the wall
+ * fits, every control is thumb-sized, Back closes what's open, sheets sit
+ * above the tab bar, and Create goes step by step with the real tile.
+ */
+const PHONES = [
+  { name: "iPhone SE (1st)", width: 320, height: 568 },
+  { name: "iPhone SE", width: 375, height: 667 },
+  { name: "iPhone", width: 390, height: 844 },
+  { name: "Android", width: 412, height: 915 },
+  { name: "iPhone Pro Max", width: 430, height: 932 },
+] as const;
+
+for (const ph of PHONES) {
+  test.describe(`mobile audit, ${ph.name} ${ph.width}px`, () => {
+    test.use({ viewport: { width: ph.width, height: ph.height }, viewportSpec: { name: "phone", width: ph.width, height: ph.height } as never, hasTouch: true });
+
+    test("the wall fits, controls are thumb-sized, nothing jumps", async ({ wall, page }) => {
+      appOnly("approved change: mobile audit");
+      await page.addInitScript(() => {
+        (window as unknown as { cls: number }).cls = 0;
+        new PerformanceObserver((l) => {
+          for (const e of l.getEntries() as unknown as { value: number; hadRecentInput: boolean }[]) if (!e.hadRecentInput) (window as unknown as { cls: number }).cls += e.value;
+        }).observe({ type: "layout-shift", buffered: true });
+      });
+      await wall.goto();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBe(ph.width);
+      const small = await page.evaluate(() =>
+        [...document.querySelectorAll<HTMLElement>(".top a, .top button, .tabbar button, .intro button")]
+          .filter((e) => e.offsetParent)
+          .map((e) => [e.textContent!.trim() || e.getAttribute("aria-label"), e.getBoundingClientRect().height] as const)
+          .filter(([, h]) => h < 44),
+      );
+      expect(small).toEqual([]);
+      expect(await page.evaluate(() => document.querySelector(".top")!.getBoundingClientRect().height)).toBeLessThanOrEqual(100);
+      await page.evaluate(() => window.scrollTo(0, 6000));
+      await page.waitForTimeout(300);
+      expect(await page.evaluate(() => (window as unknown as { cls: number }).cls)).toBeLessThan(0.02);
+      /* no price label spills out of its column */
+      const spill = await page.evaluate(() =>
+        [...document.querySelectorAll<HTMLElement>("#rack .vacant .v2")].some((e) => e.getBoundingClientRect().right > document.documentElement.clientWidth),
+      );
+      expect(spill).toBe(false);
+    });
+
+    test("an open spot's buttons are thumb-sized", async ({ wall, page }) => {
+      appOnly("approved change: mobile audit");
+      await wall.goto();
+      await wall.openTile(0);
+      const small = await page.evaluate(() =>
+        [...document.querySelectorAll<HTMLElement>("#dsheet .acts button, #dsheet .dclose, #dsheet [data-play]")]
+          .map((e) => [e.textContent!.trim() || e.getAttribute("aria-label"), e.getBoundingClientRect().height] as const)
+          .filter(([, h]) => h < 44),
+      );
+      expect(small).toEqual([]);
+    });
+
+    test("Back closes Finds, Create and Share, top one first, and you stay where you were", async ({ wall, page }) => {
+      appOnly("approved change: Back closes what's open");
+      await wall.goto();
+      await page.evaluate(() => window.scrollTo(0, 1800));
+      const y = await page.evaluate(() => scrollY);
+      for (const tab of ["card", "create"]) {
+        await page.locator(`.tabbar [data-tab="${tab}"]`).click();
+        await page.waitForTimeout(350);
+        await page.goBack();
+        await expect(page.locator(".veil.on, #card.on")).toHaveCount(0);
+        expect(await page.evaluate(() => scrollY)).toBe(y);
+      }
+      await wall.openTile(0);
+      await page.locator("#dsheet [data-share]").click();
+      await expect(page.locator("#shareVeil")).toHaveClass(/\bon\b/);
+      /* the share sheet is on top of the open spot */
+      expect(await page.evaluate(() => {
+        const r = document.querySelector("#shareSheet")!.getBoundingClientRect();
+        return !!document.elementFromPoint(r.left + r.width / 2, r.top + 20)?.closest("#shareSheet");
+      })).toBe(true);
+      await page.goBack();
+      await expect(page.locator("#shareVeil")).not.toHaveClass(/\bon\b/);
+      await expect(sheet(page)).toBeVisible();
+      await page.goBack();
+      await expect(sheet(page)).toBeHidden();
+    });
+
+    test("Create goes step by step, above the tab bar, with the wall's own tile", async ({ wall, page }) => {
+      appOnly("approved change: Create in steps on phones");
+      await wall.goto();
+      await wall.openCreate();
+      await expect(page.locator("#claimH")).toHaveText("Step 1 of 6 · Lane");
+      await page.locator(".st-lane", { hasText: "Books" }).click();
+      await expect(page.locator("#claimH")).toHaveText("Step 2 of 6 · Artwork");
+      await page.locator(".st-next").click();
+      await page.locator(".st-next").click();
+      await expect(page.locator("#fErr")).toHaveText("Add your name so people know who they're looking at.");
+      await page.locator("#fName").fill("Paper Moons");
+      await page.locator("#fName").press("Enter");
+      await expect(page.locator("#claimH")).toHaveText("Step 4 of 6 · Description");
+      /* the live tile is the wall tile, and it already carries the name and lane */
+      await expect(page.locator(".st-live .bk-strip b")).toHaveText("Paper Moons");
+      await expect(page.locator(".st-live .bk-strip small")).toHaveText("Books");
+      await page.locator(".st-next").click();
+      await page.locator("[data-link]").first().fill("papermoons.example");
+      await page.locator(".st-next").click();
+      await expect(page.locator("#claimH")).toHaveText("Step 6 of 6 · Preview");
+      expect(await page.evaluate(() => document.querySelector("#claimSheet")!.scrollWidth <= document.querySelector("#claimSheet")!.clientWidth)).toBe(true);
+      /* the pay button is on screen and on top (not under the tab bar) */
+      expect(await page.evaluate(() => {
+        const r = document.querySelector("#fPay")!.getBoundingClientRect();
+        return r.bottom <= innerHeight && !!document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest("#fPay");
+      })).toBe(true);
+      await page.locator(".st-back").click();
+      await expect(page.locator("[data-link]").first()).toHaveValue("papermoons.example");
+      await page.locator(".st-next").click();
+      await page.locator("#fPay").click();
+      await expect(page.locator("#claimH")).toHaveText("You're on the wall.");
+    });
+  });
+}

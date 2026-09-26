@@ -136,3 +136,138 @@
 .disc-gone p{color:var(--ink2);margin:0 0 24px}
 .disc-cta{display:inline-block;width:auto;padding:14px 26px;text-decoration:none}
 .disc .btn-create{text-decoration:none}
+
+/*
+ * Phones and tablets (approved change, mobile audit): sheets open above the
+ * tab bar and above an open spot; the tab bar is in the paper look (light
+ * and dark) and keeps clear of the iPhone home indicator.
+ */
+@media (max-width:979px){
+  .veil{z-index:96;touch-action:none}
+  .veil .sheet{touch-action:pan-y;padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))}
+  .tabbar{background:var(--bg);color:var(--ink);border-top-color:var(--line);box-shadow:0 -8px 20px -16px rgba(28,27,24,.35)}
+  .tabbar button{color:color-mix(in oklab,var(--ink),transparent 45%);min-height:48px}
+  .tabbar button.on{color:var(--ink)}
+  .tabbar .tb-create{background:#d8ff45;color:#1c1b18}
+  .tb-n{box-shadow:0 0 0 2px var(--bg)}
+  .card-veil,.dveil{touch-action:none}
+}
+
+/*
+ * Phones (approved change, mobile audit): a compact header. One line with
+ * the brand and a search button, then the lanes with thumb-sized tabs. The
+ * avatar was a desktop decoration; search opens in place of the brand.
+ */
+.search-toggle,.intro{display:none}
+@media (max-width:699px){
+  .site{padding-block:8px 0;column-gap:10px;row-gap:0}
+  #brand{gap:2px}
+  #brand .slogan{font-size:11px}
+  .who{display:none}
+  .header-actions{gap:0}
+  .search-toggle{all:unset;box-sizing:border-box;display:grid;place-items:center;width:44px;height:44px;margin-right:-10px;border-radius:999px;color:var(--ink);cursor:pointer}
+  .search-toggle svg{width:21px;height:21px}
+  .search-toggle .st-close,.top.searching .search-toggle .st-open{display:none}
+  .top.searching .search-toggle .st-close{display:block}
+  .searchbox{display:none}
+  .top.searching #brand{display:none}
+  .top.searching .searchbox{display:flex;order:1;flex:1 1 0;min-width:0;max-width:none;height:42px;margin:1px 0}
+  .top.searching .header-actions{order:2}
+  nav.primary{gap:22px;margin:0 calc(-1 * clamp(16px,2.6vw,36px));padding:0 clamp(16px,2.6vw,36px);
+    -webkit-mask-image:linear-gradient(90deg,#000 86%,transparent);mask-image:linear-gradient(90deg,#000 86%,transparent)}
+  nav.primary a{padding:13px 0 11px;font-size:15px}
+
+  /* one line that says what this is, for a first visit */
+  .intro{display:flex;align-items:flex-start;gap:8px;margin:12px 0 2px;padding:11px 6px 11px 14px;border-radius:12px;background:var(--card);border:1px solid var(--line)}
+  .intro p{margin:0;font-size:14px;line-height:1.4;color:var(--ink2);flex:1}
+  .intro b{color:var(--ink)}
+  .intro button{all:unset;box-sizing:border-box;flex:none;display:grid;place-items:center;width:44px;height:44px;margin:-11px 0 -11px;font-size:22px;color:var(--ink2);cursor:pointer}
+
+  /* thumb-sized controls: 44px or more */
+  .dsheet .act{min-height:44px;padding:11px 18px}
+  .dclose{width:44px;height:44px}
+  .player .pp{width:44px;height:44px}
+  .claim-grid .chip,.sheet .chip{min-height:44px;padding:10px 14px}
+  .sv-x::before{content:"";position:absolute;inset:-12px}
+  .links a{min-height:48px}
+}
+/* the smallest phones: the price label fits its column */
+@media (max-width:359px){
+  .vacant .v2{font-size:10px;padding:3px 7px}
+  .vacant .vno{font-size:11px}
+}
+@media (max-width:699px){
+  #q::-webkit-search-cancel-button{display:none}
+}
+
+/*
+ * Phones (mobile audit): the wall scrolls on the compositor. Rows out of view
+ * skip layout and paint (sized from the first row, so nothing jumps), with a
+ * few pixels of room so an open tile's ring isn't clipped. Grain and halftone
+ * are plain see-through layers instead of blend modes, and the backdrop is a
+ * tint instead of a blur, which costs every frame of the overlay's motion.
+ */
+@media (max-width:699px){
+  .shelf-row{content-visibility:auto;contain-intrinsic-size:auto var(--row-est,240px);padding:4px 3px;margin:-4px -3px 10px}
+  .book::after,.lc::after,.art::before{mix-blend-mode:normal;background-image:var(--grain-a);opacity:.06}
+  .bk-art::after,.art::after{mix-blend-mode:normal;opacity:.09}
+  .dveil{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(20,18,15,.55)}
+  .dsheet{will-change:transform,opacity}
+}
+:root{--grain-a:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -1.2 0 0 0 1.1'/></filter><rect width='100%' height='100%' filter='url(%23g)'/></svg>")}
+@media (max-width:699px){
+  /* the wall holds a screen's height from the first paint, so nothing below it jumps when it fills */
+  .rack{min-height:100dvh}
+}
+
+/* Create on phones, one step at a time (app/wall/Claim.tsx, Steps) */
+.steps{display:flex;flex-direction:column;gap:12px;min-height:min(560px,78dvh)}
+.st-top{display:flex;align-items:center;gap:6px;margin:-4px -8px 0}
+.st-top .x{position:static;flex:none;width:44px;height:44px}
+.st-back{all:unset;box-sizing:border-box;display:grid;place-items:center;width:44px;height:44px;border-radius:999px;cursor:pointer;color:var(--ink)}
+.st-back[hidden]{visibility:hidden;display:grid}
+.st-back svg{width:22px;height:22px}
+.st-where{flex:1;text-align:center;font-size:13px;color:var(--ink2)}
+.st-where b{color:var(--ink)}
+.st-bar{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.st-bar i{height:4px;border-radius:2px;background:var(--line)}
+.st-bar i.on{background:var(--ink)}
+.st-live{align-self:center;margin:6px 0 2px;pointer-events:none}
+.st-body{display:flex;flex-direction:column;gap:10px;outline:none}
+.st-h{font-size:26px;line-height:1.05;letter-spacing:-.035em;font-weight:900;margin:4px 0 0}
+.st-sub{margin:0 0 4px;font-size:15px;color:var(--ink2);line-height:1.4}
+.st-body input[type=text],.st-body input[type=url],.st-body textarea{border:1px solid var(--line);background:var(--paper);border-radius:10px;padding:13px 14px;font-size:16px;width:100%}
+.st-body textarea{min-height:96px;resize:vertical}
+.st-lanes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.st-lane{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;min-height:56px;padding:12px 14px;border:1.5px solid var(--line);border-radius:14px;background:var(--card);font-weight:800;font-size:16px;cursor:pointer;color:var(--ink)}
+.st-lane svg{width:20px;height:20px;flex:none}
+.st-lane[aria-checked="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
+.st-lane:focus-visible{outline:2px solid var(--pink);outline-offset:2px}
+.st-note{margin:4px 0 0;font-size:14px;color:var(--ink2);line-height:1.5}
+.st-link{all:unset;cursor:pointer;font-weight:700;color:var(--ink);text-decoration:underline;text-underline-offset:3px;padding:10px 0}
+.st-upload{position:relative;display:block;cursor:pointer}
+.st-upload input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
+.st-btn{display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:999px;background:var(--ink);color:var(--paper);font-weight:800;font-size:16px}
+.st-quiet span{display:flex;align-items:center;justify-content:center;min-height:48px;border:1.5px dashed var(--line);border-radius:12px;font-weight:700;font-size:15px;color:var(--ink2)}
+.st-upload:focus-within .st-btn,.st-upload:focus-within span{outline:2px solid var(--pink);outline-offset:2px}
+.st-next{margin-top:auto}
+.st-prev{align-self:center}
+.st-cover{position:static}
+.steps .err{margin:0;min-height:0}
+.steps .err:empty{display:none}
+.st-head{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:start}
+.st-head .st-live{margin:2px 0 0}
+.st-next.alt{background:transparent;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.st-pay{position:sticky;bottom:calc(-22px - env(safe-area-inset-bottom,0px));margin:0 -18px calc(-22px - env(safe-area-inset-bottom,0px));padding:12px 18px calc(10px + env(safe-area-inset-bottom,0px));background:var(--bg);box-shadow:0 -10px 18px -14px rgba(28,27,24,.35);z-index:3}
+.st-pay .fine{margin:8px 0 0}
+/* the opened preview in Create is framed exactly like the phone's overlay (.dsheet) */
+.st-cover{background:var(--c1);border-radius:18px;padding:6px;box-shadow:0 30px 60px -28px rgba(0,0,0,.45)}
+.st-cover .cover{margin:0;padding:0;background:none;box-shadow:none;animation:none;border-radius:14px;overflow:hidden;grid-template-columns:1fr}
+.st-cover .cover::before,.st-cover .cover::after{display:none}
+.st-cover .cover>.art,.st-cover .cover>.body{box-shadow:none}
+.st-cover .art{aspect-ratio:1/1}
+.st-cover .body{padding:18px 16px 20px}
+.st-cover .title{font-size:clamp(32px,10vw,44px)}
+@media (max-width:699px){
+  #brand{min-height:44px;justify-content:center}
+}

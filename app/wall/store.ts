@@ -39,6 +39,10 @@ export type WallState = {
   /** What #claimSheet shows (§13 form, then the success screen). */
   claim: ClaimView | null;
   claimVersion: number;
+  /** Phones: tile patterns as images, and the rack built a few rows at a time. */
+  compact: boolean;
+  /** How many rack items are rendered (phones build the rest when idle). */
+  limit: number;
 };
 
 const initial: WallState = {
@@ -60,6 +64,8 @@ const initial: WallState = {
   toast: { msg: "", on: false },
   claim: null,
   claimVersion: 0,
+  compact: false,
+  limit: Infinity,
 };
 let state = initial;
 const listeners = new Set<() => void>();
@@ -90,8 +96,15 @@ export const bridge = {
     set({ lane, laneVersion: state.laneVersion + 1 });
   },
   /** Replaces the whole rack, like the reference's innerHTML did; nothing is open after. */
-  renderRack(rack: Rack) {
-    set({ rack, version: state.version + 1, openNo: null, view: null });
+  renderRack(rack: Rack, limit = Infinity) {
+    set({ rack, version: state.version + 1, openNo: null, view: null, limit });
+  },
+  /** Renders more of the rack (phones build it a few rows at a time). */
+  setLimit(limit: number) {
+    if (limit !== state.limit) set({ limit });
+  },
+  setCompact(compact: boolean) {
+    if (compact !== state.compact) set({ compact });
   },
   /** Opens a spot inline under its row, or marks it open behind the phone sheet. */
   open(no: number, view: "panel" | "sheet") {

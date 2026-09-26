@@ -24,8 +24,12 @@ for (const viewport of viewports) {
         colorScheme,
         hasTouch: viewport.name === "phone",
       });
-      const shot = (state: string) => `${viewport.name}-${colorScheme}-${state}.png`;
-      const approvedShot = (state: string) => ["approved", shot(state)];
+      /* phones and tablets follow the mobile audit (approved change); desktop stays the reference */
+      const mobile = viewport.name !== "desktop";
+      if (mobile) test.beforeEach(() => approved("phones and tablets follow the mobile audit"));
+      const name = (state: string) => `${viewport.name}-${colorScheme}-${state}.png`;
+      const approvedShot = (state: string) => ["approved", name(state)];
+      const shot = (state: string) => (mobile ? approvedShot(state) : name(state));
 
       test("wall as it loads", async ({ wall, page }) => {
         await wall.goto();
@@ -59,6 +63,8 @@ for (const viewport of viewports) {
 
       test("search with no matches", async ({ wall, page }) => {
         await wall.goto();
+        /* phones (the app): search opens from the search button */
+        if (mobile && viewport.width < 700) await page.locator("#searchToggle").click();
         await page.locator("#q").fill("zzzz");
         await expect(page.locator("#rack .no-hits")).toBeVisible();
         await page.locator("#q").blur();
@@ -78,10 +84,7 @@ for (const viewport of viewports) {
         approved("the card is the story share card built from the wall tile");
         await wall.goto();
         await wall.openCreate();
-        await page.locator("#fName").fill("Lowtide Club");
-        await page.locator("[data-link]").first().fill("open.spotify.com/artist/lowtide");
-        await page.locator("#fSnip").fill("Slow songs for the last train home.");
-        await page.locator("#fPay").click();
+        await wall.createAndPay("Lowtide Club", "open.spotify.com/artist/lowtide", "Slow songs for the last train home.");
         await expect(page.locator("#claimSheet .card-img")).toBeVisible({ timeout: 10_000 });
         await page.locator("#claimSheet .card-img").evaluate((i: HTMLImageElement) => i.decode());
         await wall.quiet();

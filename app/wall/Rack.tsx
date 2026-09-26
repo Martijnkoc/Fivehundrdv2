@@ -48,6 +48,7 @@ function Item({ item, st }: { item: RackItem; st: WallState }) {
             opens={s.vacant ? undefined : s.opens}
             saves={s.vacant ? undefined : s.saves}
             minute={st.minute}
+            compact={st.compact}
           />
         ))}
         {Array.from({ length: item.fillers }, (_, i) => (
@@ -63,8 +64,9 @@ export function Rack() {
   const st = useSyncExternalStore(wallStore.subscribe, wallStore.get, wallStore.getServer);
   const { rack, version } = st;
   const open = st.view === "panel" && st.openNo ? (st.wall[st.openNo - 1] as FilledSpot) : null;
+  const complete = !!rack && st.limit >= rack.items.length;
   return (
-    <ol className="rack" id="rack">
+    <ol className="rack" id="rack" data-complete={complete ? "" : undefined}>
       {rack && (
         /* A new key per render: the wall is rebuilt, as it was with innerHTML. */
         <Fragment key={version}>
@@ -78,7 +80,7 @@ export function Rack() {
               </button>
             </li>
           )}
-          {rack.items.map((item, i) => (
+          {rack.items.slice(0, st.limit).map((item, i) => (
             <Fragment key={i}>
               <Item item={item} st={st} />
               {open && item.kind === "row" && item.spots.some((s) => s.no === open.no) && (

@@ -37,6 +37,8 @@ export class Wall {
     /* the baselines are the reference plus the approved changes */
     if (this.isReference) await this.page.addStyleTag({ path: "app/wall/overrides.css" });
     await this.page.waitForSelector("#rack .spot");
+    /* phones build the wall a few rows at a time */
+    if (!this.isReference) await this.page.waitForSelector("#rack[data-complete]");
     await this.page.evaluate(() => document.fonts.ready);
     await this.settle();
   }
@@ -115,13 +117,50 @@ export class Wall {
     }
   }
 
+  /** Types into search; on phones (the app) search opens from its button first. */
+  async search(text: string) {
+    const q = this.page.locator("#q");
+    if (!(await q.isVisible())) {
+      /* the reference has no search button; the approved styles hide its field on phones */
+      if (await this.page.locator("#searchToggle").count()) await this.page.locator("#searchToggle").click();
+      else await this.page.evaluate(() => document.getElementById("top")!.classList.add("searching"));
+    }
+    await q.fill(text);
+  }
+
+  /** Phones (the app) create in steps; wider screens use the one-page form. */
+  get createsInSteps() {
+    return !this.isReference && this.viewport.width < 700;
+  }
+
+  /** Fills in a story and pays, through the steps on phones or the form above. */
+  async createAndPay(name: string, link: string, snippet = "") {
+    const page = this.page;
+    if (this.createsInSteps) {
+      await page.locator(".st-lane").first().click();
+      await page.locator(".st-next").click();
+      await page.locator("#fName").fill(name);
+      await page.locator(".st-next").click();
+      if (snippet) await page.locator("#fSnip").fill(snippet);
+      await page.locator(".st-next").click();
+      await page.locator("[data-link]").first().fill(link);
+      await page.locator(".st-next").click();
+    } else {
+      await page.locator("#fName").fill(name);
+      await page.locator("[data-link]").first().fill(link);
+      if (snippet) await page.locator("#fSnip").fill(snippet);
+    }
+    await page.locator("#fPay").click();
+  }
+
   async openCreate() {
     const button = this.usesTabBar
       ? this.page.locator('.tabbar [data-tab="create"]')
       : this.page.locator("#claimTop");
     await button.click();
     await expect(this.page.locator("#claimVeil")).toHaveClass(/\bon\b/);
-    await expect(this.page.locator("#fName")).toBeFocused();
+    if (this.createsInSteps) await expect(this.page.locator(".steps")).toBeVisible();
+    else await expect(this.page.locator("#fName")).toBeFocused();
   }
 }
 

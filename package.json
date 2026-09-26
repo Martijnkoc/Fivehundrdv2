@@ -15,7 +15,7 @@
     "test:visual": "playwright test --project=app",
     "test:db": "node --test db/schema.test.mjs",
     "test:unit": "node --import ./scripts/ts-resolve.mjs --test \"lib/**/*.test.mjs\"",
-    "test:approve": "playwright test --project=app --update-snapshots=all -g \"(approved)\""
+    "test:approve": "playwright test tests/visual-parity.spec.ts --project=app --update-snapshots=all -g \"approved|phone (light|dark)|breakpoint (light|dark)\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",

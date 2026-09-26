@@ -30,9 +30,54 @@ export type Live = { feed: Feed; base: string };
 export function startWall(bridge: Bridge, live?: Live) {
   const $ = <T extends Element = HTMLElement>(s: string) => document.querySelector<T>(s)!;
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const spotEl = (no: number) => document.getElementById("s-" + pad(no));
+  /* a tile phones haven't built yet is built on the spot (see buildRest) */
+  const spotEl = (no: number) => document.getElementById("s-" + pad(no)) ?? (ensureAll(), document.getElementById("s-" + pad(no)));
   const noOf = (el: Element) => +(el as HTMLElement).dataset.no!;
   const filledOf = (el: Element) => WALL[noOf(el) - 1] as FilledSpot;
+
+  /*
+   * Back closes what is open (approved change, phones and tablets): every
+   * sheet that comes up (a spot, Finds, Create, Share, Report, Keep my card)
+   * gets its own history entry, so the back button or gesture closes the top
+   * one instead of leaving the wall. Closing with × or a tap gives the entry
+   * back; when another sheet opens straight away, it takes that entry over
+   * instead, so the history never jumps.
+   */
+  const layered = () => matchMedia("(max-width:979px)").matches;
+  const layers: string[] = [];
+  let ignorePops = 0,
+    releasing = 0,
+    releaseT: ReturnType<typeof setTimeout> | undefined;
+  function pushEntry(name: string, state: object = { layer: name }, url = location.href) {
+    layers.push(name);
+    try {
+      if (releasing > 0) {
+        releasing--;
+        history.replaceState(state, "", url);
+      } else history.pushState(state, "", url);
+    } catch {}
+  }
+  /** Gives back the entries of layers closed on screen (not by Back). */
+  function releaseEntries(names: string[]) {
+    let n = 0;
+    for (const name of names) {
+      const i = layers.lastIndexOf(name);
+      if (i >= 0) {
+        layers.splice(i, 1);
+        n++;
+      }
+    }
+    if (!n) return;
+    releasing += n;
+    clearTimeout(releaseT);
+    releaseT = setTimeout(() => {
+      if (!releasing) return;
+      ignorePops++;
+      const k = releasing;
+      releasing = 0;
+      history.go(-k);
+    }, 0);
+  }
 
   /* ---------- the wall: live stories, or demo data plus this browser's own claims ---------- */
   const WALL: Spot[] = live ? buildLiveWall(live.feed, live.base, liveApi.mineIds()) : seedWall();
@@ -91,6 +136,25 @@ export function startWall(bridge: Bridge, live?: Live) {
   });
   let query = "",
     qT: ReturnType<typeof setTimeout> | undefined;
+  /* phones: the search button opens the search field in place of the brand, and closes it again */
+  const top = $("#top"),
+    qInput = $<HTMLInputElement>("#q"),
+    qToggle = $("#searchToggle");
+  function setSearching(on: boolean) {
+    top.classList.toggle("searching", on);
+    qToggle.setAttribute("aria-expanded", String(on));
+    qToggle.setAttribute("aria-label", on ? "Close search" : "Search the wall");
+    if (on) qInput.focus();
+    else if (qInput.value) {
+      qInput.value = "";
+      qInput.dispatchEvent(new Event("input"));
+      qInput.blur();
+    } else qInput.blur();
+  }
+  qToggle.addEventListener("click", () => setSearching(!top.classList.contains("searching")));
+  qInput.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && top.classList.contains("searching")) setSearching(false);
+  });
   $("#q").addEventListener("input", (e) => {
     clearTimeout(qT);
     qT = setTimeout(() => {
@@ -129,12 +193,48 @@ export function startWall(bridge: Bridge, live?: Live) {
       }
     }
   });
+  /*
+   * Phones build the wall a few rows at a time: the first screens at once,
+   * the rest while the phone is idle, so the wall is there and scrolls
+   * straight away. Rows out of view aren't laid out or painted either
+   * (content-visibility, overrides.css), sized from the first row.
+   */
+  const compactNow = () => matchMedia("(max-width:699px)").matches;
+  const FIRST_ROWS = 10,
+    MORE_ROWS = 8;
+  let built = Infinity,
+    total = 0,
+    buildT = 0;
+  const idle = (f: () => void) =>
+    "requestIdleCallback" in window ? requestIdleCallback(f, { timeout: 120 }) : (setTimeout(f, 30) as unknown as number);
+  const unidle = (id: number) => ("cancelIdleCallback" in window ? cancelIdleCallback(id) : clearTimeout(id));
+  function buildRest() {
+    unidle(buildT);
+    if (built >= total) return;
+    buildT = idle(() => {
+      built += MORE_ROWS;
+      bridge.setLimit(built >= total ? Infinity : built);
+      buildRest();
+    });
+  }
+  function ensureAll() {
+    unidle(buildT);
+    if (built >= total) return;
+    built = Infinity;
+    bridge.setLimit(Infinity);
+  }
   function renderRack() {
     open = null;
     const C = (COLS = colsNow());
     const r = buildRack({ wall: WALL, lane, query, cols: C, entryR: ENTRY_R });
     entryNo = r.entryNo;
-    bridge.renderRack(r);
+    bridge.setCompact(compactNow());
+    total = r.items.length;
+    built = compactNow() ? FIRST_ROWS : Infinity;
+    bridge.renderRack(r, built >= total ? Infinity : built);
+    const row = rack.querySelector<HTMLElement>(".shelf-row");
+    if (row) rack.style.setProperty("--row-est", row.offsetHeight + "px");
+    buildRest();
     renderCard();
   }
 
@@ -181,6 +281,7 @@ export function startWall(bridge: Bridge, live?: Live) {
       saves: [...SAVES],
       savesShown,
       account: ACCOUNT,
+      ...(layered() && { finds: true }),
     });
   }
 
@@ -217,7 +318,11 @@ export function startWall(bridge: Bridge, live?: Live) {
         btn.classList.add("pop");
         bumpTab();
       } else flyToCard(li, s, from);
-      toast("Saved to your Fivehundrd card.");
+      toast(layered() ? "Saved to your Finds." : "Saved to your Fivehundrd card.");
+      try {
+        localStorage.setItem("fh-intro", "1");
+      } catch {}
+      dispatchEvent(new Event("fh-intro-done"));
     }
   }
 
@@ -376,7 +481,11 @@ export function startWall(bridge: Bridge, live?: Live) {
     } catch {}
   }
   function step(d: number) {
-    const list = [...rack.querySelectorAll<HTMLElement>(".spot:not(.vacant):not(.filler)")];
+    let list = [...rack.querySelectorAll<HTMLElement>(".spot:not(.vacant):not(.filler)")];
+    if (built < total && open && list.indexOf(open) >= list.length - 3) {
+      ensureAll();
+      list = [...rack.querySelectorAll<HTMLElement>(".spot:not(.vacant):not(.filler)")];
+    }
     if (!list.length) return;
     const i = open ? list.indexOf(open) : -1;
     openSpot(list[Math.max(0, Math.min(list.length - 1, i + d))], { align: true });
@@ -477,7 +586,9 @@ export function startWall(bridge: Bridge, live?: Live) {
     a.onfinish = done;
     a.oncancel = done;
   }
-  function setCard(on: boolean) {
+  function setCard(on: boolean, fromPop = false) {
+    if (on && !cardOpen && layered()) pushEntry("card");
+    if (!on && cardOpen && !fromPop) releaseEntries(["card"]);
     cardOpen = on;
     $("#card").classList.toggle("on", on);
     $("#cardVeil").classList.toggle("on", on);
@@ -592,24 +703,23 @@ export function startWall(bridge: Bridge, live?: Live) {
   function tileFrame(el: HTMLElement) {
     const t = el.querySelector(".book")!.getBoundingClientRect(),
       r = dsheet.getBoundingClientRect();
-    const k = t.width / r.width;
-    const cut = Math.max(0, r.height - t.height / k);
     return {
-      transform: `translate(${t.left - r.left}px,${t.top - r.top}px) scale(${k})`,
-      clipPath: `inset(0 0 ${cut}px 0 round ${6 / k}px)`,
+      transform: `translate(${t.left - r.left}px,${t.top - r.top}px) scale(${t.width / r.width})`,
       visible: t.bottom > 0 && t.top < innerHeight,
     };
   }
   const EASE_OPEN = "cubic-bezier(.2,.9,.25,1)";
+  /* transform and opacity only, so the phone's compositor runs it */
   function growFrom(el: HTMLElement) {
     const f = tileFrame(el);
     dsheet.style.transformOrigin = "0 0";
     dsheet.animate(
       [
-        { transform: f.transform, clipPath: f.clipPath },
-        { transform: "none", clipPath: "inset(0 0 0 0 round 18px)" },
+        { transform: f.transform, opacity: 0.35 },
+        { transform: f.transform, opacity: 1, offset: 0.12 },
+        { transform: "none", opacity: 1 },
       ],
-      { duration: 380, easing: EASE_OPEN },
+      { duration: 340, easing: EASE_OPEN },
     );
   }
   /** Brings a spot forward as the overlay; `instant` skips growing out of the tile (rotation). */
@@ -648,12 +758,8 @@ export function startWall(bridge: Bridge, live?: Live) {
     dsheet.hidden = false;
     dveil.classList.add("on");
     document.documentElement.classList.add("sheet-lock");
-    try {
-      history.pushState({ sheet: 1 }, "", addressOf(s));
-      sheetPushed = true;
-    } catch {
-      sheetPushed = false;
-    }
+    pushEntry("sheet", { sheet: 1 }, addressOf(s));
+    sheetPushed = true;
     if (reduce || instant) {
       dsheet.style.transform = "none";
       return;
@@ -687,11 +793,11 @@ export function startWall(bridge: Bridge, live?: Live) {
         /* back into its tile, where you left it */
         dsheet.animate(
           [
-            { transform: "none", clipPath: "inset(0 0 0 0 round 18px)", opacity: 1 },
-            { transform: f.transform, clipPath: f.clipPath, opacity: 1, offset: 0.85 },
-            { transform: f.transform, clipPath: f.clipPath, opacity: 0 },
+            { transform: "none", opacity: 1 },
+            { transform: f.transform, opacity: 0.6, offset: 0.8 },
+            { transform: f.transform, opacity: 0 },
           ],
-          { duration: 260, easing: "cubic-bezier(.4,0,.2,1)" },
+          { duration: 240, easing: "cubic-bezier(.4,0,.2,1)" },
         ).onfinish = done;
       /* dragged down, or the tile is out of view: it drops away */
       else
@@ -702,9 +808,7 @@ export function startWall(bridge: Bridge, live?: Live) {
     }
     if (sheetPushed && !fromPop) {
       sheetPushed = false;
-      try {
-        history.back();
-      } catch {}
+      releaseEntries(["sheet"]);
     } else {
       sheetPushed = false;
       try {
@@ -717,6 +821,20 @@ export function startWall(bridge: Bridge, live?: Live) {
     el?.querySelector<HTMLElement>(".book")?.focus({ preventScroll: true });
   }
   addEventListener("popstate", () => {
+    if (ignorePops) {
+      ignorePops--;
+      return;
+    }
+    /* Back closes the top layer */
+    const top = layers.pop();
+    if (top === "claimVeil" || top === "shareVeil") {
+      const v = $(`#${top}`);
+      v.classList.remove("on");
+      stopAudio();
+      if (!document.querySelector(".veil.on")) document.body.style.overflow = "";
+      return;
+    }
+    if (top === "card") return setCard(false, true);
     if (sheetOn) hideSheet(true);
   });
   dveil.addEventListener("click", () => hideSheet());
@@ -855,7 +973,7 @@ export function startWall(bridge: Bridge, live?: Live) {
       }
     }
     bridge.openShare({ kind: "share", data, spot: s });
-    $("#shareVeil").classList.add("on");
+    showVeil("shareVeil");
   }
   /** Prints the open spot's story card in the background, so Share can hand it over at once. */
   let warmT: ReturnType<typeof setTimeout> | undefined;
@@ -869,17 +987,25 @@ export function startWall(bridge: Bridge, live?: Live) {
        login sheet opened behind it; close the card first, as Create does */
     if (cardOpen) setCard(false);
     bridge.openShare({ kind: "keep" });
-    $("#shareVeil").classList.add("on");
+    showVeil("shareVeil");
   }
   function openReport(s: FilledSpot) {
     if (!s.id) return;
     bridge.openShare({ kind: "report", id: s.id, name: s.name });
-    $("#shareVeil").classList.add("on");
+    showVeil("shareVeil");
   }
-  function closeVeils() {
+  /** Shows #claimVeil or #shareVeil (with its own history entry on phones). */
+  function showVeil(id: "claimVeil" | "shareVeil") {
+    const v = $(`#${id}`);
+    if (!v.classList.contains("on") && layered()) pushEntry(id);
+    v.classList.add("on");
+  }
+  function closeVeils(fromPop = false) {
     stopAudio();
+    const open = [...document.querySelectorAll<HTMLElement>(".veil.on")].map((v) => v.id);
     document.querySelectorAll(".veil").forEach((v) => v.classList.remove("on"));
     document.body.style.overflow = "";
+    if (!fromPop) releaseEntries(open);
   }
   document.querySelectorAll(".veil").forEach((v) =>
     v.addEventListener("click", (e) => {
@@ -917,7 +1043,7 @@ export function startWall(bridge: Bridge, live?: Live) {
       seed: Math.floor(Math.random() * 1e9),
       pal: PAL[Math.floor(Math.random() * PAL.length)],
     });
-    $("#claimVeil").classList.add("on");
+    showVeil("claimVeil");
     document.body.style.overflow = "hidden";
   }
   function placeClaim(draft: Draft): string | null | Promise<string | null> {
@@ -1032,7 +1158,7 @@ export function startWall(bridge: Bridge, live?: Live) {
         data: { title: `${s.name} on fivehundrd.`, text: `${s.name} is on spot ${pad(numOf(s))} of 500.`, url: spotURL(s) },
         spot: s,
       });
-      $("#shareVeil").classList.add("on");
+      showVeil("shareVeil");
     },
     spotURL,
     seeOnWall(no: number) {
@@ -1042,6 +1168,9 @@ export function startWall(bridge: Bridge, live?: Live) {
   } satisfies Bridge["actions"]);
 
   /* ---------- boot ---------- */
+  /* the card says "Finds" on phones and tablets */
+  matchMedia("(max-width:979px)").addEventListener("change", () => renderCard());
+  matchMedia("(max-width:699px)").addEventListener("change", (e) => bridge.setCompact(e.matches));
   const setHead = () => document.documentElement.style.setProperty("--headY", $("#top").getBoundingClientRect().bottom + 12 + "px");
   renderLanes();
   renderRack();
@@ -1054,7 +1183,7 @@ export function startWall(bridge: Bridge, live?: Live) {
     return;
   }
   const h = location.hash.replace("#", "");
-  const start = (h && document.getElementById("s-" + h.padStart(3, "0"))) || rack.querySelector<HTMLElement>(".spot:not(.vacant):not(.filler)")!;
+  const start = (h && /^\d{1,3}$/.test(h) && spotEl(+h)) || rack.querySelector<HTMLElement>(".spot:not(.vacant):not(.filler)")!;
   requestAnimationFrame(() => {
     openSpot(start.classList.contains("vacant") ? rack.querySelector<HTMLElement>(".spot:not(.vacant):not(.filler)") : start, {
       align: !!h,
@@ -1112,7 +1241,7 @@ export function startWall(bridge: Bridge, live?: Live) {
           }
           renderCard();
           bridge.claimDone(s);
-          $("#claimVeil").classList.add("on");
+          showVeil("claimVeil");
           document.body.style.overflow = "hidden";
         }
         return;

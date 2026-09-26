@@ -4,12 +4,12 @@ import { Fragment, useEffect, useRef, useState, useSyncExternalStore, type FormE
 import { readDataURL, shrink } from "../../lib/wall/image";
 import { parseLink } from "../../lib/wall/links";
 import { LANES, PRICE, numOf, pad, type FilledSpot, type LaneId, type Link, type Palette } from "../../lib/wall/model";
-import { until } from "../../lib/wall/time";
+import { styleFor, until } from "../../lib/wall/time";
 import { playingIn, stopAudio } from "./audio";
 import { Cover } from "./Cover";
 import { bridge, wallStore } from "./store";
 import { cardFileName, shareCardBlob } from "./shareCard";
-import { GenArt, SpotTile } from "./Tile";
+import { GenArt, LaneIcon, SpotTile, cssVars } from "./Tile";
 
 /* Whitespace text nodes as in the reference's openClaim/showDone templates. */
 const ws = (indent: number) => "\n" + " ".repeat(indent);
@@ -55,11 +55,15 @@ function ClaimForm({ start }: { start: ClaimStart }) {
     return w ? Math.round(w * 100) / 100 : 180;
   });
   const linkRef = useRef<HTMLInputElement>(null);
+  /* phones: the same form, one small step at a time (approved change) */
+  const [stepped] = useState(() => matchMedia("(max-width:699px)").matches);
+  const [step, setStep] = useState(0);
 
   useEffect(() => {
+    if (stepped) return;
     const t = setTimeout(() => nameRef.current?.focus(), 50);
     return () => clearTimeout(t);
-  }, []);
+  }, [stepped]);
 
   /* editing the form stops a preview that is playing, as in the reference */
   const prevRef = useRef<HTMLDivElement>(null);
@@ -109,6 +113,10 @@ function ClaimForm({ start }: { start: ClaimStart }) {
       linkRef.current!.focus();
       return;
     }
+    place();
+  };
+  /** Places the story (demo) or starts paying for it (live). */
+  const place = () => {
     const problem = bridge.actions.placeClaim(draft);
     if (problem instanceof Promise) {
       setErr("");
@@ -212,6 +220,14 @@ function ClaimForm({ start }: { start: ClaimStart }) {
         />
         <span className="hint">A play button appears on your artwork and opens the video.</span>
       </div>
+    );
+
+  if (stepped)
+    return (
+      <Steps
+        {...{ step, setStep, no, setNo, lane, setLane, name, setName, snip, setSnip, links, setLinks, img, logo, audio, exT, ex, trailer, err, setErr, placing }}
+        {...{ onArt, onLogo, onAudio, extra, preview, draft, place, tileWidth, nameRef, linkRef, prevRef }}
+      />
     );
 
   return (
@@ -367,6 +383,258 @@ function ClaimForm({ start }: { start: ClaimStart }) {
         {ws(2)}
       </div>
     </>
+  );
+}
+
+const STEPS = ["Lane", "Artwork", "Name", "Description", "Links", "Preview"] as const;
+
+type StepsProps = {
+  step: number;
+  setStep: (n: number) => void;
+  no: number;
+  setNo: (n: number) => void;
+  lane: LaneId;
+  setLane: (l: LaneId) => void;
+  name: string;
+  setName: (v: string) => void;
+  snip: string;
+  setSnip: (v: string) => void;
+  links: string[];
+  setLinks: (v: string[]) => void;
+  img: string | null;
+  logo: string | null;
+  audio: string | null;
+  exT: string;
+  ex: string;
+  trailer: string;
+  err: string;
+  setErr: (v: string) => void;
+  placing: boolean;
+  onArt: (f?: File) => void;
+  onLogo: (f?: File) => void;
+  onAudio: (f?: File) => void;
+  extra: React.ReactNode;
+  preview: FilledSpot;
+  draft: Draft;
+  place: () => void;
+  tileWidth: number;
+  nameRef: React.RefObject<HTMLInputElement | null>;
+  linkRef: React.RefObject<HTMLInputElement | null>;
+  prevRef: React.RefObject<HTMLDivElement | null>;
+};
+
+/**
+ * Create on phones (approved change, mobile audit): lane, artwork, name,
+ * description, links, preview and pay, one step at a time, with the real
+ * wall tile growing as you fill it in. The fields, state and checks are the
+ * desktop form's own.
+ */
+function Steps(p: StepsProps) {
+  const { step, setStep, lane, err, setErr } = p;
+  const last = STEPS.length - 1;
+  const focusRef = useRef<HTMLDivElement>(null);
+  /* each step starts at its top, with its first field ready */
+  useEffect(() => {
+    const sheet = document.getElementById("claimSheet");
+    if (sheet) sheet.scrollTop = 0;
+    const t = setTimeout(() => {
+      if (step === 2) p.nameRef.current?.focus();
+      else if (step === 4) p.linkRef.current?.focus();
+      else focusRef.current?.focus({ preventScroll: true });
+    }, 60);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
+  /** Moves on when this step has what it needs. */
+  const next = () => {
+    if (step === 2 && !p.draft.name) return setErr("Add your name so people know who they're looking at.");
+    if (step === 4 && !p.draft.links.length)
+      return setErr(
+        p.links.some((v) => v.trim())
+          ? "That link doesn't look like a web address. Try something like instagram.com/yourname."
+          : "Add at least one link, so visitors can go and find you.",
+      );
+    setErr("");
+    setStep(Math.min(last, step + 1));
+  };
+  const back = () => {
+    setErr("");
+    setStep(Math.max(0, step - 1));
+  };
+  const onEnter = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !(e.target as Element).matches("textarea")) {
+      e.preventDefault();
+      next();
+    }
+  };
+  const live = document.documentElement.dataset.live === "1";
+
+  /* the step's question, with the real wall tile beside it, filling in as you go */
+  const head = (title: string, sub?: string) => (
+    <div className="st-head">
+      <div>
+        <h2 className="st-h">{title}</h2>
+        {sub && <p className="st-sub">{sub}</p>}
+      </div>
+      <div className="st-live" aria-label="Live preview of your spot">
+        <SpotTile s={p.preview} width={96} />
+      </div>
+    </div>
+  );
+
+  const body = [
+    /* 1. lane */
+    <>
+      {head("What are you putting on the wall?")}
+      <div className="st-lanes" role="radiogroup" aria-label="Lane">
+        {LANES.map(([k, v]) => (
+          <button
+            key={k}
+            type="button"
+            role="radio"
+            aria-checked={k === lane}
+            className="st-lane"
+            onClick={() => {
+              p.setLane(k);
+              p.setNo(bridge.actions.numberFor(k, p.no));
+              setStep(1);
+            }}
+          >
+            <LaneIcon lane={k} />
+            {v}
+          </button>
+        ))}
+      </div>
+      <p className="st-note">
+        {`Spot ${pad(p.no)}. ${PRICE}, live straight away for three days. `}
+        <button
+          className="st-link"
+          type="button"
+          onClick={() => {
+            const n2 = bridge.actions.randomVacant(lane);
+            if (n2) p.setNo(n2);
+          }}
+        >
+          Pick another number
+        </button>
+      </p>
+    </>,
+    /* 2. artwork */
+    <>
+      {head("Add your artwork", "Square works best. No image yet? We'll print a pattern for you.")}
+      <label className="st-upload">
+        <input type="file" accept="image/*" onChange={(e) => p.onArt(e.target.files?.[0])} />
+        <span className="st-btn">{p.img ? "Change artwork" : "Choose artwork"}</span>
+      </label>
+      <label className="st-upload st-quiet">
+        <input type="file" accept="image/*" onChange={(e) => p.onLogo(e.target.files?.[0])} />
+        <span>{p.logo ? "Logo added. Change it" : "Add a logo (optional)"}</span>
+      </label>
+    </>,
+    /* 3. name */
+    <>
+      {head("Who's it by?", "Your name, band or project. It's the title of your spot.")}
+      <input
+        ref={p.nameRef}
+        type="text"
+        id="fName"
+        maxLength={40}
+        placeholder="Your name, band or project"
+        autoComplete="off"
+        enterKeyHint="next"
+        value={p.name}
+        onChange={(e) => p.setName(e.target.value)}
+        onKeyDown={onEnter}
+      />
+    </>,
+    /* 4. description */
+    <>
+      {head("One line that makes someone tap", "What should they hear, read or play first?")}
+      <textarea id="fSnip" maxLength={140} value={p.snip} onChange={(e) => p.setSnip(e.target.value)} placeholder="Slow songs for the last train home." />
+      <span className="hint">{`${140 - p.snip.length} left`}</span>
+      {lane === "music" || lane === "podcasts" ? (
+        <label className="st-upload st-quiet">
+          <input type="file" id="fAudio" accept="audio/*" onChange={(e) => p.onAudio(e.target.files?.[0])} />
+          <span>{p.audio ? `♪ ${lane === "music" ? "Song preview" : "Trailer"} added. Change it` : `Add a ${lane === "music" ? "30-second song preview" : "30-second trailer"} (optional)`}</span>
+        </label>
+      ) : (
+        p.extra
+      )}
+    </>,
+    /* 5. links */
+    <>
+      {head("Where can people find you?", "Up to three links. Spotify, Steam, Substack, your site, anything.")}
+      {[0, 1, 2].map((i) => (
+        <input
+          key={i}
+          ref={i === 0 ? p.linkRef : undefined}
+          type="url"
+          data-link={i}
+          placeholder={LINK_HINTS[i]}
+          inputMode="url"
+          autoCapitalize="off"
+          enterKeyHint={i === 2 ? "done" : "next"}
+          value={p.links[i]}
+          onChange={(e) => p.setLinks(p.links.map((v, j) => (j === i ? e.target.value : v)))}
+          onKeyDown={onEnter}
+        />
+      ))}
+    </>,
+    /* 6. preview and pay */
+    <>
+      <h2 className="st-h">This is your spot</h2>
+      <p className="st-sub">Exactly as visitors will see it on the wall, and when they open it.</p>
+      <div className="prev-tile st-prev">
+        <SpotTile s={p.preview} width={p.tileWidth} />
+      </div>
+      {/* opened, as the phone shows it: the overlay's frame in the lane colour */}
+      <div className="st-cover" id="fPrev" ref={p.prevRef} style={cssVars(styleFor(p.preview))} onClick={(e) => bridge.actions.previewClick(e.nativeEvent, p.preview)}>
+        <Cover s={p.preview} saved={false} preview />
+      </div>
+    </>,
+  ];
+
+  return (
+    <div className="steps">
+      <div className="st-top">
+        <button className="st-back" type="button" onClick={back} aria-label="Back" hidden={step === 0}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M15 5l-7 7 7 7" />
+          </svg>
+        </button>
+        <span className="st-where" id="claimH">
+          <b>{`Step ${step + 1} of ${STEPS.length}`}</b>
+          {` · ${STEPS[step]}`}
+        </span>
+        <button className="x" aria-label="Close" data-close="">
+          &times;
+        </button>
+      </div>
+      <div className="st-bar" aria-hidden="true">
+        {STEPS.map((_, i) => (
+          <i key={i} className={i <= step ? "on" : undefined} />
+        ))}
+      </div>
+      <div className="st-body" ref={focusRef} tabIndex={-1}>
+        {body[step]}
+      </div>
+      <p className="err" id="fErr" role="alert">
+        {err}
+      </p>
+      {step === 0 ? null : step < last ? (
+        <button className={`pay st-next${step === 1 && !p.img ? " alt" : ""}`} type="button" onClick={next}>
+          {step === 1 && !p.img ? "Use a printed pattern" : step === 3 && !p.snip ? "Skip" : "Next"}
+        </button>
+      ) : (
+        <div className="st-pay">
+          <button className="pay" id="fPay" type="button" onClick={p.place} disabled={p.placing}>
+            {p.placing ? "Placing you on the wall…" : `Pay ${PRICE} and go live`}
+          </button>
+          <p className="fine">{live ? "Secure payment with Stripe. Refunded if your spot doesn't go live." : "Prototype. No payment is taken."}</p>
+        </div>
+      )}
+    </div>
   );
 }
 

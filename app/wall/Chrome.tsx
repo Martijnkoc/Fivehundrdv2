@@ -33,6 +33,16 @@ export function Header() {
               </svg>
               Create
             </button>
+            {/* phones: search sits behind this button, so the header stays one line of brand */}
+            <button className="search-toggle" type="button" id="searchToggle" aria-label="Search the wall" aria-expanded="false" aria-controls="q">
+              <svg className="st-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" />
+                <path d="m21 21-4.3-4.3" />
+              </svg>
+              <svg className="st-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+                <path d="M6 6l12 12M18 6 6 18" />
+              </svg>
+            </button>
             <div className="who">
               <div className="avatar-fallback"></div>
               <small>
@@ -169,7 +179,7 @@ export function TabBar() {
           </svg>
           <TabBadge />
         </span>
-        My card
+        Finds
       </button>
       <button type="button" data-tab="create" className="tb-create">
         <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

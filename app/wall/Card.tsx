@@ -16,6 +16,8 @@ export type CardData = {
   saves: SaveEntry[];
   savesShown: number;
   account: Account | null;
+  /** phones and tablets: the card is the Finds tab */
+  finds?: boolean;
 };
 
 /* Whitespace text nodes as in the reference's renderCard template. */
@@ -89,11 +91,13 @@ function Saves({ card, wall }: { card: CardData; wall: Spot[] }) {
   return (
     <div className="sv-box">
       <div className="sv-head">
-        <span>{`Your saves${all.length ? ", leaving first" : ""}`}</span>
+        <span>{`${card.finds ? "Your finds" : "Your saves"}${all.length ? ", leaving first" : ""}`}</span>
         <b>{all.length}</b>
       </div>
       {!all.length ? (
-        <p className="sv-empty">Nothing saved yet. Tap Save on a tile and it lands here.</p>
+        <p className="sv-empty">
+          {card.finds ? "Nothing found yet. Tap Save on anything you like and it lands here, even after it leaves the wall." : "Nothing saved yet. Tap Save on a tile and it lands here."}
+        </p>
       ) : (
         <>
           <ul className="sv-list">

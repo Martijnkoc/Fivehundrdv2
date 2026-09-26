@@ -1,5 +1,5 @@
 import { createElement, memo, type CSSProperties } from "react";
-import { artShapes } from "../../lib/wall/art";
+import { artShapes, genArt } from "../../lib/wall/art";
 import { BOOKMARK, EYE, LANE_ICON_PATHS } from "../../lib/wall/icons";
 import { LANE, LIFE, PRICE, fmt, numOf, pad, type FilledSpot, type LaneId, type Palette, type Spot } from "../../lib/wall/model";
 import { left, short, spotStyle } from "../../lib/wall/time";
@@ -46,15 +46,27 @@ function PillIcon({ paths }: { paths: string }) {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" dangerouslySetInnerHTML={{ __html: paths }} />;
 }
 
+/* Phones: the printed pattern as one image instead of an inline SVG of many
+   shapes, so the wall has far fewer elements and the pattern is decoded off
+   the main thread. Same markup, so the same picture. */
+const artURLs = new Map<string, string>();
+function artURL(seed: number, pal: Palette) {
+  const k = seed + pal.join();
+  let u = artURLs.get(k);
+  if (!u) artURLs.set(k, (u = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(genArt(seed, pal))));
+  return u;
+}
+
 /** The front of a tile: the maker's artwork, their logo, or (demo) a pattern. */
-function Front({ s }: { s: FilledSpot }) {
-  if (s.img) return <img src={s.img} alt="" />;
+function Front({ s, compact }: { s: FilledSpot; compact?: boolean }) {
+  if (s.img) return <img src={s.img} alt="" loading="lazy" decoding="async" />;
   if (s.logo)
     return (
       <span className="bk-logo">
-        <img src={s.logo} alt="" />
+        <img src={s.logo} alt="" loading="lazy" decoding="async" />
       </span>
     );
+  if (compact) return <img src={artURL(s.seed, s.pal)} alt="" decoding="async" />;
   return <GenArt seed={s.seed} pal={s.pal} />;
 }
 
@@ -63,7 +75,7 @@ function Front({ s }: { s: FilledSpot }) {
 const NL6 = "\n      ";
 const NL4 = "\n    ";
 
-function Filled({ s, open, still }: { s: FilledSpot; open: boolean; still?: boolean }) {
+function Filled({ s, open, still, compact }: { s: FilledSpot; open: boolean; still?: boolean; compact?: boolean }) {
   const l = left(s),
     fresh = LIFE - l < 3 * 3600e3;
   /* on the wall the tile is a button; as a preview or share card, the same tile as a picture */
@@ -78,7 +90,7 @@ function Filled({ s, open, still }: { s: FilledSpot; open: boolean; still?: bool
         >
           {NL6}
           <span className="bk-art">
-            <Front s={s} />
+            <Front s={s} compact={compact} />
           </span>
           {NL6}
           <span className="bk-strip">
@@ -141,13 +153,14 @@ type TileProps = {
   opens?: number;
   saves?: number;
   minute: number;
+  compact?: boolean;
 };
 
 /** One spot on the wall (§6): a filled tile or an open spot. */
-export const Tile = memo(function Tile({ s, open }: TileProps) {
+export const Tile = memo(function Tile({ s, open, compact }: TileProps) {
   return (
     <div className={`spot${s.vacant ? " vacant" : ""}${open ? " open" : ""}`} id={`s-${pad(s.no)}`} data-no={s.no} style={cssVars(spotStyle(s))}>
-      {s.vacant ? <Vacant s={s} /> : <Filled s={s} open={open} />}
+      {s.vacant ? <Vacant s={s} /> : <Filled s={s} open={open} compact={compact} />}
     </div>
   );
 });
