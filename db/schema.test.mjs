@@ -8,7 +8,11 @@ import { PGlite } from "@electric-sql/pglite";
  * Auth, Vault, the API roles and the teaser tables are stubbed; everything
  * the wall does goes through the same functions the app calls.
  */
-const schema = await readFile(new URL("../supabase/migrations/20260926090000_wall_v2_schema.sql", import.meta.url), "utf8");
+/* every migration but the platform one (pg_cron, Storage: Supabase only) */
+const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card"];
+const schema = (
+  await Promise.all(MIGRATIONS.map((m) => readFile(new URL(`../supabase/migrations/${m}.sql`, import.meta.url), "utf8")))
+).join("\n");
 const KEY = "test-server-key";
 
 const STUBS = `
@@ -213,5 +217,27 @@ describe("access", () => {
     await wall();
     await rejects(db.query("select * from public.stories"), /permission denied/);
     await rejects(db.query("select private.wall_tick()"), /permission denied/);
+  });
+});
+
+describe("keep my card", () => {
+  test("logging in takes this browser's saves to the account and brings back the others", async () => {
+    const a = await reserve(story());
+    const b = await reserve(story({ no: 5 }));
+    await complete(a.id);
+    await complete(b.id);
+    await event(a.id, "save", "phone");
+    await event(b.id, "save", "laptop");
+    const user = "7d0a9a64-6c55-4b7e-9d1f-2b1bb0c7a001";
+    await db.query("insert into auth.users values ($1)", [user]);
+    await db.exec("set role anon");
+    await rejects(db.query("select public.sync_card('phone')"), /permission denied/);
+    await db.exec(`reset role; set role authenticated; set request.jwt.claim.sub = '${user}'`);
+    let saves = (await one("select public.sync_card('phone', false) r")).r;
+    assert.deepEqual(saves.map((x) => x.no), [217]);
+    saves = (await one("select public.sync_card('laptop') r")).r;
+    assert.deepEqual(saves.map((x) => x.no).sort((p, q) => p - q), [5, 217]);
+    await db.exec("reset role");
+    assert.equal((await one("select remind from public.profiles where user_id = $1", [user])).remind, false);
   });
 });

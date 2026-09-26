@@ -10,7 +10,7 @@
  * on the rendered DOM, as the reference did.
  */
 import { PAL, seedWall } from "../../lib/wall/demo";
-import { buildLiveWall, mergeFeed, openNumbers, type Feed } from "../../lib/wall/live";
+import { buildLiveWall, mediaURL, mergeFeed, openNumbers, type Feed } from "../../lib/wall/live";
 import { LANE, LIFE, numOf, pad, seenKey, type FilledSpot, type LaneId, type NavId, type Spot } from "../../lib/wall/model";
 import { buildRack } from "../../lib/wall/rack";
 import { savesOrder as savesOrderOf, skey, type SaveEntry } from "../../lib/wall/saves";
@@ -45,7 +45,11 @@ export function startWall(bridge: Bridge, live?: Live) {
   bridge.setWall(WALL);
   /** Counts an open, save, share… on the live wall. */
   const ev = (id: string | undefined, kind: liveApi.EventKind) => {
-    if (live && id) liveApi.sendEvent(id, kind);
+    if (!live || !id) return;
+    liveApi.sendEvent(id, kind);
+    /* a logged-in visitor's saves follow them to every device */
+    if (ACCOUNT && kind === "save") setTimeout(syncAccount, 1500);
+    if (ACCOUNT && kind === "unsave") liveApi.unsaveForAccount(id).catch(() => {});
   };
   /** A spot's address: /s/music/217 on the live wall, #217 on the demo wall. */
   const addressOf = (s: FilledSpot) => (live ? `/s/${s.lane}/${numOf(s)}` : "#" + pad(s.no));
@@ -147,9 +151,11 @@ export function startWall(bridge: Bridge, live?: Live) {
     bridge.setSaved(SAVES.map((x) => x.k));
   }
   let ACCOUNT: Account | null = null;
-  try {
-    ACCOUNT = JSON.parse(localStorage.getItem("fh-account") || "null");
-  } catch {}
+  /* on the live wall the login itself says whether the card is kept (syncAccount) */
+  if (!live)
+    try {
+      ACCOUNT = JSON.parse(localStorage.getItem("fh-account") || "null");
+    } catch {}
   let savesShown = 12;
   const OPENED = new Set<string | number>();
   const TODAY = new Date().toISOString().slice(0, 10);
@@ -916,8 +922,47 @@ export function startWall(bridge: Bridge, live?: Live) {
   $("#claimTop").onclick = () => openClaim();
 
   /* ---------- what React asks for ---------- */
+  /** Logged in (live wall): the account's saves join this browser's, and the card says it is kept. */
+  async function syncAccount() {
+    const acc = await liveApi.syncCard().catch(() => null);
+    if (!acc || !live) return;
+    ACCOUNT = { via: acc.via, remind: acc.remind };
+    const have = new Set(SAVES.map((x) => x.k));
+    for (const a of acc.saves) {
+      if (have.has(a.id)) continue;
+      const cur = WALL.find((w) => !w.vacant && w.id === a.id);
+      SAVES.push({
+        k: a.id,
+        no: cur ? cur.no : 0,
+        num: a.no,
+        name: a.name,
+        lane: a.lane as LaneId,
+        start: Date.parse(a.startsAt),
+        link: a.link,
+        logo: mediaURL(live.base, "art", a.logo),
+        img: mediaURL(live.base, "art", a.artwork),
+        seed: a.seed,
+        pal: PAL[a.pal] ?? PAL[0],
+        savedAt: Date.parse(a.savedAt),
+      });
+    }
+    SAVES.sort((x, y) => y.savedAt - x.savedAt);
+    persistSaves();
+    renderCard();
+  }
+
   Object.assign(bridge.actions, {
     keepCard(via: string, remind: boolean, byEmail: boolean) {
+      if (live) {
+        liveApi.signIn(via, remind).then((err) => {
+          if (err) return toast(err);
+          if (byEmail) {
+            closeVeils();
+            toast("Check your inbox for the link.");
+          }
+        });
+        return;
+      }
       ACCOUNT = { via, remind };
       try {
         localStorage.setItem("fh-account", JSON.stringify(ACCOUNT));
@@ -947,6 +992,7 @@ export function startWall(bridge: Bridge, live?: Live) {
   (document.fonts ? document.fonts.ready : Promise.resolve()).then(setHead);
   if (live) {
     bootLive();
+    syncAccount();
     return;
   }
   const h = location.hash.replace("#", "");

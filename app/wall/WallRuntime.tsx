@@ -18,8 +18,10 @@ export function WallRuntime() {
     (async () => {
       await import("../../scripts/fixture.js");
       const { startWall } = await import("./controller");
-      const { fetchFeed, liveWanted, SUPABASE_URL } = await import("./liveClient");
+      const { fetchFeed, liveWanted, supabase, SUPABASE_URL } = await import("./liveClient");
       if (!liveWanted()) return startWall(bridge);
+      /* back from a login link: let Supabase read it before the wall rewrites the address */
+      if (/access_token|error_description/.test(location.hash)) await (await supabase()).auth.getSession();
       /* the live wall (open spots only if the database can't be reached; it catches up each minute) */
       const feed = await fetchFeed().catch(() => ({ now: "", stories: [], held: [] }));
       startWall(bridge, { feed, base: SUPABASE_URL });

@@ -78,6 +78,42 @@ Supabase Vault. The live teaser tables (`early_access_signups`,
 
 `pnpm test:db` runs the schema on an in-process Postgres (PGlite) with
 Auth, Vault and the API roles stubbed.
+`pnpm test:unit` covers the live wall's layout (`lib/wall/live.ts`).
+
+## The live wall
+
+With the Supabase variables set, `/` is the live wall: every live story
+first, taking turns lane by lane, then open spots until the wall holds 500.
+Without them (and always with `?demo=1` or `?fixture=1`) it is the demo wall
+from the reference. A spot's address is `/s/{lane}/{no}`, e.g. `/s/music/217`.
+
+| Route | What it does |
+| --- | --- |
+| `GET /api/wall` | live stories and held numbers, cached 15 s at the edge |
+| `POST /api/checkout` | checks the claim, holds the number for 30 minutes, opens Stripe Checkout ($9.95) |
+| `GET /api/checkout/status` | where a checkout stands, for the page Stripe returns to |
+| `POST /api/checkout/cancel` | the maker backed out: ends the session, frees the number |
+| `POST /api/stripe/webhook` | paid → live for 72 hours; expired or failed → number free |
+| `POST /api/events` | opens, saves, shares, link clicks, entries |
+
+Media is uploaded from the browser to Storage (`art`, `audio`, under
+`pending/`) before paying. Keep my card uses Supabase Auth: an email link
+always; Google and Apple once they are switched on under Authentication →
+Providers.
+
+Environment variables (Vercel → Settings → Environment Variables):
+
+| Variable | Where it comes from |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase → API keys → publishable |
+| `FIVEHUNDRD_SERVER_KEY` | the Vault secret `fivehundrd_server_key` |
+| `STRIPE_SECRET_KEY` | Stripe → Developers → API keys |
+| `STRIPE_WEBHOOK_SECRET` | the webhook endpoint for `/api/stripe/webhook` |
+
+The webhook listens for `checkout.session.completed`,
+`checkout.session.async_payment_succeeded`, `checkout.session.expired` and
+`checkout.session.async_payment_failed`.
 
 ## Checks
 

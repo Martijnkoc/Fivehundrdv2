@@ -25,8 +25,9 @@ export async function fetchFeed(): Promise<Feed> {
 
 let client: Promise<SupabaseClient> | null = null;
 export function supabase() {
+  /* implicit flow: an email link still works when it opens in another browser */
   client ??= import("@supabase/supabase-js").then(({ createClient }) =>
-    createClient(SUPABASE_URL, PUBLISHABLE_KEY, { auth: { persistSession: true, detectSessionInUrl: true, flowType: "pkce" } }),
+    createClient(SUPABASE_URL, PUBLISHABLE_KEY, { auth: { persistSession: true, detectSessionInUrl: true, flowType: "implicit" } }),
   );
   return client;
 }
@@ -151,4 +152,77 @@ export async function checkoutStatus(id: string): Promise<Status | null> {
 }
 export function cancelCheckout(id: string) {
   return fetch("/api/checkout/cancel", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) }).catch(() => null);
+}
+
+/* ---------- Keep my card (§12): Supabase Auth ---------- */
+
+/** Which sign-in providers are switched on in Supabase. */
+async function providers(): Promise<Record<string, boolean>> {
+  try {
+    const r = await fetch(`${SUPABASE_URL}/auth/v1/settings`, { headers: { apikey: PUBLISHABLE_KEY } });
+    return ((await r.json()) as { external?: Record<string, boolean> }).external ?? {};
+  } catch {
+    return {};
+  }
+}
+
+/** Starts a login. Google and Apple leave the page; email sends a link. Returns an error message, or null. */
+export async function signIn(via: string, remind: boolean): Promise<string | null> {
+  try {
+    localStorage.setItem("fh-remind", remind ? "1" : "0");
+  } catch {}
+  const auth = (await supabase()).auth;
+  const back = location.origin + "/";
+  if (via === "Google" || via === "Apple") {
+    const id = via.toLowerCase() as "google" | "apple";
+    if (!(await providers())[id]) return `${via} login isn't switched on yet. Use your email for now.`;
+    const { error } = await auth.signInWithOAuth({ provider: id, options: { redirectTo: back } });
+    return error ? "That didn't work. Try again." : null;
+  }
+  const { error } = await auth.signInWithOtp({ email: via, options: { emailRedirectTo: back } });
+  if (error) return error.status === 429 ? "Too many links sent. Try again in a minute." : "That didn't work. Try again.";
+  return null;
+}
+
+/** A save as the account keeps it (my_saves() in the database). */
+export type AccountSave = {
+  id: string;
+  lane: string;
+  no: number;
+  name: string;
+  startsAt: string;
+  link: { label: string; url: string } | null;
+  artwork: string | null;
+  logo: string | null;
+  seed: number;
+  pal: number;
+  savedAt: string;
+};
+
+/**
+ * If the visitor is logged in: hands this browser's saves to the account and
+ * returns the account's saves and how they logged in; otherwise null.
+ */
+export async function syncCard(): Promise<{ via: string; remind: boolean; saves: AccountSave[] } | null> {
+  const sb = await supabase();
+  const { data } = await sb.auth.getSession();
+  const user = data.session?.user;
+  if (!user) return null;
+  let remind: boolean | null = null;
+  try {
+    const r = localStorage.getItem("fh-remind");
+    if (r != null) remind = r === "1";
+  } catch {}
+  const { data: saves, error } = await sb.rpc("sync_card", { p_visitor: visitorId(), p_remind: remind });
+  if (error) return null;
+  const provider = user.app_metadata?.provider;
+  const via = provider === "google" ? "Google" : provider === "apple" ? "Apple" : (user.email ?? "email");
+  return { via, remind: remind ?? true, saves: (saves as AccountSave[]) ?? [] };
+}
+
+/** Unsaving while logged in removes the save from the account on every device. */
+export async function unsaveForAccount(story: string) {
+  const sb = await supabase();
+  const { data } = await sb.auth.getSession();
+  if (data.session) await sb.from("saves").delete().eq("story_id", story);
 }

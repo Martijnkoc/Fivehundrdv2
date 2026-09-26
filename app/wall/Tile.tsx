@@ -109,17 +109,19 @@ function Filled({ s, open }: { s: FilledSpot; open: boolean }) {
 }
 
 function Vacant({ s }: { s: Spot }) {
+  const lane = s.vacant ? s.lane : undefined;
   return (
     <>
       <div className="stand">
-        <button className="book vbook" aria-label={`Spot ${numOf(s)} is open. Claim it for ${PRICE}`}>
+        <button className="book vbook" aria-label={`${lane ? LANE[lane] + " spot" : "Spot"} ${numOf(s)} is open. Claim it for ${PRICE}`}>
           <span>Open spot</span>
         </button>
       </div>
       {NL4}
       <div className="cap">
         <strong className="vno">{`No. ${pad(numOf(s))}`}</strong>
-        <span className="v2">{`Claim for ${PRICE}`}</span>
+        {/* the live wall numbers each lane, so an open spot says which lane it is in */}
+        <span className="v2">{lane ? `${LANE[lane]} · ${PRICE}` : `Claim for ${PRICE}`}</span>
       </div>
     </>
   );
