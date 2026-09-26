@@ -9,7 +9,7 @@ import { PGlite } from "@electric-sql/pglite";
  * the wall does goes through the same functions the app calls.
  */
 /* every migration but the platform one (pg_cron, Storage: Supabase only) */
-const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links"];
+const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links", "20260926090600_founder_data"];
 const schema = (
   await Promise.all(MIGRATIONS.map((m) => readFile(new URL(`../supabase/migrations/${m}.sql`, import.meta.url), "utf8")))
 ).join("\n");
@@ -392,5 +392,156 @@ describe("lasting links", () => {
     await one("select public.admin_hide($1, $2, false)", [KEY, a.id]);
     await one("select public.admin_remove($1, $2, 'spam')", [KEY, a.id]);
     assert.equal(await byCode(slug), null);
+  });
+});
+
+describe("the Control Room's data", () => {
+  const visit = (v) => one("select public.track_visit($1, $2) r", [KEY, JSON.stringify(v)]).then((x) => x.r);
+  const q = async (sql, params) => (await one(sql, [KEY, ...params])).r;
+  const FROM = "2000-01-01T00:00:00Z", TO = "2100-01-01T00:00:00Z";
+  const kpis = (f = {}) => q("select public.fd_kpis($1, $2, $3, $4) r", [FROM, TO, JSON.stringify(f)]);
+  const live = async (extra = {}) => {
+    const s = await reserve(story({ no: null, ...extra }));
+    await one("select public.checkout_complete($1, $2, 'pi_' || $3, 995, 'usd')", [KEY, s.id, s.id.slice(0, 8)]);
+    return s;
+  };
+
+  test("a visit records the visitor once, and says whether they're new", async () => {
+    assert.equal(await visit({ visitor: "v1", source: "instagram", device: "mobile", country: "NL", landing: "/" }), true);
+    assert.equal(await visit({ visitor: "v1", source: "direct", device: "mobile" }), false);
+    const v = await one("select * from public.visitors where visitor = 'v1'");
+    assert.deepEqual([v.source, v.device, v.country, v.visits], ["instagram", "mobile", "NL", 2]);
+    assert.equal((await visit({ visitor: "v2", device: "phone", country: "Netherlands" })), true);
+    const v2 = await one("select device, country, source from public.visitors where visitor = 'v2'");
+    assert.deepEqual([v2.device, v2.country, v2.source], [null, null, "direct"], "only known device classes and 2-letter countries");
+  });
+
+  test("a shared link's visit counts for its story", async () => {
+    const s = await live();
+    const { slug } = await one("select slug from public.stories where id = $1", [s.id]);
+    await visit({ visitor: "v9", source: "whatsapp", landing: `/s/music/${s.no}/${slug}`, slug });
+    const k = await kpis();
+    assert.equal(k.fromShares, 1);
+    const spot = await q("select public.fd_spot($1, $2) r", [s.id]);
+    assert.equal(spot.totals.shareVisits, 1);
+    assert.deepEqual(spot.sources, [{ key: "whatsapp", visits: 1 }]);
+  });
+
+  test("headline numbers add up, and filters narrow them", async () => {
+    const a = await live({ lane: "music" });
+    const b = await live({ lane: "writers" });
+    await visit({ visitor: "m1", source: "instagram", device: "mobile" });
+    await visit({ visitor: "d1", source: "google", device: "desktop" });
+    for (const [v, s] of [["m1", a], ["d1", a], ["d1", b]]) await event(s.id, "open", v);
+    await event(a.id, "save", "m1");
+    await event(a.id, "share", "m1");
+    await q("select public.track_impressions($1, $2, $3) r", ["m1", [a.id, b.id]]);
+    await q("select public.track_impressions($1, $2, $3) r", ["m1", [a.id]]);
+    await q("select public.track_event($1, $2, 'create_start') r", ["m1"]);
+    const k = await kpis();
+    assert.equal(k.visitors, 2);
+    assert.equal(k.opens, 3);
+    assert.equal(k.saves, 1);
+    assert.equal(k.shares, 1);
+    assert.equal(k.impressions, 2, "once per story, visitor and day");
+    assert.equal(k.createStarts, 1);
+    assert.equal(k.paid, 2);
+    assert.equal(k.gross, 2 * 995);
+    assert.equal(k.liveSpots, 2);
+    assert.equal(k.creators, 1, "the same maker email twice is one creator");
+    const mobile = await kpis({ device: "mobile" });
+    assert.deepEqual([mobile.visitors, mobile.opens, mobile.saves], [1, 1, 1]);
+    const books = await kpis({ lane: "writers" });
+    assert.deepEqual([books.opens, books.paid, books.liveSpots], [1, 1, 1]);
+  });
+
+  test("series come in hour or day buckets across the whole range", async () => {
+    await visit({ visitor: "x" });
+    const now = new Date();
+    const from = new Date(now.getTime() - 5 * 3600e3).toISOString(), to = new Date(now.getTime() + 3600e3).toISOString();
+    const hours = await q("select public.fd_series($1, $2, $3, 'hour', '{}', 'UTC') r", [from, to]);
+    assert.equal(hours.length, 7);
+    assert.equal(hours.reduce((n, h) => n + h.visits, 0), 1);
+  });
+
+  test("breakdowns by source and by lane", async () => {
+    const a = await live({ lane: "games" });
+    await visit({ visitor: "i1", source: "instagram" });
+    await visit({ visitor: "i2", source: "instagram" });
+    await visit({ visitor: "t1", source: "tiktok" });
+    await event(a.id, "open", "i1");
+    const src = await q("select public.fd_breakdown($1, 'source', $2, $3, '{}') r", [FROM, TO]);
+    assert.deepEqual(src.map((x) => [x.key, x.visitors]), [["instagram", 2], ["tiktok", 1]]);
+    assert.equal(src[0].opens, 1);
+    const lanes = await q("select public.fd_breakdown($1, 'lane', $2, $3, '{}') r", [FROM, TO]);
+    assert.equal(lanes.length, 6);
+    assert.equal(lanes.find((l) => l.lane === "games").live, 1);
+  });
+
+  test("spots, one spot, creators and transactions", async () => {
+    const a = await live();
+    await event(a.id, "open", "p1");
+    await event(a.id, "save", "p1");
+    await q("select public.record_fee($1, $2, $3) r", [a.id, 59]);
+    const spots = await q("select public.fd_spots($1, $2, $3, '{}', 'opens', '', 50, 0) r", [FROM, TO]);
+    assert.equal(spots[0].id, a.id);
+    assert.equal(spots[0].opens, 1);
+    const spot = await q("select public.fd_spot($1, $2) r", [a.id]);
+    assert.equal(spot.story.status, "live");
+    assert.equal(spot.totals.saves, 1);
+    assert.ok(spot.timeline.length >= 1);
+    assert.equal(spot.events.length, 2);
+    const creators = await q("select public.fd_creators($1, $2, $3, '{}') r", [FROM, TO]);
+    assert.equal(creators[0].creator, "maker@example.com");
+    const tx = await q("select public.fd_transactions($1, $2, $3, '{}') r", [FROM, TO]);
+    assert.equal(tx[0].net, 995 - 59);
+    await q("select public.record_dispute($1, $2, $3, $4) r", [tx[0].paymentIntent, 995, "needs_response"]);
+    assert.equal((await kpis()).disputes, 995);
+  });
+
+  test("the 7-day return rate follows visitors first seen 7 to 14 days before", async () => {
+    await visit({ visitor: "old" });
+    await visit({ visitor: "gone" });
+    await db.query("update public.visitors set first_at = now() - interval '10 days'");
+    await db.query("update public.visits set at = now() - interval '10 days'");
+    await db.query("insert into public.visits (visitor, at, is_new) values ('old', now() - interval '8 days', false)");
+    const k = await q("select public.fd_kpis($1, $2, now(), '{}') r", [FROM]);
+    assert.deepEqual([k.cohort, k.returned7], [2, 1]);
+    const cohorts = await q("select public.fd_cohorts($1, 4, 'UTC') r", []);
+    assert.equal(cohorts.reduce((n, c) => n + c.size, 0), 2);
+  });
+
+  test("the feed, live now and health", async () => {
+    const a = await live();
+    await visit({ visitor: "f1", source: "instagram" });
+    await event(a.id, "open", "f1");
+    const feed = await q("select public.fd_feed($1, now() - interval '1 hour', 20) r", []);
+    const kinds = feed.map((x) => x.kind);
+    assert.ok(kinds.includes("visit") && kinds.includes("open") && kinds.includes("paid") && kinds.includes("checkout"));
+    assert.ok(feed.every((x) => !("visitor" in x) && !Object.values(x).includes("f1")), "visitors stay anonymous");
+    assert.equal((await q("select public.fd_live($1) r", [])).now, 1);
+    await q("select public.log_api($1, '/api/wall', 200, 40) r", []);
+    await q("select public.log_api($1, '/api/wall', 500, 1500) r", []);
+    await q("select public.log_ops($1, 'webhook', false, '/api/stripe/webhook', 500, 10, 'db down') r", []);
+    const ops = await q("select public.fd_ops($1) r", []);
+    assert.equal(ops.routes[0].requests, 2);
+    assert.equal(ops.routes[0].errors, 1);
+    assert.equal(ops.routes[0].slow, 1);
+    assert.equal(ops.webhooks.failed24h, 1);
+    assert.equal(ops.hours.length, 24);
+    assert.deepEqual(ops.cron, [], "no pg_cron here");
+  });
+
+  test("exports keep their history", async () => {
+    const id = await q("select public.export_create($1, $2) r", [JSON.stringify({ title: "Spots", kind: "spots", format: "csv", createdBy: "me" })]);
+    await q("select public.export_update($1, $2, $3) r", [id, JSON.stringify({ status: "done", rows: 12, bytes: 900, path: "x.csv" })]);
+    const list = await q("select public.export_list($1, 10) r", []);
+    assert.deepEqual([list[0].status, list[0].rows], ["done", 12]);
+    assert.ok(list[0].finished_at);
+  });
+
+  test("everything needs the server key", async () => {
+    await rejects(db.query("select public.fd_kpis('nope', now(), now())"), /forbidden/);
+    await rejects(db.query("select public.track_visit('nope', '{}')"), /forbidden/);
   });
 });
