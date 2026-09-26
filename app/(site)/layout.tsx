@@ -2,9 +2,28 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { DESCRIPTION, NAME, orgJsonLd, SITE_URL, TAGLINE } from "../../lib/site/facts";
 
 export const metadata: Metadata = {
-  title: "fivehundrd. the wall",
+  metadataBase: new URL(SITE_URL),
+  title: { default: `${NAME}. The wall: 500 spots, 72 hours each`, template: `%s · ${NAME}` },
+  description: DESCRIPTION,
+  applicationName: NAME,
+  keywords: [
+    "discover new music",
+    "indie books",
+    "indie games",
+    "independent creators",
+    "new podcasts",
+    "newsletters",
+    "promote your work",
+    "showcase for makers",
+    "no algorithm",
+  ],
+  alternates: { canonical: "/" },
+  openGraph: { type: "website", siteName: NAME, title: `${NAME}. ${TAGLINE}`, description: DESCRIPTION, url: "/", locale: "en_US" },
+  twitter: { card: "summary_large_image", title: `${NAME}. ${TAGLINE}`, description: DESCRIPTION },
+  robots: { index: true, follow: true },
   appleWebApp: { capable: true, statusBarStyle: "default" },
   formatDetection: { telephone: false },
 };
@@ -37,6 +56,8 @@ export default async function RootLayout({ children }: { children: ReactNode }) 
       <body>
         {/* Inter and Fraunces, self-hosted (BUILD_BRIEF §1.2); see scripts/prepare-reference.mjs */}
         <link rel="stylesheet" href="/fonts/fonts.css" precedence="default" />
+        {/* who and what Fivehundrd is, for search and answer engines (lib/site/facts.ts) */}
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd()).replace(/</g, "\\u003c") }} />
         {children}
       </body>
     </html>

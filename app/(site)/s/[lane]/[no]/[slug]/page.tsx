@@ -15,11 +15,11 @@ type Props = { params: Promise<{ lane: string; no: string; slug: string }> };
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const s = await storyBySlug(slug);
-  if (!s) return { title: "fivehundrd." };
+  if (!s) return { title: { absolute: "fivehundrd." } };
   const title = `${s.name} on fivehundrd.`;
   const description = `${s.snippet ? s.snippet + " " : ""}${LANE[s.lane]}, spot ${pad(s.no)} of 500.`;
   return {
-    title,
+    title: { absolute: title },
     description,
     alternates: { canonical: `/s/${s.lane}/${s.no}/${s.slug}` },
     openGraph: { title, description, type: "website" },

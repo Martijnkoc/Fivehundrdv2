@@ -22,6 +22,7 @@ import type { ShareData } from "./Sheets";
 import { cardFileName, readyCard, shareCardBlob } from "./shareCard";
 import type { Bridge } from "./store";
 import * as liveApi from "./liveClient";
+import { laneBySlug, lanePath } from "../../lib/site/facts";
 import { createMoment, startTracking, watchTiles } from "./track";
 
 type Opts = { align: boolean; auto?: boolean };
@@ -100,13 +101,18 @@ export function startWall(bridge: Bridge, live?: Live) {
   };
   /** A spot's address: /s/music/217 on the live wall, #217 on the demo wall. */
   const addressOf = (s: FilledSpot) => (live ? `/s/${s.lane}/${numOf(s)}${s.slug ? "/" + s.slug : ""}` : "#" + pad(s.no));
-  const homeAddress = () => (live ? "/" : location.pathname + location.search);
+  const homeAddress = () => (live ? lanePath(lane) : location.pathname + location.search);
 
   /* ---------- lanes and search (§9) ---------- */
-  let lane: NavId = "all";
+  /* a lane's own address (/lanes/music) opens the wall on that lane */
+  let lane: NavId = (laneBySlug(location.pathname.match(/^\/lanes\/([a-z]+)\/?$/)?.[1] ?? "")?.id as NavId) ?? "all";
   const renderLanes = () => bridge.setLane(lane);
   function setLane(k: NavId) {
     lane = k;
+    if (live)
+      try {
+        history.replaceState(null, "", lanePath(k));
+      } catch {}
     renderLanes();
     renderRack();
     window.scrollTo({ top: 0 });
@@ -1193,6 +1199,13 @@ export function startWall(bridge: Bridge, live?: Live) {
   renderLanes();
   renderRack();
   setHead();
+  /* "Claim a spot" from another page */
+  if (new URLSearchParams(location.search).get("create") === "1") {
+    try {
+      history.replaceState(null, "", location.pathname);
+    } catch {}
+    requestAnimationFrame(() => openClaim());
+  }
   addEventListener("resize", setHead);
   (document.fonts ? document.fonts.ready : Promise.resolve()).then(setHead);
   if (live) {

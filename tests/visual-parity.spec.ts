@@ -61,7 +61,9 @@ for (const viewport of viewports) {
         }
       });
 
-      test("search with no matches", async ({ wall, page }) => {
+      test("search with no matches (approved)", async ({ wall, page }) => {
+        /* with nothing on the wall the footer comes into view */
+        approved("the footer has real links and says what Fivehundrd is");
         await wall.goto();
         /* phones (the app): search opens from the search button */
         if (mobile && viewport.width < 700) await page.locator("#searchToggle").click();
@@ -69,7 +71,7 @@ for (const viewport of viewports) {
         await expect(page.locator("#rack .no-hits")).toBeVisible();
         await page.locator("#q").blur();
         await wall.quiet();
-        await expect(page).toHaveScreenshot(shot("search-empty"));
+        await expect(page).toHaveScreenshot(approvedShot("search-empty"));
       });
 
       test("create your story (approved)", async ({ wall, page }) => {
@@ -126,12 +128,13 @@ for (const viewport of viewports) {
         });
       }
 
-      test("footer in view", async ({ wall, page }) => {
+      test("footer in view (approved)", async ({ wall, page }) => {
+        approved("the footer has real links and says what Fivehundrd is");
         await wall.goto();
         await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
         await expect(page.locator(".site-foot")).toBeInViewport();
         await wall.quiet();
-        await expect(page).toHaveScreenshot(shot("footer"));
+        await expect(page).toHaveScreenshot(approvedShot("footer"));
       });
     });
   }

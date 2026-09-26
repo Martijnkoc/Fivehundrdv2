@@ -140,6 +140,8 @@ Optional, for keeping the wall safe (each is skipped when unset):
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | Cloudflare's invisible robot check before paying |
 | `ADMIN_EMAILS` | who may open `/admin` (comma separated) |
 | `CRON_SECRET` | lets Vercel's daily clean-up and scheduled reports in |
+| `NEXT_PUBLIC_SITE_URL` | the public address for canonical links, sitemap and structured data (default `https://fivehundrd.com`) |
+| `NEXT_PUBLIC_CONTACT_EMAIL` | the address in the footer and on Contact (default `hello@fivehundrd.com`) |
 | `FOUNDER_EMAILS` | who may open the Control Room, `/founder` (falls back to `ADMIN_EMAILS`) |
 | `FOUNDER_SESSION_SECRET` | signs Control Room sessions (otherwise derived from the server key) |
 | `FOUNDER_TZ` | where the Control Room's days begin (default `Europe/Amsterdam`) |
@@ -149,6 +151,19 @@ The webhook listens for `checkout.session.completed`,
 `checkout.session.async_payment_succeeded`, `checkout.session.expired`,
 `checkout.session.async_payment_failed` and `charge.dispute.*` (chargebacks),
 and records Stripe's fee for each payment.
+
+## The site around the wall (SEO and answer engines)
+
+- The footer says what Fivehundrd is and links to real pages: How it works,
+  Pricing, Wall rules, Questions, About, Contact, Terms, Privacy
+  (`app/(site)/[page]`, copy in `lib/site/pages.tsx`), and to each lane's
+  own address, `/lanes/music` … (the wall, opened on that lane).
+- All facts come from one file, `lib/site/facts.ts`: the footer, pages,
+  JSON-LD (Organization, WebSite, Service with the $9.95 offer, FAQPage,
+  breadcrumbs), `/sitemap.xml` (with live stories' lasting links),
+  `/robots.txt` (keeps `/founder`, `/admin` and `/api` out) and `/llms.txt`.
+- Terms and Privacy describe what the code does; have them checked by a
+  lawyer before launch.
 
 ## The Control Room (`/founder`)
 

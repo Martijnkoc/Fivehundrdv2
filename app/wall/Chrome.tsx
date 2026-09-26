@@ -5,6 +5,7 @@ import { ClaimContent } from "./Claim";
 import { LaneNav } from "./LaneNav";
 import { SheetContent } from "./SheetContent";
 import { ShareContent, Toast } from "./Sheets";
+export { Footer } from "./Footer";
 
 /** §9: brand and slogan, lane tabs, live search, Create, avatar. */
 export function Header() {
@@ -12,7 +13,7 @@ export function Header() {
     <header className="top" id="top">
       <div className="site-wrap">
         <div className="site">
-          <a className="brand" href="#" id="brand">
+          <a className="brand" href="/" id="brand">
             <span className="bn">
               Fivehundrd<span className="bdot">.</span>
             </span>
@@ -58,76 +59,6 @@ export function Header() {
   );
 }
 
-/** §9: white footer, tagline, three link columns, legal line. */
-export function Footer() {
-  return (
-    <footer className="site-foot">
-      <div className="in">
-        <div>
-          <a className="brand" href="#">
-            Fivehundrd<span className="bdot">.</span>
-          </a>
-          <p className="tag">
-            Good stories
-            <br />
-            find good people.
-          </p>
-        </div>
-        <div className="cols">
-          <div>
-            <h2>The wall</h2>
-            <ul id="footLanes">
-              {NAV.map(([k, v]) => (
-                <li key={k}>
-                  <a href="#" data-lane={k}>
-                    {v}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-          <div>
-            <h2>For makers</h2>
-            <ul>
-              <li>
-                <a href="#" data-claim="">
-                  Claim a spot
-                </a>
-              </li>
-              <li>
-                <a href="#">How it works</a>
-              </li>
-              <li>
-                <a href="#">Pricing</a>
-              </li>
-            </ul>
-          </div>
-          <div>
-            <h2>Fivehundrd</h2>
-            <ul>
-              <li>
-                <a href="#">About</a>
-              </li>
-              <li>
-                <a href="#">Contact</a>
-              </li>
-              <li>
-                <a href="#">Terms</a>
-              </li>
-              <li>
-                <a href="#">Privacy</a>
-              </li>
-            </ul>
-          </div>
-        </div>
-        <div className="legal">
-          <span>&copy; 2026 Fivehundrd</span>
-          <span>500 spots. Three days each.</span>
-        </div>
-      </div>
-    </footer>
-  );
-}
 
 /** Containers for sheets, the toast and the phone detail sheet (§7). */
 export function Overlays() {
