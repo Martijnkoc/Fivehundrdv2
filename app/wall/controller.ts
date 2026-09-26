@@ -10,7 +10,8 @@
  * on the rendered DOM, as the reference did.
  */
 import { PAL, seedWall } from "../../lib/wall/demo";
-import { LANE, LIFE, pad, type FilledSpot, type LaneId, type NavId, type Spot } from "../../lib/wall/model";
+import { buildLiveWall, mergeFeed, openNumbers, type Feed } from "../../lib/wall/live";
+import { LANE, LIFE, numOf, pad, seenKey, type FilledSpot, type LaneId, type NavId, type Spot } from "../../lib/wall/model";
 import { buildRack } from "../../lib/wall/rack";
 import { savesOrder as savesOrderOf, skey, type SaveEntry } from "../../lib/wall/saves";
 import { left, short, styleFor } from "../../lib/wall/time";
@@ -19,25 +20,36 @@ import type { Account } from "./Card";
 import type { Draft } from "./Claim";
 import type { ShareData } from "./Sheets";
 import type { Bridge } from "./store";
+import * as liveApi from "./liveClient";
 
 type Opts = { align: boolean; auto?: boolean };
+/** The live wall (Supabase): the feed it was built from and the storage base URL. */
+export type Live = { feed: Feed; base: string };
 
-export function startWall(bridge: Bridge) {
+export function startWall(bridge: Bridge, live?: Live) {
   const $ = <T extends Element = HTMLElement>(s: string) => document.querySelector<T>(s)!;
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const spotEl = (no: number) => document.getElementById("s-" + pad(no));
   const noOf = (el: Element) => +(el as HTMLElement).dataset.no!;
   const filledOf = (el: Element) => WALL[noOf(el) - 1] as FilledSpot;
 
-  /* ---------- the wall: demo data plus this browser's own claims ---------- */
-  const WALL: Spot[] = seedWall();
-  try {
-    const mine: FilledSpot[] = JSON.parse(localStorage.getItem("fh-claims") || "[]");
-    mine.forEach((s) => {
-      if (Date.now() - s.start < LIFE) WALL[s.no - 1] = s;
-    });
-  } catch {}
+  /* ---------- the wall: live stories, or demo data plus this browser's own claims ---------- */
+  const WALL: Spot[] = live ? buildLiveWall(live.feed, live.base, liveApi.mineIds()) : seedWall();
+  if (!live)
+    try {
+      const mine: FilledSpot[] = JSON.parse(localStorage.getItem("fh-claims") || "[]");
+      mine.forEach((s) => {
+        if (Date.now() - s.start < LIFE) WALL[s.no - 1] = s;
+      });
+    } catch {}
   bridge.setWall(WALL);
+  /** Counts an open, save, share… on the live wall. */
+  const ev = (id: string | undefined, kind: liveApi.EventKind) => {
+    if (live && id) liveApi.sendEvent(id, kind);
+  };
+  /** A spot's address: /s/music/217 on the live wall, #217 on the demo wall. */
+  const addressOf = (s: FilledSpot) => (live ? `/s/${s.lane}/${numOf(s)}` : "#" + pad(s.no));
+  const homeAddress = () => (live ? "/" : location.pathname + location.search);
 
   /* ---------- lanes and search (§9) ---------- */
   let lane: NavId = "all";
@@ -139,14 +151,14 @@ export function startWall(bridge: Bridge) {
     ACCOUNT = JSON.parse(localStorage.getItem("fh-account") || "null");
   } catch {}
   let savesShown = 12;
-  const OPENED = new Set<number>();
+  const OPENED = new Set<string | number>();
   const TODAY = new Date().toISOString().slice(0, 10);
-  let SEEN = new Set<number>();
+  let SEEN = new Set<string | number>();
   try {
     const d = JSON.parse(localStorage.getItem("fh-seen") || "null");
     if (d && d.day === TODAY) SEEN = new Set(d.nos);
   } catch {}
-  function markSeen(no: number) {
+  function markSeen(no: string | number) {
     if (SEEN.has(no)) return;
     SEEN.add(no);
     try {
@@ -155,7 +167,14 @@ export function startWall(bridge: Bridge) {
   }
   const savesOrder = () => savesOrderOf(SAVES, WALL);
   function renderCard() {
-    bridge.setCard({ entryNo, seen: new Set(SEEN), saves: [...SAVES], savesShown, account: ACCOUNT });
+    bridge.setCard({
+      entryNo,
+      ...(live && WALL[entryNo - 1] && { entryNum: numOf(WALL[entryNo - 1]) }),
+      seen: new Set(SEEN),
+      saves: [...SAVES],
+      savesShown,
+      account: ACCOUNT,
+    });
   }
 
   function toggleSave(li: HTMLElement, s: FilledSpot, btn: HTMLElement) {
@@ -164,6 +183,7 @@ export function startWall(bridge: Bridge) {
       SAVES.unshift({
         k: skey(s),
         no: s.no,
+        ...(s.num != null && { num: s.num }),
         name: s.name,
         lane: s.lane,
         start: s.start,
@@ -175,6 +195,7 @@ export function startWall(bridge: Bridge) {
       });
     else SAVES = SAVES.filter((x) => x.k !== skey(s));
     s.saves = Math.max(0, (s.saves || 0) + (on ? 1 : -1));
+    ev(s.id, on ? "save" : "unsave");
     persistSaves();
     const from = on && !sheetOn ? li.querySelector(".book")!.getBoundingClientRect() : null;
     if (on && !mobileCard()) {
@@ -202,6 +223,7 @@ export function startWall(bridge: Bridge) {
       toast("Demo spot. Real makers link out to their own pages.");
       return true;
     }
+    if (t.closest("a[href]")) ev(s.id, "link_click");
     const unavailable = () => toast("Audio isn't available in this browser.");
     const pl = t.closest("[data-play]");
     if (pl) {
@@ -271,18 +293,19 @@ export function startWall(bridge: Bridge) {
     if (el === open) return;
     const before = el.getBoundingClientRect().top;
     stopAudio();
-    if (!OPENED.has(s.no)) {
-      OPENED.add(s.no);
+    if (!OPENED.has(seenKey(s))) {
+      OPENED.add(seenKey(s));
       s.opens = (s.opens || 0) + 1;
+      ev(s.id, "open");
     }
-    markSeen(s.no);
+    markSeen(seenKey(s));
     bridge.open(s.no, "panel");
     placeNotch(el, rack.querySelector<HTMLElement>(".panel")!);
     const shift = el.getBoundingClientRect().top - before;
     if (shift) window.scrollTo(0, scrollY + shift);
     open = el;
     try {
-      history.replaceState(null, "", "#" + pad(s.no));
+      history.replaceState(null, "", addressOf(s));
     } catch {}
     renderCard();
   }
@@ -340,7 +363,7 @@ export function startWall(bridge: Bridge) {
     const shift = el.getBoundingClientRect().top - before;
     if (shift) window.scrollTo(0, scrollY + shift);
     try {
-      history.replaceState(null, "", location.pathname + location.search);
+      history.replaceState(null, "", homeAddress());
     } catch {}
   }
   function step(d: number) {
@@ -481,12 +504,12 @@ export function startWall(bridge: Bridge) {
     const un = t.closest<HTMLElement>("[data-unsave]");
     if (un) {
       e.preventDefault();
-      const k = un.dataset.unsave!,
-        x = SAVES.find((y) => y.k === k);
+      const k = un.dataset.unsave!;
       SAVES = SAVES.filter((y) => y.k !== k);
       persistSaves();
-      const cur = x && WALL[x.no - 1];
-      if (cur && !cur.vacant && skey(cur) === k) {
+      ev(k, "unsave");
+      const cur = WALL.find((w) => !w.vacant && skey(w) === k);
+      if (cur && !cur.vacant) {
         cur.saves = Math.max(0, (cur.saves || 0) - 1);
         bridge.refresh();
       }
@@ -539,16 +562,17 @@ export function startWall(bridge: Bridge) {
     dsheet.dataset.no = String(s.no);
     bridge.fillSheet(s.no);
     dscroll.scrollTop = 0;
-    dsheet.setAttribute("aria-label", `${s.name}, ${LANE[s.lane]}, spot ${s.no}`);
+    dsheet.setAttribute("aria-label", `${s.name}, ${LANE[s.lane]}, spot ${numOf(s)}`);
   }
   function markOpen(el: HTMLElement) {
     const s = filledOf(el);
     stopAudio();
-    if (!OPENED.has(s.no)) {
-      OPENED.add(s.no);
+    if (!OPENED.has(seenKey(s))) {
+      OPENED.add(seenKey(s));
       s.opens = (s.opens || 0) + 1;
+      ev(s.id, "open");
     }
-    markSeen(s.no);
+    markSeen(seenKey(s));
     bridge.open(s.no, "sheet");
     open = el;
     renderCard();
@@ -579,7 +603,7 @@ export function startWall(bridge: Bridge) {
             { duration: 260, easing: "cubic-bezier(.2,.8,.2,1)" },
           );
         try {
-          history.replaceState(sheetPushed ? { sheet: 1 } : null, "", "#" + pad(s.no));
+          history.replaceState(sheetPushed ? { sheet: 1 } : null, "", addressOf(s));
         } catch {}
       };
       return;
@@ -592,7 +616,7 @@ export function startWall(bridge: Bridge) {
     dveil.classList.add("on");
     document.documentElement.classList.add("sheet-lock");
     try {
-      history.pushState({ sheet: 1 }, "", "#" + pad(s.no));
+      history.pushState({ sheet: 1 }, "", addressOf(s));
       sheetPushed = true;
     } catch {
       sheetPushed = false;
@@ -658,7 +682,7 @@ export function startWall(bridge: Bridge) {
     } else {
       sheetPushed = false;
       try {
-        history.replaceState(null, "", location.pathname + location.search);
+        history.replaceState(null, "", homeAddress());
       } catch {}
     }
     /* back where you were: the wall doesn't move while the sheet is up, so
@@ -741,30 +765,49 @@ export function startWall(bridge: Bridge) {
   });
 
   /* ---------- the minute tick: ageing, time left, expiry ---------- */
-  setInterval(() => {
-    let changed = false;
-    WALL.forEach((s, i) => {
-      if (!s.vacant && left(s) <= 0) {
-        WALL[i] = { no: s.no, vacant: true };
-        changed = true;
-      }
-    });
+  function afterChange(changed: boolean) {
     if (changed) {
       const keep = open ? noOf(open) : null;
       renderRack();
       if (keep) openSpot(spotEl(keep), { align: false });
     } else bridge.tickMinute();
     renderCard();
+  }
+  setInterval(() => {
+    let changed = false;
+    WALL.forEach((s, i) => {
+      if (!s.vacant && left(s) <= 0) {
+        WALL[i] = live ? { no: s.no, vacant: true, lane: s.lane, num: s.num } : { no: s.no, vacant: true };
+        changed = true;
+      }
+    });
+    afterChange(changed);
+    if (live) refreshFeed();
   }, 60e3);
+  /** The live wall follows the database every minute, without reshuffling under the visitor. */
+  async function refreshFeed() {
+    if (!live) return;
+    try {
+      live.feed = await liveApi.fetchFeed();
+    } catch {
+      return;
+    }
+    /* never swap spots out from under an open phone sheet or form */
+    if (sheetOn || document.querySelector(".veil.on")) return;
+    const changed = mergeFeed(WALL, live.feed, live.base, liveApi.mineIds());
+    if (changed) afterChange(true);
+    else bridge.refresh();
+  }
 
   /* ---------- sharing (§15) and Keep my card (§12) ---------- */
-  const spotURL = (s: { no: number }) => location.href.split("#")[0] + "#" + pad(s.no);
+  const spotURL = (s: FilledSpot) => (live ? location.origin + addressOf(s) : location.href.split("#")[0] + "#" + pad(s.no));
   async function shareSpot(s: FilledSpot) {
     const data: ShareData = {
       title: `${s.name} on fivehundrd.`,
-      text: `${s.name} is on spot ${pad(s.no)} of 500. Gone in ${short(left(s))}.`,
+      text: `${s.name} is on spot ${pad(numOf(s))} of 500. Gone in ${short(left(s))}.`,
       url: spotURL(s),
     };
+    ev(s.id, "share");
     if (navigator.share) {
       try {
         await navigator.share(data);
@@ -796,26 +839,40 @@ export function startWall(bridge: Bridge) {
   const toast = (m: string) => bridge.toast(m);
 
   /* ---------- claiming a spot (§13) ---------- */
-  function randomVacant() {
+  /** An open number: a place on the demo wall, or a number in `L` on the live wall. */
+  function randomVacant(L?: LaneId) {
+    if (live) {
+      const nums = openNumbers(live.feed, L ?? (lane === "all" ? "music" : lane));
+      return nums.length ? nums[Math.floor(Math.random() * nums.length)] : null;
+    }
     const v = WALL.filter((s) => s.vacant);
     return v.length ? v[Math.floor(Math.random() * v.length)].no : null;
   }
+  /** Switching lanes in the form keeps the number if it is open in the new lane. */
+  function numberFor(L: LaneId, n: number) {
+    if (!live) return n;
+    return openNumbers(live.feed, L).includes(n) ? n : (randomVacant(L) ?? n);
+  }
   function openClaim(no?: number) {
-    const n = no || randomVacant();
+    const at = live && no ? WALL[no - 1] : null;
+    const L: LaneId = at && at.lane ? at.lane : lane === "all" ? "music" : (lane as LaneId);
+    const n = live ? (at && at.vacant && at.num) || randomVacant(L) : no || randomVacant();
     if (!n) {
-      toast("All 500 spots are taken. Check back soon.");
+      toast(live ? `Every ${LANE[L]} spot is taken. Check back soon.` : "All 500 spots are taken. Check back soon.");
       return;
     }
     bridge.openClaim({
       no: n,
-      lane: lane === "all" ? "music" : (lane as LaneId),
+      lane: L,
       seed: Math.floor(Math.random() * 1e9),
       pal: PAL[Math.floor(Math.random() * PAL.length)],
     });
     $("#claimVeil").classList.add("on");
     document.body.style.overflow = "hidden";
   }
-  function placeClaim(draft: Draft) {
+  function placeClaim(draft: Draft): string | null | Promise<string | null> {
+    /* the live wall holds the spot and sends the maker to Stripe Checkout */
+    if (live) return liveApi.checkout(draft);
     if (!WALL[draft.no - 1].vacant) {
       const n = randomVacant();
       if (!n) return "Someone just took the last spot.";
@@ -870,6 +927,7 @@ export function startWall(bridge: Bridge) {
       toast(byEmail ? "Check your inbox for the link. Your card is kept." : "Card kept.");
     },
     randomVacant,
+    numberFor,
     placeClaim,
     previewClick: (e: MouseEvent, p: FilledSpot) => coverClick(e, p),
     share: (s: FilledSpot) => shareSpot(s),
@@ -887,6 +945,10 @@ export function startWall(bridge: Bridge) {
   setHead();
   addEventListener("resize", setHead);
   (document.fonts ? document.fonts.ready : Promise.resolve()).then(setHead);
+  if (live) {
+    bootLive();
+    return;
+  }
   const h = location.hash.replace("#", "");
   const start = (h && document.getElementById("s-" + h.padStart(3, "0"))) || rack.querySelector<HTMLElement>(".spot:not(.vacant):not(.filler)")!;
   requestAnimationFrame(() => {
@@ -895,4 +957,57 @@ export function startWall(bridge: Bridge) {
       auto: !h,
     });
   });
+
+  /* ---------- the live wall: shared links, and coming back from Checkout ---------- */
+  function bootLive() {
+    const q = new URLSearchParams(location.search);
+    const claimed = q.get("claimed"),
+      cancelled = q.get("cancelled");
+    const m = location.pathname.match(/^\/s\/([a-z]+)\/(\d+)\/?$/);
+    const shared = m ? WALL.find((s): s is FilledSpot => !s.vacant && s.lane === m[1] && numOf(s) === +m[2]) : undefined;
+    if (m && !shared) {
+      toast("That story has left the wall. Here's who's on it now.");
+      history.replaceState(null, "", "/");
+    }
+    if (claimed || cancelled) history.replaceState(null, "", "/");
+    const first = rack.querySelector<HTMLElement>(".spot:not(.vacant):not(.filler)");
+    const start = shared ? spotEl(shared.no) : first;
+    requestAnimationFrame(() => {
+      if (start) openSpot(start, { align: !!shared, auto: !shared });
+      if (shared) ev(shared.id, "entry");
+    });
+    if (claimed) afterCheckout(claimed);
+    if (cancelled)
+      liveApi.cancelCheckout(cancelled).then(() => {
+        toast("Checkout cancelled. Nothing was charged.");
+        refreshFeed();
+      });
+  }
+  /** Back from Stripe: wait for the payment to land, then show the maker their spot. */
+  async function afterCheckout(id: string) {
+    liveApi.addMine(id);
+    for (let i = 0; i < 20; i++) {
+      const st = await liveApi.checkoutStatus(id).catch(() => null);
+      if (st?.status === "live") {
+        await refreshFeed();
+        const s = WALL.find((w): w is FilledSpot => !w.vacant && w.id === id);
+        if (s) {
+          s.mine = true;
+          if (lane !== "all" && lane !== s.lane) {
+            lane = "all";
+            renderLanes();
+            renderRack();
+          }
+          renderCard();
+          bridge.claimDone(s);
+          $("#claimVeil").classList.add("on");
+          document.body.style.overflow = "hidden";
+        }
+        return;
+      }
+      if (!st || st.status === "vacant" || st.status === "released") break;
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+    toast("We're confirming your payment. Your spot appears in a minute.");
+  }
 }

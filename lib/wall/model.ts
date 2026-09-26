@@ -33,8 +33,15 @@ export type Palette = [string, string, string];
 export type Link = { label: string; url: string };
 export type Excerpt = { t: string; s?: string; x: string };
 
+/*
+ * `no` is the spot's place on this visitor's wall. In the demo wall it is also
+ * the spot's number; on the live wall (500 per lane) `num` is the number
+ * within its lane and `id` the story's id.
+ */
 export type FilledSpot = {
   no: number;
+  num?: number;
+  id?: string;
   vacant?: false;
   lane: LaneId;
   name: string;
@@ -53,7 +60,7 @@ export type FilledSpot = {
   excerpt?: Excerpt | null;
   trailer?: { url: string; len: string } | null;
 };
-export type VacantSpot = { no: number; vacant: true };
+export type VacantSpot = { no: number; vacant: true; num?: number; lane?: LaneId };
 export type Spot = FilledSpot | VacantSpot;
 
 /** One binding per lane, all from the fivehundrd palette. */
@@ -67,6 +74,12 @@ export const BIND: Record<LaneId, { c1: string; c2: string; c3: string; pill?: s
 };
 
 export const pad = (n: number) => String(n).padStart(3, "0");
+
+/** What "opened today" counts by: the story on the live wall, else the place. */
+export const seenKey = (s: { no: number; id?: string }): string | number => s.id ?? s.no;
+
+/** The number a visitor sees: the lane number on the live wall, else the place. */
+export const numOf = (s: { no: number; num?: number }) => s.num ?? s.no;
 
 export const esc = (s: unknown) =>
   String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);

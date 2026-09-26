@@ -3,11 +3,12 @@
  * filter, the search, the circle starting at this visitor's entry point, and
  * rows of `cols` tiles. Ported from renderRack/entryFor in reference.html.
  */
-import { LANE, type NavId, type Spot } from "./model";
+import { LANE, numOf, type NavId, type Spot } from "./model";
 
 export type RackItem =
   | { kind: "row"; spots: Spot[]; fillers: number }
   | { kind: "wrap"; no: number }
+  /* `no` and `entryNo` here are the numbers shown, not places on the wall */
   | { kind: "end"; entryNo: number };
 
 export type Rack = { entryNo: number; query: string; empty: boolean; items: RackItem[] };
@@ -45,10 +46,10 @@ export function buildRack(opts: { wall: Spot[]; lane: NavId; query: string; cols
   const w = query ? -1 : ring.findIndex((s, i) => i > 0 && s.no < ring[i - 1].no);
   if (w > 0) {
     rows(ring.slice(0, w));
-    items.push({ kind: "wrap", no: ring[w].no });
+    items.push({ kind: "wrap", no: numOf(ring[w]) });
     rows(ring.slice(w));
   } else rows(ring);
-  if (ring.length && !query) items.push({ kind: "end", entryNo });
+  if (ring.length && !query) items.push({ kind: "end", entryNo: numOf(ring[0]) });
 
   return { entryNo, query, empty: !list.length, items };
 }

@@ -1,5 +1,5 @@
 import { flushSync } from "react-dom";
-import type { FilledSpot, NavId, Spot } from "../../lib/wall/model";
+import type { FilledSpot, LaneId, NavId, Spot } from "../../lib/wall/model";
 import type { Rack } from "../../lib/wall/rack";
 import type { CardData } from "./Card";
 import type { ClaimStart, ClaimView, Draft } from "./Claim";
@@ -135,9 +135,10 @@ export const bridge = {
   /** Things React asks the controller to do, registered by the controller. */
   actions: {} as {
     keepCard: (via: string, remind: boolean, byEmail: boolean) => void;
-    randomVacant: () => number | null;
-    /** Starts placing the spot; returns an error message, or null. */
-    placeClaim: (draft: Draft) => string | null;
+    randomVacant: (lane?: LaneId) => number | null;
+    numberFor: (lane: LaneId, no: number) => number;
+    /** Starts placing the spot; returns an error message, or null (on the live wall, once Checkout fails or opens). */
+    placeClaim: (draft: Draft) => string | null | Promise<string | null>;
     previewClick: (e: MouseEvent, spot: FilledSpot) => void;
     share: (spot: FilledSpot) => void;
     seeOnWall: (no: number) => void;

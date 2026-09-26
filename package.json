@@ -13,12 +13,16 @@
     "test:e2e": "pnpm test:baseline && pnpm test:visual",
     "test:baseline": "playwright test --project=reference --update-snapshots=all",
     "test:visual": "playwright test --project=app",
-    "test:db": "node --test db/schema.test.mjs"
+    "test:db": "node --test db/schema.test.mjs",
+    "test:unit": "node --import ./scripts/ts-resolve.mjs --test \"lib/**/*.test.mjs\""
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.117.2",
     "next": "16.3.6",
     "react": "19.3.0",
-    "react-dom": "19.3.0"
+    "react-dom": "19.3.0",
+    "server-only": "^0.0.1",
+    "stripe": "^22.6.2"
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.8",

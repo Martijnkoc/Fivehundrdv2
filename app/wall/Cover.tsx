@@ -2,7 +2,7 @@
 
 import { memo, useEffect, useState } from "react";
 import { ICON } from "../../lib/wall/icons";
-import { LANE, LIFE, pad, rng, type FilledSpot } from "../../lib/wall/model";
+import { LANE, LIFE, numOf, pad, rng, type FilledSpot } from "../../lib/wall/model";
 import { left, long } from "../../lib/wall/time";
 import { GenArt, LaneIcon } from "./Tile";
 
@@ -120,7 +120,7 @@ export const Cover = memo(function Cover({ s, saved, preview }: { s: FilledSpot;
       <div className="body">
         {ws(6)}
         <div className="issue">
-          <strong>{`No. ${pad(s.no)}`}</strong>
+          <strong>{`No. ${pad(numOf(s))}`}</strong>
           <span className="lane">
             <LaneIcon lane={s.lane} />
             {LANE[s.lane]}

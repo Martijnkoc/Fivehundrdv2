@@ -7,7 +7,7 @@ import { genArt } from "./art";
 import { LANE, pad, type LaneId, type Palette } from "./model";
 import { until } from "./time";
 
-type CardSpot = { no: number; name: string; lane: LaneId; start: number; img?: string | null; seed: number; pal: Palette };
+type CardSpot = { no: number; num?: number; name: string; lane: LaneId; start: number; img?: string | null; seed: number; pal: Palette };
 
 function loadImg(src: string) {
   return new Promise<HTMLImageElement>((resolve, reject) => {
@@ -55,7 +55,7 @@ export async function drawCard(s: CardSpot) {
   x.fillStyle = "#0d0d0d";
   x.textAlign = "right";
   x.font = "700 34px Inter, Arial, sans-serif";
-  x.fillText(`No. ${pad(s.no)} / 500`, W - 80, 126);
+  x.fillText(`No. ${pad(s.num ?? s.no)} / 500`, W - 80, 126);
   x.textAlign = "left";
   // artwork
   const ax = 80,

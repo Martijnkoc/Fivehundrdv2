@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { readDataURL, shrink } from "../../lib/wall/image";
 import { parseLink } from "../../lib/wall/links";
-import { LANES, PRICE, pad, type FilledSpot, type LaneId, type Link, type Palette } from "../../lib/wall/model";
+import { LANES, PRICE, numOf, pad, type FilledSpot, type LaneId, type Link, type Palette } from "../../lib/wall/model";
 import { drawCard } from "../../lib/wall/socialCard";
 import { until } from "../../lib/wall/time";
 import { playingIn, stopAudio } from "./audio";
@@ -105,6 +105,16 @@ function ClaimForm({ start }: { start: ClaimStart }) {
       return;
     }
     const problem = bridge.actions.placeClaim(draft);
+    if (problem instanceof Promise) {
+      setErr("");
+      setPlacing(true);
+      problem.then((p) => {
+        if (!p) return;
+        setErr(p);
+        setPlacing(false);
+      });
+      return;
+    }
     if (problem) {
       setErr(problem);
       return;
@@ -216,7 +226,7 @@ function ClaimForm({ start }: { start: ClaimStart }) {
           id="reroll"
           style={{ padding: "3px 10px" }}
           onClick={() => {
-            const n2 = bridge.actions.randomVacant();
+            const n2 = bridge.actions.randomVacant(lane);
             if (n2) setNo(n2);
           }}
         >
@@ -248,7 +258,10 @@ function ClaimForm({ start }: { start: ClaimStart }) {
             <span className="lbl">Lane</span>
             <div className="lanepick" id="fLane">
               {LANES.map(([k, v]) => (
-                <button key={k} type="button" className="chip" data-l={k} aria-pressed={k === lane} onClick={() => setLane(k)}>
+                <button key={k} type="button" className="chip" data-l={k} aria-pressed={k === lane} onClick={() => {
+                    setLane(k);
+                    setNo(bridge.actions.numberFor(k, no));
+                  }}>
                   {v}
                 </button>
               ))}
@@ -367,10 +380,10 @@ function Done({ s }: { s: FilledSpot }) {
 
   const shareCard = async () => {
     const blob = card && card !== "failed" ? card.blob : null;
-    const f = blob && new File([blob], `fivehundrd-${pad(s.no)}.png`, { type: "image/png" });
+    const f = blob && new File([blob], `fivehundrd-${pad(numOf(s))}.png`, { type: "image/png" });
     if (f && navigator.canShare && navigator.canShare({ files: [f] })) {
       try {
-        await navigator.share({ files: [f], text: `I'm on spot ${pad(s.no)} of fivehundrd. ${bridge.actions.spotURL(s)}` });
+        await navigator.share({ files: [f], text: `I'm on spot ${pad(numOf(s))} of fivehundrd. ${bridge.actions.spotURL(s)}` });
         return;
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
@@ -390,7 +403,7 @@ function Done({ s }: { s: FilledSpot }) {
           {ws(4)}
           <h2 id="claimH">You&apos;re on the wall.</h2>
           {ws(4)}
-          <p className="sub">{`Spot ${pad(s.no)} is yours until ${until(s)}. Here's your card to tell people where to find you.`}</p>
+          <p className="sub">{`Spot ${pad(numOf(s))} is yours until ${until(s)}. Here's your card to tell people where to find you.`}</p>
           {ws(4)}
           <div className="sharerow">
             <button className="act solid" id="dShare" onClick={shareCard}>
@@ -415,7 +428,7 @@ function Done({ s }: { s: FilledSpot }) {
           ) : card === "failed" ? (
             <p className="sub">The card couldn&apos;t be drawn in this browser. Share the link instead.</p>
           ) : (
-            <img className="card-img" src={card.url} alt={`Social card for ${s.name}, spot ${pad(s.no)}`} />
+            <img className="card-img" src={card.url} alt={`Social card for ${s.name}, spot ${pad(numOf(s))}`} />
           )}
         </div>
       </div>

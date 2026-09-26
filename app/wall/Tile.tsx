@@ -1,7 +1,7 @@
 import { createElement, memo, type CSSProperties } from "react";
 import { artShapes } from "../../lib/wall/art";
 import { BOOKMARK, EYE, LANE_ICON_PATHS } from "../../lib/wall/icons";
-import { LANE, LIFE, PRICE, fmt, pad, type FilledSpot, type LaneId, type Palette, type Spot } from "../../lib/wall/model";
+import { LANE, LIFE, PRICE, fmt, numOf, pad, type FilledSpot, type LaneId, type Palette, type Spot } from "../../lib/wall/model";
 import { left, short, spotStyle } from "../../lib/wall/time";
 
 /** "--a:1;--b:2" → { "--a": "1", "--b": "2" } */
@@ -69,7 +69,7 @@ function Filled({ s, open }: { s: FilledSpot; open: boolean }) {
   return (
     <>
       <div className="stand">
-        <button className="book" aria-expanded={open} aria-label={`${s.name}, ${LANE[s.lane]}, spot ${s.no}`}>
+        <button className="book" aria-expanded={open} aria-label={`${s.name}, ${LANE[s.lane]}, spot ${numOf(s)}`}>
           {NL6}
           <span className="bk-art">
             <Front s={s} />
@@ -83,7 +83,7 @@ function Filled({ s, open }: { s: FilledSpot; open: boolean }) {
             </small>
           </span>
           {NL6}
-          <span className="bk-no">{pad(s.no)}</span>
+          <span className="bk-no">{pad(numOf(s))}</span>
           {fresh && <i className="new" title="Joined in the last 3 hours"></i>}
           <i className="prog" style={{ width: `${((l / LIFE) * 100).toFixed(1)}%` }}></i>
         </button>
@@ -112,13 +112,13 @@ function Vacant({ s }: { s: Spot }) {
   return (
     <>
       <div className="stand">
-        <button className="book vbook" aria-label={`Spot ${s.no} is open. Claim it for ${PRICE}`}>
+        <button className="book vbook" aria-label={`Spot ${numOf(s)} is open. Claim it for ${PRICE}`}>
           <span>Open spot</span>
         </button>
       </div>
       {NL4}
       <div className="cap">
-        <strong className="vno">{`No. ${pad(s.no)}`}</strong>
+        <strong className="vno">{`No. ${pad(numOf(s))}`}</strong>
         <span className="v2">{`Claim for ${PRICE}`}</span>
       </div>
     </>

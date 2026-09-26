@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useSyncExternalStore } from "react";
-import { BIND, LANE, LANES, TOTAL, lum, pad, type FilledSpot, type Spot } from "../../lib/wall/model";
+import { BIND, LANE, LANES, TOTAL, lum, numOf, pad, seenKey, type FilledSpot, type Spot } from "../../lib/wall/model";
 import { savesOrder, skey, type OrderedSave, type SaveEntry } from "../../lib/wall/saves";
 import { left, short, styleFor } from "../../lib/wall/time";
 import { wallStore } from "./store";
@@ -9,8 +9,10 @@ import { GenArt, LaneIcon, cssVars } from "./Tile";
 
 export type Account = { via: string; remind: boolean };
 export type CardData = {
+  /** the entry spot's place on the wall (for Take me back) and its number */
   entryNo: number;
-  seen: ReadonlySet<number>;
+  entryNum?: number;
+  seen: ReadonlySet<string | number>;
   saves: SaveEntry[];
   savesShown: number;
   account: Account | null;
@@ -56,9 +58,9 @@ function SaveTile({ x }: { x: OrderedSave }) {
       <span className="sq-n">{x.name}</span>
     </>
   );
-  const label = `${x.name}, ${LANE[x.lane]}, No. ${pad(x.no)}${x.liveNow ? "" : ", ended"}`;
+  const label = `${x.name}, ${LANE[x.lane]}, No. ${pad(x.num ?? x.no)}${x.liveNow ? "" : ", ended"}`;
   const tile = x.liveNow ? (
-    <button className="sq" data-go={x.no} title={label} aria-label={label}>
+    <button className="sq" data-go={cur.no} title={label} aria-label={label}>
       {inner}
     </button>
   ) : x.link ? (
@@ -126,7 +128,7 @@ function CardBody({ card, wall }: { card: CardData; wall: Spot[] }) {
     vac = TOTAL - live.length;
   const next = live.reduce<FilledSpot | null>((a, s) => (!a || left(s) < left(a) ? s : a), null);
   const savedKeys = new Set(card.saves.map((x) => x.k));
-  const seenLive = live.filter((s) => card.seen.has(s.no)),
+  const seenLive = live.filter((s) => card.seen.has(seenKey(s))),
     saved = live.filter((s) => savedKeys.has(skey(s)));
   const mine = live.filter((s) => s.mine).sort((a, b) => b.start - a.start)[0];
   const day = new Date().toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "long" });
@@ -151,7 +153,7 @@ function CardBody({ card, wall }: { card: CardData; wall: Spot[] }) {
         {ws(4)}
         <button className="lc-entry" data-go={card.entryNo}>
           <span>You walked in at</span>
-          <b>{`No. ${pad(card.entryNo)}`}</b>
+          <b>{`No. ${pad(card.entryNum ?? card.entryNo)}`}</b>
           <em>Take me back</em>
         </button>
         {ws(4)}
@@ -195,7 +197,7 @@ function CardBody({ card, wall }: { card: CardData; wall: Spot[] }) {
         {mine && (
           <button className="lc-row mine" data-go={mine.no}>
             <span>Your story</span>
-            <b>{`No. ${pad(mine.no)} ${mine.name}`}</b>
+            <b>{`No. ${pad(numOf(mine))} ${mine.name}`}</b>
             <em>{`${short(left(mine))} left`}</em>
           </button>
         )}

@@ -7,7 +7,8 @@ let started = false;
 
 /**
  * Starts the wall's behaviour once the page has hydrated: fixture mode first
- * (it patches the clock and Math.random), then the controller.
+ * (it patches the clock and Math.random), then the controller, on the live
+ * wall when Supabase is configured (the demo wall with ?demo=1 or ?fixture=1).
  * Guarded so React's development double-mount does not start it twice.
  */
 export function WallRuntime() {
@@ -17,7 +18,11 @@ export function WallRuntime() {
     (async () => {
       await import("../../scripts/fixture.js");
       const { startWall } = await import("./controller");
-      startWall(bridge);
+      const { fetchFeed, liveWanted, SUPABASE_URL } = await import("./liveClient");
+      if (!liveWanted()) return startWall(bridge);
+      /* the live wall (open spots only if the database can't be reached; it catches up each minute) */
+      const feed = await fetchFeed().catch(() => ({ now: "", stories: [], held: [] }));
+      startWall(bridge, { feed, base: SUPABASE_URL });
     })();
   }, []);
   return null;
