@@ -68,10 +68,16 @@ a 404 on `/`.
 
 ## Database
 
-The Neon schema is `db/migrations/0001_init.sql`: 500 spots per lane, keyed
-by `(lane, no)`. `db/queries.mjs` holds the spot lifecycle (reserve, go live,
-release, expire). `pnpm test:db` runs both against an in-process Postgres
-(PGlite); no database server needed.
+Supabase (Postgres, Auth, Storage, Cron). The schema is
+`supabase/migrations/`: 500 spots per lane keyed by `(lane, no)`, stories,
+saves, events, and the functions the app calls (`wall_public`, checkout,
+webhook, events). Visitors can only read the public wall; everything that
+changes it goes through the server, which proves itself with a key kept in
+Supabase Vault. The live teaser tables (`early_access_signups`,
+`early_access_events`) live in the same project and are left untouched.
+
+`pnpm test:db` runs the schema on an in-process Postgres (PGlite) with
+Auth, Vault and the API roles stubbed.
 
 ## Checks
 

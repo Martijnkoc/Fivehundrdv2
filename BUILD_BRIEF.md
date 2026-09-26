@@ -230,7 +230,7 @@ Opened from the header Create button (desktop) or the tab bar (phone), or by tap
 
 ## 14. Data model (Neon)
 
-The schema lives in [`db/migrations/0001_init.sql`](db/migrations/0001_init.sql) and is tested by `pnpm test:db`. The spot lifecycle queries from §15 are in [`db/queries.mjs`](db/queries.mjs). Compared with the first draft of this section:
+The schema lives in [`supabase/migrations/`](supabase/migrations/) (Supabase replaces Neon, R2 and the login provider) and is tested by `pnpm test:db`. The spot lifecycle from §15 is the checkout functions there (`checkout_reserve`, `checkout_attach`, `checkout_complete`, `checkout_release`, and the minute tick). Compared with the first draft of this section:
 
 - **500 spots per lane (§0).** `spots` is keyed by `(lane, no)`, and the migration seeds all 3,000 rows. A composite foreign key ensures the story on a spot has the same lane and number as that spot.
 - **Creation order.** `stories` is created before `spots`, which references it. The draft had them the other way round, so it could not run.
@@ -246,9 +246,9 @@ The schema lives in [`db/migrations/0001_init.sql`](db/migrations/0001_init.sql)
 - `POST /api/uploads/sign`: signed R2 upload for artwork, logo or audio, with type/size limits.
 - `POST /api/checkout`:
   1. Validate the form (same rules and error copy as the reference).
-  2. **Reserve the spot number** in its lane (`reserveSpot` in `db/queries.mjs`): `update spots set status='reserved', reserved_until=now()+30min, story_id=$3 where lane=$1 and no=$2 and status='vacant'`. If 0 rows update, offer another vacant number.
-  3. Create the Stripe Checkout session for $9.95, with the reservation in its metadata and `expires_at` 30 minutes out (Stripe's minimum). Then set the reservation to end at the session's `expires_at` (`holdUntilCheckoutExpires`), so no payment can arrive after the number is released.
-- `POST /api/stripe/webhook`: on `checkout.session.completed`, set the spot live (`starts_at=now()`, `ends_at=now()+72h`), revalidate the wall, send the "You're on the wall" mail. On `checkout.session.expired`, free the number straight away (`releaseReservation`).
+  2. **Reserve the spot number** in its lane (`checkout_reserve`): `update spots set status='reserved', reserved_until=now()+30min, story_id=$3 where lane=$1 and no=$2 and status='vacant'`. If 0 rows update, offer another vacant number.
+  3. Create the Stripe Checkout session for $9.95, with the reservation in its metadata and `expires_at` 30 minutes out (Stripe's minimum). Then set the reservation to end at the session's `expires_at` (`checkout_attach`), so no payment can arrive after the number is released.
+- `POST /api/stripe/webhook`: on `checkout.session.completed`, set the spot live (`starts_at=now()`, `ends_at=now()+72h`), revalidate the wall, send the "You're on the wall" mail. On `checkout.session.expired`, free the number straight away (`checkout_release`).
 - `POST /api/events`: record opens/saves/clicks. Rate-limit per cookie and per IP hash; drop bots except Googlebot.
 
 **Jobs**
