@@ -15,6 +15,7 @@ export const PER_LANE = 500;
 /** One live story as /api/wall returns it (wall_public() in the database). */
 export type FeedStory = {
   id: string;
+  slug?: string;
   lane: LaneId;
   no: number;
   name: string;
@@ -62,6 +63,7 @@ export function toSpot(s: FeedStory, no: number, base: string, mine: ReadonlySet
     no,
     num: s.no,
     id: s.id,
+    slug: s.slug,
     lane: s.lane,
     name: s.name,
     snippet: s.snippet || "",

@@ -143,6 +143,8 @@ export const bridge = {
     placeClaim: (draft: Draft) => string | null | Promise<string | null>;
     previewClick: (e: MouseEvent, spot: FilledSpot) => void;
     share: (spot: FilledSpot) => void;
+    /** Opens the share sheet (every card size, save, copy) without trying the native sheet first. */
+    shareSheet: (spot: FilledSpot) => void;
     seeOnWall: (no: number) => void;
     spotURL: (spot: FilledSpot) => string;
   },

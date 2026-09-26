@@ -63,13 +63,19 @@ function Front({ s }: { s: FilledSpot }) {
 const NL6 = "\n      ";
 const NL4 = "\n    ";
 
-function Filled({ s, open }: { s: FilledSpot; open: boolean }) {
+function Filled({ s, open, still }: { s: FilledSpot; open: boolean; still?: boolean }) {
   const l = left(s),
     fresh = LIFE - l < 3 * 3600e3;
+  /* on the wall the tile is a button; as a preview or share card, the same tile as a picture */
+  const Book = still ? "div" : "button";
   return (
     <>
       <div className="stand">
-        <button className="book" aria-expanded={open} aria-label={`${s.name}, ${LANE[s.lane]}, spot ${numOf(s)}`}>
+        <Book
+          className="book"
+          aria-expanded={still ? undefined : open}
+          aria-label={still ? undefined : `${s.name}, ${LANE[s.lane]}, spot ${numOf(s)}`}
+        >
           {NL6}
           <span className="bk-art">
             <Front s={s} />
@@ -86,7 +92,7 @@ function Filled({ s, open }: { s: FilledSpot; open: boolean }) {
           <span className="bk-no">{pad(numOf(s))}</span>
           {fresh && <i className="new" title="Joined in the last 3 hours"></i>}
           <i className="prog" style={{ width: `${((l / LIFE) * 100).toFixed(1)}%` }}></i>
-        </button>
+        </Book>
       </div>
       {NL4}
       <div className="cap">
@@ -145,6 +151,20 @@ export const Tile = memo(function Tile({ s, open }: TileProps) {
     </div>
   );
 });
+
+/**
+ * The canonical spot: exactly the tile the wall shows, from the same data and
+ * styles, for anywhere else it appears (the Create preview, share cards, the
+ * discovery page). Only the width is the caller's; everything inside is the
+ * wall's own.
+ */
+export function SpotTile({ s, width }: { s: FilledSpot; width?: number }) {
+  return (
+    <div className="spot still" role="img" style={{ ...cssVars(spotStyle(s)), ...(width ? { width } : {}) }} aria-label={`${s.name}, ${LANE[s.lane]}, spot ${numOf(s)}`}>
+      <Filled s={s} open={false} still />
+    </div>
+  );
+}
 
 export function Filler() {
   return (

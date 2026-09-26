@@ -158,13 +158,29 @@ test.describe("phone: the tile comes forward as a sheet (§7)", () => {
 test.describe("phone, with motion (§7)", () => {
   test.use({ viewport: { width: phone.width, height: phone.height }, viewportSpec: phone, hasTouch: true, reducedMotion: "no-preference" });
 
-  test("the tile's artwork travels into the sheet as the sheet rises", async ({ wall, page }) => {
+  test("the spot grows out of its tile into the overlay, and shrinks back into it", async ({ wall, page }) => {
+    appOnly("approved change: an overlay that grows from the tile; the reference's sheet rose from the bottom");
     await wall.goto();
-    await wall.filledTile(1).click();
-    await expect(page.locator(".art-ghost")).toHaveCount(1);
-    expect(await page.evaluate(() => document.getAnimations().filter((a) => a.playState === "running").length)).toBeGreaterThanOrEqual(2);
-    await expect(page.locator(".art-ghost")).toHaveCount(0, { timeout: 2_000 });
-    await expect(page.locator("#dsheet .art")).toBeVisible();
+    const tile = wall.filledTile(1);
+    const t = (await tile.boundingBox())!;
+    await tile.click();
+    /* the first frame is the tile itself: same place, same width */
+    const first = await sheet(page).evaluate((el) => {
+      const a = el.getAnimations()[0];
+      const k = (a.effect as KeyframeEffect).getKeyframes()[0];
+      return String(k.transform);
+    });
+    const [, dx, dy, k] = first.match(/translate\(([-\d.]+)px,\s*([-\d.]+)px\) scale\(([\d.]+)\)/)!.map(Number);
+    await page.waitForTimeout(500);
+    const r = (await sheet(page).boundingBox())!;
+    expect(Math.abs(r.x + dx - t.x)).toBeLessThan(1);
+    expect(Math.abs(r.y + dy - t.y)).toBeLessThan(1);
+    expect(Math.abs(r.width * k - t.width)).toBeLessThan(1);
+    /* an overlay, with the wall showing around it */
+    expect(r.x).toBeGreaterThanOrEqual(8);
+    expect(r.y).toBeGreaterThanOrEqual(40);
+    await page.locator("#dsheet .dclose").click();
+    await expect(sheet(page)).toBeHidden({ timeout: 2_000 });
   });
 });
 
@@ -361,10 +377,12 @@ test.describe("desktop: sharing and Keep my card (§12, §15)", () => {
   test.use({ viewport: { width: desktop.width, height: desktop.height }, viewportSpec: desktop });
 
   test("Share falls back to a sheet with WhatsApp, Telegram, X, Facebook, Email and Copy link", async ({ wall, page }) => {
+    appOnly("approved change: the share sheet carries the spot's card; its link list is checked below");
     await wall.goto();
     await page.locator("#rack .panel [data-share]").click();
     await expect(page.locator("#shareVeil")).toHaveClass(/\bon\b/);
-    await expect(page.locator("#shareSheet .sharelist > *")).toHaveText(["WhatsApp", "Telegram", "X", "Facebook", "Email", "Copy link"]);
+    await expect(page.locator("#shareSheet .sharelist > *")).toHaveText(["WhatsApp", "Telegram", "X", "Facebook", "Email"]);
+    await expect(page.locator("#shareSheet [data-copy]")).toHaveText("Copy link");
     const no = (await page.locator("#rack .panel").getAttribute("data-no"))!;
     await expect(page.locator("#shareSheet .sharelist a").first()).toHaveAttribute("href", new RegExp(`%23${no.padStart(3, "0")}$`));
     await page.locator("#shareSheet .x").click();
@@ -512,7 +530,6 @@ test.describe("desktop: Create your story (§13)", () => {
     await expect(page.locator("#claimH")).toHaveText("You're on the wall.");
     await expect(page.locator("#claimSheet .sub").first()).toContainText(`Spot ${no} is yours until`);
     await expect(page.locator("#dCard .card-img")).toBeVisible({ timeout: 10_000 });
-    expect(await page.locator("#dCard .card-img").evaluate((img: HTMLImageElement) => [img.naturalWidth, img.naturalHeight])).toEqual([1080, 1350]);
     await page.locator("#dSee").click();
     await expect(page.locator("#claimVeil")).not.toHaveClass(/\bon\b/);
     await expect(page.locator("#rack .panel")).toHaveAttribute("data-no", String(Number(no)));
@@ -686,5 +703,70 @@ test.describe("approved changes on top of the reference", () => {
       await expect(google.locator('svg[data-mark="google"] path')).toHaveCount(4);
       await expect(apple.locator('svg[data-mark="apple"]')).toBeVisible();
     });
+  });
+});
+
+test.describe("one spot everywhere (approved change)", () => {
+  test.use({ viewport: { width: desktop.width, height: desktop.height }, viewportSpec: desktop });
+
+  const inside = (loc: import("@playwright/test").Locator) =>
+    loc.evaluate((spot) => ({
+      book: spot.querySelector(".book")!.innerHTML,
+      cap: spot.querySelector(".cap")!.innerHTML,
+      /* the lane colours and ageing; the preview only adds its width */
+      vars: (spot.getAttribute("style") ?? "")
+        .split(";")
+        .map((d) => d.trim())
+        .filter((d) => d && !d.startsWith("width"))
+        .join(";"),
+      size: [spot.querySelector(".book")!.getBoundingClientRect().width, spot.querySelector(".book")!.getBoundingClientRect().height],
+    }));
+
+  test("the Create preview is the wall's own tile: after paying, the tile on the wall is the same", async ({ wall, page }) => {
+    appOnly("approved change: the Create preview shows the real wall tile");
+    await wall.goto();
+    await wall.openCreate();
+    const no = (await page.locator("#claimNo").textContent())!;
+    await page.locator("#fName").fill("Lowtide Club");
+    await page.locator("[data-link]").first().fill("open.spotify.com/artist/lowtide");
+    const preview = await inside(page.locator("#claimSheet .prev-tile .spot"));
+    await page.locator("#fPay").click();
+    await expect(page.locator("#claimH")).toHaveText("You're on the wall.");
+    const onWall = await inside(page.locator(`#s-${no}`));
+    expect(onWall.book).toBe(preview.book);
+    expect(onWall.cap).toBe(preview.cap);
+    expect(onWall.vars).toBe(preview.vars);
+    expect(onWall.size[0]).toBeCloseTo(preview.size[0], 1);
+    expect(onWall.size[1]).toBeCloseTo(preview.size[1], 1);
+  });
+
+  test("share cards are the wall's tile on a social canvas, in three sizes, with the spot's link", async ({ wall, page }) => {
+    appOnly("approved change: share cards are built from the wall tile");
+    await wall.goto();
+    await page.locator("#rack .panel [data-share]").click();
+    for (const [label, size] of [
+      ["Square", [1080, 1080]],
+      ["Story", [1080, 1920]],
+      ["Wide", [1200, 630]],
+    ] as const) {
+      await page.locator("#shareSheet .sc-pick .chip", { hasText: label }).click();
+      const img = page.locator("#shareSheet .sc-preview img");
+      await expect(img).toBeVisible({ timeout: 10_000 });
+      await expect.poll(() => img.evaluate((i: HTMLImageElement) => [i.naturalWidth, i.naturalHeight])).toEqual(size);
+    }
+    const no = (await page.locator("#rack .panel").getAttribute("data-no"))!;
+    await expect(page.locator("#shareSheet .sharelist a").first()).toHaveAttribute("href", new RegExp(`%23${no.padStart(3, "0")}$`));
+  });
+
+  test("the Done screen shows the maker's story card (1080×1920)", async ({ wall, page }) => {
+    appOnly("approved change: the Done card is the story share card");
+    await wall.goto();
+    await wall.openCreate();
+    await page.locator("#fName").fill("Lowtide Club");
+    await page.locator("[data-link]").first().fill("open.spotify.com/artist/lowtide");
+    await page.locator("#fPay").click();
+    const img = page.locator("#dCard .card-img");
+    await expect(img).toBeVisible({ timeout: 10_000 });
+    expect(await img.evaluate((i: HTMLImageElement) => [i.naturalWidth, i.naturalHeight])).toEqual([1080, 1920]);
   });
 });

@@ -1,25 +1,83 @@
 "use client";
 
-import { Fragment, useRef, useState, useSyncExternalStore } from "react";
+import { Fragment, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import type { FilledSpot } from "../../lib/wall/model";
+import { FORMATS, cardFileName, shareCardBlob, type ShareFormat } from "./shareCard";
 import { bridge, wallStore } from "./store";
 
 /* Whitespace text nodes as in the reference's templates. */
 const ws = (indent: number) => "\n" + " ".repeat(indent);
 
 export type ShareData = { title: string; text: string; url: string };
-export type ShareView = { kind: "share"; data: ShareData } | { kind: "keep" } | { kind: "report"; id: string; name: string };
+export type ShareView = { kind: "share"; data: ShareData; spot: FilledSpot } | { kind: "keep" } | { kind: "report"; id: string; name: string };
 
-/** §15: the share fallback when there is no native share sheet. */
-function Share({ d }: { d: ShareData }) {
+/** §15: share a spot. The card is the spot itself (the wall's tile), ready to post, with its lasting link. */
+function Share({ d, spot }: { d: ShareData; spot: FilledSpot }) {
+  const [format, setFormat] = useState<ShareFormat>(() => (matchMedia("(max-width:699px)").matches ? "story" : "square"));
+  const [card, setCard] = useState<{ format: ShareFormat; blob: Blob; url: string } | "failed" | null>(null);
+  useEffect(() => {
+    let live = true;
+    shareCardBlob(spot, d.url, format).then(
+      (blob) => live && setCard({ format, blob, url: URL.createObjectURL(blob) }),
+      () => live && setCard("failed"),
+    );
+    return () => {
+      live = false;
+    };
+  }, [spot, d.url, format]);
+  useEffect(() => () => void (card && card !== "failed" && URL.revokeObjectURL(card.url)), [card]);
+
   const t = encodeURIComponent(d.text + " " + d.url);
-  const copy = async () => {
+  const blob = card && card !== "failed" && card.format === format ? card.blob : null;
+  const file = blob ? new File([blob], cardFileName(spot, format), { type: "image/png" }) : null;
+  const canShareFile = !!(file && navigator.canShare && navigator.canShare({ files: [file] }));
+  const canCopyImage = typeof ClipboardItem !== "undefined" && !!navigator.clipboard?.write;
+
+  const copyLink = async (quiet = false) => {
     try {
       await navigator.clipboard.writeText(d.url);
-      bridge.toast("Link copied");
+      if (!quiet) bridge.toast("Link copied");
+      return true;
     } catch {
-      bridge.toast(d.url);
+      if (!quiet) bridge.toast(d.url);
+      return false;
     }
   };
+  const download = () => {
+    if (!blob) return;
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = cardFileName(spot, format);
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  };
+  const shareFile = async () => {
+    if (!file) return;
+    try {
+      await navigator.share({ files: [file], title: d.title, text: `${d.text} ${d.url}` });
+    } catch (e) {
+      if ((e as Error).name !== "AbortError") bridge.toast("Sharing didn't work here. Save the card instead.");
+    }
+  };
+  const copyImage = async () => {
+    if (!blob) return;
+    try {
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+      bridge.toast("Card copied");
+    } catch {
+      bridge.toast("Couldn't copy the image here. Save it instead.");
+    }
+  };
+  /* Instagram and TikTok take the image from your photos and the link as a sticker */
+  const forStories = async () => {
+    const copied = await copyLink(true);
+    if (canShareFile) await shareFile();
+    else download();
+    bridge.toast(copied ? "Card saved and link copied. Add it as a link sticker." : "Card saved. Add the link as a sticker.");
+  };
+
   return (
     <>
       <button className="x" aria-label="Close" data-close="">
@@ -27,31 +85,66 @@ function Share({ d }: { d: ShareData }) {
       </button>
       <h2 id="shareH">Share this spot</h2>
       <p className="sub">{d.title}</p>
-      {ws(2)}
+      <div className="sc-pick" role="tablist" aria-label="Card size">
+        {(Object.keys(FORMATS) as ShareFormat[]).map((k) => (
+          <button key={k} role="tab" aria-selected={format === k} className="chip" aria-pressed={format === k} onClick={() => setFormat(k)}>
+            {FORMATS[k].label}
+            <small>{FORMATS[k].hint}</small>
+          </button>
+        ))}
+      </div>
+      <div className={`sc-preview sc-preview-${format}`}>
+        {card === "failed" ? (
+          <p className="sub">The card couldn&apos;t be printed in this browser. Share the link instead.</p>
+        ) : blob && card ? (
+          <img src={card.url} alt={`Share card for ${spot.name}`} />
+        ) : (
+          <p className="sub">Printing your card…</p>
+        )}
+      </div>
+      <div className="sc-actions">
+        {canShareFile ? (
+          <button className="pay" onClick={shareFile} disabled={!blob}>
+            Share card
+          </button>
+        ) : (
+          <button className="pay" onClick={download} disabled={!blob}>
+            Save card
+          </button>
+        )}
+        <div className="sc-row">
+          <button className="act" data-copy="" onClick={() => copyLink()}>
+            Copy link
+          </button>
+          {canCopyImage && (
+            <button className="act" onClick={copyImage} disabled={!blob}>
+              Copy image
+            </button>
+          )}
+          {canShareFile && (
+            <button className="act" onClick={download} disabled={!blob}>
+              Save card
+            </button>
+          )}
+          <button className="act" onClick={forStories} disabled={!blob}>
+            For Instagram &amp; TikTok
+          </button>
+        </div>
+      </div>
       <div className="sharelist">
-        {ws(4)}
         <a href={`https://wa.me/?text=${t}`} target="_blank" rel="noopener">
           WhatsApp
         </a>
-        {ws(4)}
         <a href={`https://t.me/share/url?url=${encodeURIComponent(d.url)}&text=${encodeURIComponent(d.text)}`} target="_blank" rel="noopener">
           Telegram
         </a>
-        {ws(4)}
         <a href={`https://x.com/intent/post?text=${t}`} target="_blank" rel="noopener">
           X
         </a>
-        {ws(4)}
         <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(d.url)}`} target="_blank" rel="noopener">
           Facebook
         </a>
-        {ws(4)}
         <a href={`mailto:?subject=${encodeURIComponent(d.title)}&body=${t}`}>Email</a>
-        {ws(4)}
-        <button data-copy="" onClick={copy}>
-          Copy link
-        </button>
-        {ws(2)}
       </div>
     </>
   );
@@ -215,7 +308,7 @@ export function ShareContent() {
   const v = st.share;
   return (
     <Fragment key={st.shareVersion}>
-      {v.kind === "keep" ? <Keep /> : v.kind === "report" ? <Report id={v.id} name={v.name} /> : <Share d={v.data} />}
+      {v.kind === "keep" ? <Keep /> : v.kind === "report" ? <Report id={v.id} name={v.name} /> : <Share d={v.data} spot={v.spot} />}
     </Fragment>
   );
 }

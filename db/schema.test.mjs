@@ -9,7 +9,7 @@ import { PGlite } from "@electric-sql/pglite";
  * the wall does goes through the same functions the app calls.
  */
 /* every migration but the platform one (pg_cron, Storage: Supabase only) */
-const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation"];
+const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links"];
 const schema = (
   await Promise.all(MIGRATIONS.map((m) => readFile(new URL(`../supabase/migrations/${m}.sql`, import.meta.url), "utf8")))
 ).join("\n");
@@ -357,5 +357,40 @@ describe("safety", () => {
   test("everything here needs the server key", async () => {
     await rejects(db.query("select public.admin_overview('nope')"), /forbidden/);
     await rejects(db.query("select public.report_story('nope', gen_random_uuid(), 'scam', '', '', '', 'x')"), /forbidden/);
+  });
+});
+
+describe("lasting links", () => {
+  const byCode = async (slug) => (await one("select public.story_public($1) r", [slug])).r;
+
+  test("every story has its own code; the link shows it live, and still after its 72 hours", async () => {
+    const a = await reserve(story());
+    const { slug } = await one("select slug from public.stories where id = $1", [a.id]);
+    assert.match(slug, /^[a-hj-km-np-z2-9]{8}$/);
+    assert.equal(await byCode(slug), null, "not before it's paid");
+    await complete(a.id);
+    assert.equal((await byCode(slug)).state, "live");
+    assert.equal((await wall()).stories[0].slug, slug);
+    await age(a.id, "73 hours");
+    await db.query("select private.wall_tick()");
+    const ended = await byCode(slug);
+    assert.equal(ended.state, "ended");
+    assert.equal(ended.name, "Lowtide Club");
+    /* the number goes to someone else; the old link still finds the old story */
+    const b = await reserve(story({ name: "Next Maker" }));
+    await complete(b.id);
+    assert.equal(b.no, 217);
+    assert.equal((await byCode(slug)).name, "Lowtide Club");
+  });
+
+  test("hidden and removed stories aren't shown through their link", async () => {
+    const a = await reserve(story());
+    await complete(a.id);
+    const { slug } = await one("select slug from public.stories where id = $1", [a.id]);
+    await one("select public.admin_hide($1, $2, true)", [KEY, a.id]);
+    assert.equal(await byCode(slug), null);
+    await one("select public.admin_hide($1, $2, false)", [KEY, a.id]);
+    await one("select public.admin_remove($1, $2, 'spam')", [KEY, a.id]);
+    assert.equal(await byCode(slug), null);
   });
 });

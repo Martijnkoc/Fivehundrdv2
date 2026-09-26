@@ -23,6 +23,7 @@ export function WallRuntime() {
       /* back from a login link: let Supabase read it before the wall rewrites the address */
       if (/access_token|error_description/.test(location.hash)) await (await supabase()).auth.getSession();
       /* the live wall (open spots only if the database can't be reached; it catches up each minute) */
+      document.documentElement.dataset.live = "1";
       const feed = await fetchFeed().catch(() => ({ now: "", stories: [], held: [] }));
       startWall(bridge, { feed, base: SUPABASE_URL });
     })();

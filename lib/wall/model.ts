@@ -42,6 +42,8 @@ export type FilledSpot = {
   no: number;
   num?: number;
   id?: string;
+  /** the story's own code, for a link that lasts beyond its 72 hours */
+  slug?: string;
   vacant?: false;
   lane: LaneId;
   name: string;

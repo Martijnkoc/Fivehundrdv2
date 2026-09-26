@@ -55,6 +55,10 @@ which were signed off:
 5. Keep my card shows the official Google and Apple marks (§12).
 6. On phones, Keep my card closes the card first, so the login sheet opens in front of it. In the reference it opened behind the card.
 7. Art direction: a lighter warm off-white page, warm paper spot cards that lift off it, washed charcoal instead of screen black (the Create button most of all), and subtle grain and halftone on cards and artwork. Layout, sizes, spacing and hierarchy are unchanged.
+8. On phones an open spot is an overlay above the wall that grows out of its tile and shrinks back into it, with room around it to tap to close. The wall never moves behind it; ×, a tap outside, Escape, a downward drag and the back gesture all close it.
+9. One spot everywhere: the Create preview shows the wall's own tile (`SpotTile`, the same component and styles as the wall) above the opened view.
+10. Share cards are built around that same tile, in Story (1080×1920), Square (1080×1080) and Wide (1200×630), and replace the reference's hand-drawn canvas card on the Done screen. Share goes straight to the native share sheet with the card and link where the phone can share files; otherwise the share sheet offers the card, save, copy image, copy link and "For Instagram & TikTok".
+11. Screens redesigned by these changes (Create, the Done screen, the share sheet) are compared against approved baselines of the app itself (`tests/__baselines__/…/approved/`, committed; `pnpm test:approve` rewrites them after a signed-off change), still at zero tolerance.
 
 CSS for these lives in `app/wall/overrides.css`. The visual suite applies it
 to the reference too, so the baselines are "the reference plus the approved
@@ -86,7 +90,15 @@ Auth, Vault and the API roles stubbed.
 With the Supabase variables set, `/` is the live wall: every live story
 first, taking turns lane by lane, then open spots until the wall holds 500.
 Without them (and always with `?demo=1` or `?fixture=1`) it is the demo wall
-from the reference. A spot's address is `/s/{lane}/{no}`, e.g. `/s/music/217`.
+from the reference. A story's address is `/s/{lane}/{no}/{code}`, e.g. `/s/music/217/k3f9x2ab`.
+The code belongs to the story, so a shared link keeps working after its 72
+hours, when No. 217 has a new holder: while it's live the link opens the wall
+at the story; afterwards it shows the story as it was (the same open view,
+aged), where to find its maker, and the way to the wall. `/s/{lane}/{no}`
+opens whoever holds that number now. Link previews (X, WhatsApp, iMessage)
+are drawn on the server as the Wide card, from the same data, colours,
+pattern and fonts (`opengraph-image.tsx`), since those platforms can't run
+the wall.
 
 | Route | What it does |
 | --- | --- |

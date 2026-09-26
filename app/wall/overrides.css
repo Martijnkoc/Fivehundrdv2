@@ -59,3 +59,80 @@
 .btn-create:hover{background-color:var(--pink);color:#1c1b18}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn-create{background-color:#f2ede2;color:#1c1b18}}
 :root[data-theme="dark"] .btn-create{background-color:#f2ede2;color:#1c1b18}
+
+/*
+ * One spot, everywhere (approved change): the Create preview and share cards
+ * show the wall's own tile. .still is that tile as a picture: no hover, no
+ * clicks. The Create sheet's caption style must not reach the tile's caption.
+ */
+.spot.still{pointer-events:none}
+.preview .spot .cap{font-size:inherit;color:inherit;margin:0}
+.prev-tile{margin:0 0 18px}
+
+/*
+ * Share cards (app/wall/shareCard.tsx): the wall's tile on a social canvas,
+ * always in the light paper look whatever the viewer's theme.
+ */
+.sc{--bg:#fbf9f4;--paper:#f6efe1;--card:#f3e9d6;--ink:#1c1b18;--ink2:#5d564a;--line:#e2d8c4;
+  position:relative;display:flex;flex-direction:column;box-sizing:border-box;overflow:hidden;
+  background:#fbf9f4;color:#1c1b18;font-family:var(--font);padding:20px 20px 18px}
+.sc::after{content:"";position:absolute;inset:0;pointer-events:none;background-image:var(--grain);background-size:120px;opacity:.06;mix-blend-mode:multiply}
+.sc-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.sc-brand{display:flex;flex-direction:column;gap:3px;font-family:"Fraunces",Georgia,serif;font-weight:800;font-size:18px;line-height:1;letter-spacing:-.01em;white-space:nowrap}
+.sc-brand small{font-style:italic;font-weight:500;font-size:9.5px;letter-spacing:0;color:#5d564a}
+.sc-id{align-self:flex-start;font-size:9px;font-weight:800;line-height:1;white-space:nowrap;background:#1c1b18;color:#fbf7ee;border-radius:999px;padding:5px 8px}
+.sc-main{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;min-height:0}
+.sc-tile{transform:rotate(-1.6deg);filter:drop-shadow(0 14px 16px rgba(28,27,24,.22))}
+.sc-snip{margin:0;max-width:270px;text-align:center;font-family:"Fraunces",Georgia,serif;font-style:italic;font-weight:500;font-size:15px;line-height:1.3;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.sc-foot{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.sc-url{min-width:0;font-size:9.5px;font-weight:800;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:#d8ff45;color:#1c1b18;border-radius:999px;padding:5px 9px}
+.sc-cta{flex:none;font-size:9.5px;font-weight:700;color:#5d564a}
+.sc-square{padding:16px 16px 14px}
+.sc-square .sc-main{gap:0}
+.sc-wide{flex-direction:row;align-items:center;gap:22px;padding:10px 22px 10px 26px}
+.sc-wide .sc-side{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.sc-wide .sc-brand{font-size:15px;margin-bottom:4px}
+.sc-name{font-size:26px;font-weight:900;letter-spacing:-.05em;line-height:.95;max-width:100%;overflow-wrap:anywhere}
+.sc-wide .sc-snip{text-align:left;font-size:12px;max-width:none;-webkit-line-clamp:2}
+.sc-wide .sc-url{max-width:100%}
+
+/* the share sheet: pick a size, see the card, share or save it */
+.sc-pick{display:flex;gap:8px;flex-wrap:wrap;margin:4px 0 14px}
+.sc-pick .chip{display:flex;flex-direction:column;align-items:flex-start;gap:1px;line-height:1.15;text-align:left}
+.sc-pick .chip small{font-size:11px;font-weight:600;opacity:.7}
+.sc-preview{display:grid;place-items:center;min-height:160px;margin:0 0 14px;padding:14px;border-radius:12px;background:color-mix(in oklab,var(--paper),var(--ink) 5%)}
+.sc-preview img{display:block;max-width:100%;max-height:min(52vh,460px);width:auto;height:auto;border-radius:6px;box-shadow:0 18px 34px -22px rgba(0,0,0,.55)}
+.sc-actions{display:flex;flex-direction:column;gap:10px;margin:0 0 10px}
+.sc-row{display:flex;flex-wrap:wrap;gap:8px}
+.sc-row .act:disabled,.sc-actions .pay:disabled{opacity:.5}
+.card-img{max-height:72vh;width:auto;max-width:100%;margin:0 auto}
+.sc-pick .chip{border-radius:12px;padding:7px 12px}
+
+/*
+ * Phones (approved change): an open spot is an overlay above the wall, not a
+ * bottom sheet. It grows out of its tile and shrinks back into it; the wall
+ * stays put behind it, and there is room around it to tap to close.
+ */
+@media (max-width:699px){
+  .dsheet{left:10px;right:10px;top:calc(env(safe-area-inset-top,0px) + 52px);bottom:auto;
+    max-height:calc(100dvh - 52px - 12px - env(safe-area-inset-top,0px) - env(safe-area-inset-bottom,0px));
+    border-radius:18px;padding:6px;box-shadow:0 30px 60px -20px rgba(0,0,0,.55)}
+  .dsheet .grab{margin:2px auto 6px}
+  .dclose{top:20px;right:16px}
+}
+
+/* a story's lasting link after its 72 hours (app/s/[lane]/[no]/[slug]) */
+.disc{min-height:100dvh}
+.disc-top{display:flex;justify-content:space-between;align-items:center;gap:12px;max-width:1080px;margin:0 auto;padding:18px clamp(16px,2.6vw,36px) 10px}
+.disc-main{max-width:1080px;margin:0 auto;padding:8px clamp(16px,2.6vw,36px) 60px}
+.disc-note{font-size:15px;line-height:1.45;max-width:62ch;margin:0 0 18px;color:var(--ink2)}
+.disc-note b{color:var(--ink)}
+.disc-spot::before{display:none}
+.disc-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.disc-acts .act{text-decoration:none;display:inline-flex;align-items:center}
+.disc-gone{text-align:center;padding-top:14vh}
+.disc-gone h1{font-size:clamp(30px,6vw,48px);letter-spacing:-.04em;line-height:1;margin:0 0 12px}
+.disc-gone p{color:var(--ink2);margin:0 0 24px}
+.disc-cta{display:inline-block;width:auto;padding:14px 26px;text-decoration:none}
+.disc .btn-create{text-decoration:none}

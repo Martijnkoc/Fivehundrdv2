@@ -19,6 +19,7 @@ import { startPlay, stopAudio, togglePlay } from "./audio";
 import type { Account } from "./Card";
 import type { Draft } from "./Claim";
 import type { ShareData } from "./Sheets";
+import { cardFileName, readyCard, shareCardBlob } from "./shareCard";
 import type { Bridge } from "./store";
 import * as liveApi from "./liveClient";
 
@@ -52,7 +53,7 @@ export function startWall(bridge: Bridge, live?: Live) {
     if (ACCOUNT && kind === "unsave") liveApi.unsaveForAccount(id).catch(() => {});
   };
   /** A spot's address: /s/music/217 on the live wall, #217 on the demo wall. */
-  const addressOf = (s: FilledSpot) => (live ? `/s/${s.lane}/${numOf(s)}` : "#" + pad(s.no));
+  const addressOf = (s: FilledSpot) => (live ? `/s/${s.lane}/${numOf(s)}${s.slug ? "/" + s.slug : ""}` : "#" + pad(s.no));
   const homeAddress = () => (live ? "/" : location.pathname + location.search);
 
   /* ---------- lanes and search (§9) ---------- */
@@ -305,6 +306,7 @@ export function startWall(bridge: Bridge, live?: Live) {
       ev(s.id, "open");
     }
     markSeen(seenKey(s));
+    warmCard(s);
     bridge.open(s.no, "panel");
     placeNotch(el, rack.querySelector<HTMLElement>(".panel")!);
     const shift = el.getBoundingClientRect().top - before;
@@ -580,12 +582,37 @@ export function startWall(bridge: Bridge, live?: Live) {
       ev(s.id, "open");
     }
     markSeen(seenKey(s));
+    warmCard(s);
     bridge.open(s.no, "sheet");
     open = el;
     renderCard();
     return s;
   }
-  /** Brings a spot forward as the sheet; `instant` skips the rise and ghost (rotation). */
+  /** Where the overlay starts and ends: the tile, as a transform of the overlay (scaled from its top left). */
+  function tileFrame(el: HTMLElement) {
+    const t = el.querySelector(".book")!.getBoundingClientRect(),
+      r = dsheet.getBoundingClientRect();
+    const k = t.width / r.width;
+    const cut = Math.max(0, r.height - t.height / k);
+    return {
+      transform: `translate(${t.left - r.left}px,${t.top - r.top}px) scale(${k})`,
+      clipPath: `inset(0 0 ${cut}px 0 round ${6 / k}px)`,
+      visible: t.bottom > 0 && t.top < innerHeight,
+    };
+  }
+  const EASE_OPEN = "cubic-bezier(.2,.9,.25,1)";
+  function growFrom(el: HTMLElement) {
+    const f = tileFrame(el);
+    dsheet.style.transformOrigin = "0 0";
+    dsheet.animate(
+      [
+        { transform: f.transform, clipPath: f.clipPath },
+        { transform: "none", clipPath: "inset(0 0 0 0 round 18px)" },
+      ],
+      { duration: 380, easing: EASE_OPEN },
+    );
+  }
+  /** Brings a spot forward as the overlay; `instant` skips growing out of the tile (rotation). */
   function showSheet(el: HTMLElement, instant = false) {
     const s = filledOf(el);
     if (sheetOn) {
@@ -615,7 +642,6 @@ export function startWall(bridge: Bridge, live?: Live) {
       };
       return;
     }
-    const from = el.querySelector(".bk-art")!.getBoundingClientRect();
     markOpen(el);
     fillSheet(s);
     sheetOn = true;
@@ -632,29 +658,9 @@ export function startWall(bridge: Bridge, live?: Live) {
       dsheet.style.transform = "none";
       return;
     }
-    /* the tile's artwork travels up into the sheet while the sheet rises */
+    /* approved change: the spot itself grows out of its tile into the overlay */
     dsheet.style.transform = "none";
-    const art = dscroll.querySelector<HTMLElement>(".art")!,
-      to = art.getBoundingClientRect();
-    const g = document.createElement("div");
-    g.className = "flyer art-ghost";
-    g.style.cssText = `left:${to.left}px;top:${to.top}px;width:${to.width}px;height:${to.height}px;border-radius:12px;overflow:hidden`;
-    g.innerHTML = el.querySelector(".bk-art")!.innerHTML;
-    document.body.appendChild(g);
-    art.style.visibility = "hidden";
-    const sx = from.width / to.width,
-      sy = from.height / to.height;
-    g.animate(
-      [
-        { transform: `translate(${from.left - to.left}px,${from.top - to.top}px) scale(${sx},${sy})`, borderRadius: "6px" },
-        { transform: "none", borderRadius: "12px" },
-      ],
-      { duration: 440, easing: "cubic-bezier(.2,.9,.25,1)", fill: "both" },
-    ).onfinish = () => {
-      art.style.visibility = "";
-      g.remove();
-    };
-    dsheet.animate([{ transform: "translateY(100%)" }, { transform: "none" }], { duration: 440, easing: "cubic-bezier(.2,.9,.25,1)" });
+    growFrom(el);
     setTimeout(() => dsheet.querySelector<HTMLElement>(".dclose")?.focus({ preventScroll: true }), 460);
   }
   function hideSheet(fromPop?: boolean) {
@@ -676,10 +682,23 @@ export function startWall(bridge: Bridge, live?: Live) {
     if (reduce) done();
     else {
       const cur = getComputedStyle(dsheet).transform;
-      dsheet.animate([{ transform: cur === "none" ? "none" : cur }, { transform: "translateY(105%)" }], {
-        duration: 280,
-        easing: "cubic-bezier(.4,0,.6,1)",
-      }).onfinish = done;
+      const f = el && cur === "none" ? tileFrame(el) : null;
+      if (f && f.visible)
+        /* back into its tile, where you left it */
+        dsheet.animate(
+          [
+            { transform: "none", clipPath: "inset(0 0 0 0 round 18px)", opacity: 1 },
+            { transform: f.transform, clipPath: f.clipPath, opacity: 1, offset: 0.85 },
+            { transform: f.transform, clipPath: f.clipPath, opacity: 0 },
+          ],
+          { duration: 260, easing: "cubic-bezier(.4,0,.2,1)" },
+        ).onfinish = done;
+      /* dragged down, or the tile is out of view: it drops away */
+      else
+        dsheet.animate([{ transform: cur === "none" ? "none" : cur, opacity: 1 }, { transform: "translateY(60vh)", opacity: 0 }], {
+          duration: 240,
+          easing: "cubic-bezier(.4,0,.6,1)",
+        }).onfinish = done;
     }
     if (sheetPushed && !fromPop) {
       sheetPushed = false;
@@ -812,6 +831,11 @@ export function startWall(bridge: Bridge, live?: Live) {
 
   /* ---------- sharing (§15) and Keep my card (§12) ---------- */
   const spotURL = (s: FilledSpot) => (live ? location.origin + addressOf(s) : location.href.split("#")[0] + "#" + pad(s.no));
+  /**
+   * Share: where the phone can share files, the spot's card and its link go
+   * straight to the native share sheet (the card is printed ahead, while the
+   * spot is open); otherwise, and when that fails, our share sheet.
+   */
   async function shareSpot(s: FilledSpot) {
     const data: ShareData = {
       title: `${s.name} on fivehundrd.`,
@@ -820,15 +844,25 @@ export function startWall(bridge: Bridge, live?: Live) {
     };
     ev(s.id, "share");
     if (navigator.share) {
+      const blob = readyCard(s, data.url, "story");
+      const file = blob && new File([blob], cardFileName(s, "story"), { type: "image/png" });
       try {
-        await navigator.share(data);
+        if (file && navigator.canShare?.({ files: [file] })) await navigator.share({ files: [file], title: data.title, text: `${data.text} ${data.url}` });
+        else await navigator.share(data);
         return;
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
       }
     }
-    bridge.openShare({ kind: "share", data });
+    bridge.openShare({ kind: "share", data, spot: s });
     $("#shareVeil").classList.add("on");
+  }
+  /** Prints the open spot's story card in the background, so Share can hand it over at once. */
+  let warmT: ReturnType<typeof setTimeout> | undefined;
+  function warmCard(s: FilledSpot) {
+    clearTimeout(warmT);
+    if (!navigator.canShare) return;
+    warmT = setTimeout(() => void shareCardBlob(s, spotURL(s), "story").catch(() => {}), 700);
   }
   function openKeep() {
     /* approved change: on phones the card is a sheet above the veil, so the
@@ -992,6 +1026,14 @@ export function startWall(bridge: Bridge, live?: Live) {
     placeClaim,
     previewClick: (e: MouseEvent, p: FilledSpot) => coverClick(e, p),
     share: (s: FilledSpot) => shareSpot(s),
+    shareSheet(s: FilledSpot) {
+      bridge.openShare({
+        kind: "share",
+        data: { title: `${s.name} on fivehundrd.`, text: `${s.name} is on spot ${pad(numOf(s))} of 500.`, url: spotURL(s) },
+        spot: s,
+      });
+      $("#shareVeil").classList.add("on");
+    },
     spotURL,
     seeOnWall(no: number) {
       closeVeils();
@@ -1025,8 +1067,11 @@ export function startWall(bridge: Bridge, live?: Live) {
     const q = new URLSearchParams(location.search);
     const claimed = q.get("claimed"),
       cancelled = q.get("cancelled");
-    const m = location.pathname.match(/^\/s\/([a-z]+)\/(\d+)\/?$/);
-    const shared = m ? WALL.find((s): s is FilledSpot => !s.vacant && s.lane === m[1] && numOf(s) === +m[2]) : undefined;
+    /* /s/music/217/k3f9x2ab (the lasting link) or /s/music/217 (whoever holds it now) */
+    const m = location.pathname.match(/^\/s\/([a-z]+)\/(\d+)(?:\/([a-z0-9]{8}))?\/?$/);
+    const shared = m
+      ? WALL.find((s): s is FilledSpot => !s.vacant && (m[3] ? s.slug === m[3] : s.lane === m[1] && numOf(s) === +m[2]))
+      : undefined;
     if (m && !shared) {
       toast("That story has left the wall. Here's who's on it now.");
       history.replaceState(null, "", "/");
@@ -1039,6 +1084,11 @@ export function startWall(bridge: Bridge, live?: Live) {
       if (shared) ev(shared.id, "entry");
     });
     if (claimed) afterCheckout(claimed);
+    /* "Get your own spot" from a story's lasting link */
+    if (q.get("create") === "1") {
+      history.replaceState(null, "", "/");
+      openClaim();
+    }
     if (cancelled)
       liveApi.cancelCheckout(cancelled).then(() => {
         toast("Checkout cancelled. Nothing was charged.");

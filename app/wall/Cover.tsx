@@ -25,7 +25,7 @@ function Live({ s }: { s: FilledSpot }) {
   }, []);
   return (
     <span className="live" data-live="">
-      {`${long(left(s))} left`}
+      {left(s) > 0 ? `${long(left(s))} left` : "Ended"}
     </span>
   );
 }

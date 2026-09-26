@@ -4,12 +4,12 @@ import { Fragment, useEffect, useRef, useState, useSyncExternalStore, type FormE
 import { readDataURL, shrink } from "../../lib/wall/image";
 import { parseLink } from "../../lib/wall/links";
 import { LANES, PRICE, numOf, pad, type FilledSpot, type LaneId, type Link, type Palette } from "../../lib/wall/model";
-import { drawCard } from "../../lib/wall/socialCard";
 import { until } from "../../lib/wall/time";
 import { playingIn, stopAudio } from "./audio";
 import { Cover } from "./Cover";
 import { bridge, wallStore } from "./store";
-import { GenArt } from "./Tile";
+import { cardFileName, shareCardBlob } from "./shareCard";
+import { GenArt, SpotTile } from "./Tile";
 
 /* Whitespace text nodes as in the reference's openClaim/showDone templates. */
 const ws = (indent: number) => "\n" + " ".repeat(indent);
@@ -49,6 +49,11 @@ function ClaimForm({ start }: { start: ClaimStart }) {
   const [err, setErr] = useState("");
   const [placing, setPlacing] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
+  /* a wall tile's width right now, so the preview tile is the same size */
+  const [tileWidth] = useState(() => {
+    const w = document.querySelector("#rack .spot:not(.filler) .book")?.getBoundingClientRect().width;
+    return w ? Math.round(w * 100) / 100 : 180;
+  });
   const linkRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -342,11 +347,18 @@ function ClaimForm({ start }: { start: ClaimStart }) {
             {placing ? "Placing you on the wall…" : `Pay ${PRICE} and go live`}
           </button>
           {ws(4)}
-          <p className="fine">Prototype. No payment is taken.</p>
+          <p className="fine">
+            {document.documentElement.dataset.live === "1" ? "Secure payment with Stripe. Refunded if your spot doesn't go live." : "Prototype. No payment is taken."}
+          </p>
           {ws(3)}
         </form>
         {ws(3)}
         <div className="preview">
+          {/* the real wall tile, at the width tiles have on this visitor's wall */}
+          <p className="cap">How it sits on the wall</p>
+          <div className="prev-tile">
+            <SpotTile s={preview} width={tileWidth} />
+          </div>
           <p className="cap">How it slides out on the wall</p>
           <div id="fPrev" ref={prevRef} onClick={(e) => bridge.actions.previewClick(e.nativeEvent, preview)}>
             <Cover s={preview} saved={false} preview />
@@ -360,36 +372,32 @@ function ClaimForm({ start }: { start: ClaimStart }) {
 
 /** §13: You're on the wall, with the social card to share or save. */
 function Done({ s }: { s: FilledSpot }) {
-  const [card, setCard] = useState<{ url: string; blob: Blob | null } | "failed" | null>(null);
+  const [card, setCard] = useState<{ url: string; blob: Blob } | "failed" | null>(null);
+  const link = bridge.actions.spotURL(s);
   useEffect(() => {
     let live = true;
-    (async () => {
-      try {
-        const c = await drawCard(s);
-        const url = c.toDataURL("image/png");
-        const blob = await new Promise<Blob | null>((r) => c.toBlob(r, "image/png"));
-        if (live) setCard({ url, blob });
-      } catch {
-        if (live) setCard("failed");
-      }
-    })();
+    shareCardBlob(s, link, "story").then(
+      (blob) => live && setCard({ url: URL.createObjectURL(blob), blob }),
+      () => live && setCard("failed"),
+    );
     return () => {
       live = false;
     };
-  }, [s]);
+  }, [s, link]);
 
+  /* the maker's own card: straight to the share sheet with the link, or our share sheet with every size */
   const shareCard = async () => {
     const blob = card && card !== "failed" ? card.blob : null;
-    const f = blob && new File([blob], `fivehundrd-${pad(numOf(s))}.png`, { type: "image/png" });
+    const f = blob && new File([blob], cardFileName(s, "story"), { type: "image/png" });
     if (f && navigator.canShare && navigator.canShare({ files: [f] })) {
       try {
-        await navigator.share({ files: [f], text: `I'm on spot ${pad(numOf(s))} of fivehundrd. ${bridge.actions.spotURL(s)}` });
+        await navigator.share({ files: [f], text: `I'm on spot ${pad(numOf(s))} of fivehundrd. ${link}` });
         return;
       } catch (e) {
         if ((e as Error).name === "AbortError") return;
       }
     }
-    bridge.toast("Press and hold the card to save it, then post it anywhere.");
+    bridge.actions.shareSheet(s);
   };
 
   return (
@@ -428,7 +436,7 @@ function Done({ s }: { s: FilledSpot }) {
           ) : card === "failed" ? (
             <p className="sub">The card couldn&apos;t be drawn in this browser. Share the link instead.</p>
           ) : (
-            <img className="card-img" src={card.url} alt={`Social card for ${s.name}, spot ${pad(numOf(s))}`} />
+            <img className="card-img" src={card.url} alt={`Share card for ${s.name}, spot ${pad(numOf(s))}`} />
           )}
         </div>
       </div>

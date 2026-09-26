@@ -8,4 +8,8 @@ test-results/
 .generated/
 *.tsbuildinfo
 public/fonts/
-tests/__baselines__/
+# baselines are written from the reference on every run, except the
+# approved redesigns, which are the app's own and committed
+tests/__baselines__/**
+!tests/__baselines__/**/
+!tests/__baselines__/**/approved/**

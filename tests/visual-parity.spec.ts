@@ -5,6 +5,14 @@ import { expect, test, viewports } from "./wall";
  * Screenshots cover the viewport (or the card itself), not the full page, so
  * each one is about the state it names.
  */
+/*
+ * Screens redesigned on purpose no longer match the reference. They are
+ * compared, just as strictly, against approved baselines of the app itself
+ * (tests/__baselines__/…/approved/, committed; `pnpm test:approve` rewrites
+ * them after a signed-off change).
+ */
+const approved = (reason: string) => test.skip(test.info().project.name === "reference", `approved change: ${reason}`);
+
 const LANES = ["all", "music", "writers", "games", "art", "podcasts", "letters"] as const;
 
 for (const viewport of viewports) {
@@ -17,6 +25,7 @@ for (const viewport of viewports) {
         hasTouch: viewport.name === "phone",
       });
       const shot = (state: string) => `${viewport.name}-${colorScheme}-${state}.png`;
+      const approvedShot = (state: string) => ["approved", shot(state)];
 
       test("wall as it loads", async ({ wall, page }) => {
         await wall.goto();
@@ -57,14 +66,16 @@ for (const viewport of viewports) {
         await expect(page).toHaveScreenshot(shot("search-empty"));
       });
 
-      test("create your story", async ({ wall, page }) => {
+      test("create your story (approved)", async ({ wall, page }) => {
+        approved("the preview shows the real wall tile");
         await wall.goto();
         await wall.openCreate();
         await wall.quiet();
-        await expect(page).toHaveScreenshot(shot("create"));
+        await expect(page).toHaveScreenshot(approvedShot("create"));
       });
 
-      test("success screen with the social card", async ({ wall, page }) => {
+      test("success screen with the share card (approved)", async ({ wall, page }) => {
+        approved("the card is the story share card built from the wall tile");
         await wall.goto();
         await wall.openCreate();
         await page.locator("#fName").fill("Lowtide Club");
@@ -72,8 +83,9 @@ for (const viewport of viewports) {
         await page.locator("#fSnip").fill("Slow songs for the last train home.");
         await page.locator("#fPay").click();
         await expect(page.locator("#claimSheet .card-img")).toBeVisible({ timeout: 10_000 });
+        await page.locator("#claimSheet .card-img").evaluate((i: HTMLImageElement) => i.decode());
         await wall.quiet();
-        await expect(page).toHaveScreenshot(shot("create-done"));
+        await expect(page).toHaveScreenshot(approvedShot("create-done"));
       });
 
       test("after Next spot ten times and closing", async ({ wall, page }) => {
@@ -89,13 +101,16 @@ for (const viewport of viewports) {
         await expect(page).toHaveScreenshot(shot("next-then-close"));
       });
 
-      test("share sheet", async ({ wall, page }) => {
+      test("share sheet (approved)", async ({ wall, page }) => {
+        approved("the share sheet carries the spot's card");
         await wall.goto();
         await wall.openTile(0);
         await wall.openView.locator("[data-share]").click();
         await expect(page.locator("#shareVeil")).toHaveClass(/\bon\b/);
+        await expect(page.locator("#shareSheet .sc-preview img")).toBeVisible({ timeout: 10_000 });
+        await page.locator("#shareSheet .sc-preview img").evaluate((i: HTMLImageElement) => i.decode());
         await wall.quiet();
-        await expect(page).toHaveScreenshot(shot("share"));
+        await expect(page).toHaveScreenshot(approvedShot("share"));
       });
 
       for (const saves of [0, 3, 13]) {
