@@ -114,3 +114,20 @@ pipeline produces the scheduled reports:
 | Daily founder summary | every day, 07:00 | Pulse numbers for yesterday, alerts |
 | Weekly growth report | Mondays | visitors, retention, acquisition, shares, top spots |
 | Monthly financial report | the 1st | revenue, refunds, fees, chargebacks, per lane, transactions (XLSX + PDF) |
+
+## Where it lives in the code
+
+| Part | Files |
+|---|---|
+| Data layer | `supabase/migrations/20260926090600_founder_data.sql` (tables, `track_*`, `log_*`, `fd_*`) |
+| Tracking | `app/wall/track.ts`, `app/api/track`, `lib/server/ops.ts` (`measured`, `opsLog`), `app/api/stripe/webhook` |
+| Server access | `lib/founder/data.ts` (database or demo), `lib/founder/auth.ts` + `session.ts` |
+| Rules | `lib/founder/filters.ts` (periods, filters), `alerts.ts`, `format.ts`, `feedText.ts` |
+| Pages | `app/(founder)/founder/(room)/*`, kit in `app/(founder)/founder/_kit` |
+| Exports | `lib/founder/exports.ts`, `csv.ts`, `report.tsx`, `app/api/founder/exports`, `app/api/cron/reports` |
+| Demo | `lib/founder/demo.ts` (`FOUNDER_DEMO=1`) |
+| Tests | `lib/founder/*.test.mjs`, `db/schema.test.mjs`, `tests/founder.spec.ts` |
+
+Screens (demo data): [Pulse](founder-screens/pulse.png),
+[Overview](founder-screens/overview.png), [Overview, dark](founder-screens/overview-dark.png),
+[Pulse on a phone](founder-screens/pulse-phone.png).

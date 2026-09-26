@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { hasDatabase, rpc } from "../../../../lib/server/backend";
-import type { Feed } from "../../../../lib/wall/live";
-import { mediaURL } from "../../../../lib/wall/live";
-import { LANE, pad, type LaneId } from "../../../../lib/wall/model";
-import { left, short } from "../../../../lib/wall/time";
+import { hasDatabase, rpc } from "../../../../../lib/server/backend";
+import type { Feed } from "../../../../../lib/wall/live";
+import { mediaURL } from "../../../../../lib/wall/live";
+import { LANE, pad, type LaneId } from "../../../../../lib/wall/model";
+import { left, short } from "../../../../../lib/wall/time";
 import WallPage from "../../../page";
 
 type Props = { params: Promise<{ lane: string; no: string }> };

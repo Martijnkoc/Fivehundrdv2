@@ -625,14 +625,22 @@ test.describe("approved changes on top of the reference", () => {
     test("closing the sheet leaves you where you were on the wall", async ({ wall, page }) => {
       await wall.goto();
       await page.evaluate(() => window.scrollTo(0, 2400));
+      /* rows render (content-visibility) on the next frames; people tap what they can see */
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
       const y = await page.evaluate(() => scrollY);
       const tile = page.locator("#rack .spot:not(.vacant):not(.filler) .book");
+      /* a tile fully clear of the header and the tab bar, so clicking it doesn't scroll the page first */
       const n = await page.evaluate(() => {
-        const all = [...document.querySelectorAll("#rack .spot:not(.vacant):not(.filler)")];
-        return all.findIndex((el) => el.getBoundingClientRect().top > 150);
+        const all = [...document.querySelectorAll("#rack .spot:not(.vacant):not(.filler) .book")];
+        return all.findIndex((el) => {
+          const r = el.getBoundingClientRect();
+          return r.top > 150 && r.bottom < innerHeight - 120;
+        });
       });
-      await tile.nth(n).click();
+      const box = (await tile.nth(n).boundingBox())!;
+      await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
       await expect(page.locator("#dsheet")).toBeVisible();
+      expect(await page.evaluate(() => scrollY)).toBe(y);
       for (let i = 0; i < 6; i++) {
         const no = await page.locator("#dsheet").getAttribute("data-no");
         await page.locator("#dsheet [data-next]").click();

@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { mediaURL } from "../../lib/wall/live";
-import { LANE, pad, type LaneId } from "../../lib/wall/model";
-import { SUPABASE_URL, supabase } from "../wall/liveClient";
+import { mediaURL } from "../../../lib/wall/live";
+import { LANE, pad, type LaneId } from "../../../lib/wall/model";
+import { SUPABASE_URL, supabase } from "../../wall/liveClient";
 import "./admin.css";
 
 /*

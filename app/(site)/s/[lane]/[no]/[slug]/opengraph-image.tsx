@@ -1,11 +1,11 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { ImageResponse } from "next/og";
-import { storyBySlug } from "../../../../../lib/server/story";
-import { genArt } from "../../../../../lib/wall/art";
-import { mediaURL } from "../../../../../lib/wall/live";
-import { BIND, LANE, pad } from "../../../../../lib/wall/model";
-import { PAL } from "../../../../../lib/wall/demo";
+import { storyBySlug } from "../../../../../../lib/server/story";
+import { genArt } from "../../../../../../lib/wall/art";
+import { mediaURL } from "../../../../../../lib/wall/live";
+import { BIND, LANE, pad } from "../../../../../../lib/wall/model";
+import { PAL } from "../../../../../../lib/wall/demo";
 
 /*
  * The link preview (what X, WhatsApp, iMessage and Slack show for a pasted

@@ -1,8 +1,8 @@
-import { Card } from "./wall/Card";
-import { Footer, Header, Overlays, TabBar } from "./wall/Chrome";
-import { Intro } from "./wall/Intro";
-import { Rack } from "./wall/Rack";
-import { WallRuntime } from "./wall/WallRuntime";
+import { Card } from "../wall/Card";
+import { Footer, Header, Overlays, TabBar } from "../wall/Chrome";
+import { Intro } from "../wall/Intro";
+import { Rack } from "../wall/Rack";
+import { WallRuntime } from "../wall/WallRuntime";
 
 export default function WallPage() {
   return (

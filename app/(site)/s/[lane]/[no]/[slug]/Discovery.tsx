@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { toSpot } from "../../../../../lib/wall/live";
-import { LANE, numOf, pad } from "../../../../../lib/wall/model";
-import { styleFor } from "../../../../../lib/wall/time";
-import type { PublicStory } from "../../../../../lib/server/story";
-import { startPlay, togglePlay } from "../../../../wall/audio";
-import { Cover } from "../../../../wall/Cover";
-import { cardFileName, shareCardBlob } from "../../../../wall/shareCard";
-import { cssVars } from "../../../../wall/Tile";
-import { startTracking } from "../../../../wall/track";
+import { toSpot } from "../../../../../../lib/wall/live";
+import { LANE, numOf, pad } from "../../../../../../lib/wall/model";
+import { styleFor } from "../../../../../../lib/wall/time";
+import type { PublicStory } from "../../../../../../lib/server/story";
+import { startPlay, togglePlay } from "../../../../../wall/audio";
+import { Cover } from "../../../../../wall/Cover";
+import { cardFileName, shareCardBlob } from "../../../../../wall/shareCard";
+import { cssVars } from "../../../../../wall/Tile";
+import { startTracking } from "../../../../../wall/track";
 
 /**
  * A story after its 72 hours: the same open view as on the wall (Cover),

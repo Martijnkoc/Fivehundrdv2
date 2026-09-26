@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
-import { storyBySlug } from "../../../../../lib/server/story";
-import { LANE, pad } from "../../../../../lib/wall/model";
+import { storyBySlug } from "../../../../../../lib/server/story";
+import { LANE, pad } from "../../../../../../lib/wall/model";
 import WallPage from "../../../../page";
 import { Discovery } from "./Discovery";
 

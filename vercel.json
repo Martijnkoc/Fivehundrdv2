@@ -1,5 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "crons": [{ "path": "/api/cron/cleanup", "schedule": "17 4 * * *" }]
+  "crons": [
+    { "path": "/api/cron/cleanup", "schedule": "17 4 * * *" },
+    { "path": "/api/cron/reports?kind=daily", "schedule": "53 4 * * *" },
+    { "path": "/api/cron/reports?kind=weekly", "schedule": "8 5 * * 1" },
+    { "path": "/api/cron/reports?kind=monthly", "schedule": "23 5 1 * *" }
+  ]
 }

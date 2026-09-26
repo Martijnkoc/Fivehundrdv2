@@ -139,11 +139,40 @@ Optional, for keeping the wall safe (each is skipped when unset):
 | `GOOGLE_SAFE_BROWSING_KEY` | checks links against Google's list of harmful sites |
 | `NEXT_PUBLIC_TURNSTILE_SITE_KEY`, `TURNSTILE_SECRET_KEY` | Cloudflare's invisible robot check before paying |
 | `ADMIN_EMAILS` | who may open `/admin` (comma separated) |
-| `CRON_SECRET` | lets Vercel's daily clean-up in |
+| `CRON_SECRET` | lets Vercel's daily clean-up and scheduled reports in |
+| `FOUNDER_EMAILS` | who may open the Control Room, `/founder` (falls back to `ADMIN_EMAILS`) |
+| `FOUNDER_SESSION_SECRET` | signs Control Room sessions (otherwise derived from the server key) |
+| `FOUNDER_TZ` | where the Control Room's days begin (default `Europe/Amsterdam`) |
+| `FOUNDER_SINCE` | the first day of "All time" (default `2026-09-01`) |
 
 The webhook listens for `checkout.session.completed`,
-`checkout.session.async_payment_succeeded`, `checkout.session.expired` and
-`checkout.session.async_payment_failed`.
+`checkout.session.async_payment_succeeded`, `checkout.session.expired`,
+`checkout.session.async_payment_failed` and `charge.dispute.*` (chargebacks),
+and records Stripe's fee for each payment.
+
+## The Control Room (`/founder`)
+
+The founder's private analytics product: Pulse (today, live), Overview,
+Growth, Wall, Creators, Revenue, Acquisition, Shares, Retention, Operations,
+Events, Exports, and a page per spot. Blueprint, metric definitions and alert
+rules: [`docs/founder-dashboard.md`](docs/founder-dashboard.md).
+
+- Its own root layout, styles and code (`app/(founder)`); the public site
+  lives in `app/(site)` and never loads any of it.
+- Every number comes from `fd_*` database functions that need the server
+  key, called only on the server. Sign-in is a Supabase email link; the
+  server checks `FOUNDER_EMAILS` and sets its own signed, httpOnly cookie.
+- The wall measures anonymously: one beacon per visit (source, device,
+  country), batched impressions, Create steps and errors (`app/wall/track.ts`
+  → `/api/track`); API routes log status and timing after responding.
+- Exports (CSV, XLSX, PDF founder report) run as server jobs into the private
+  `exports` Storage bucket (created on first use). Scheduled reports:
+  `/api/cron/reports?kind=daily|weekly|monthly` (see `vercel.json`).
+- To look around without data: `FOUNDER_DEMO=1 pnpm dev`, then open
+  `/founder`. The demo is made up, needs no sign-in, and is refused when
+  `VERCEL_ENV=production`.
+
+![Pulse](docs/founder-screens/pulse.png)
 
 ## Keeping the wall safe
 
@@ -169,6 +198,7 @@ The webhook listens for `checkout.session.completed`,
 ```bash
 pnpm lint
 pnpm test:db
+pnpm test:unit
 pnpm build
 pnpm exec playwright install chromium
 pnpm test:e2e
