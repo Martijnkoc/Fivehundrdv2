@@ -15,3 +15,47 @@
 .reasons{display:flex;flex-direction:column;margin:4px 0 12px}
 .reason{display:flex;gap:10px;align-items:center;padding:11px 4px;border-bottom:1px solid var(--line);font-weight:600;font-size:15px;cursor:pointer}
 .reason input{accent-color:var(--ink);width:18px;height:18px;margin:0}
+
+/*
+ * Art direction (approved change): the same wall, printed. A light, fresh
+ * page; warm paper cards that sit on it; ink that reads as printed rather
+ * than screen black; a little grain and halftone on cards and artwork.
+ * Layout, sizes, spacing and hierarchy are untouched.
+ */
+:root{
+  --bg:#fbf9f4;          /* the page: very light warm off-white */
+  --paper:#f6efe1;       /* cream: the open story's text side, fields, text on ink */
+  --card:#f3e9d6;        /* warm paper: spot cards */
+  --ink:#1c1b18;         /* washed charcoal, like printed ink */
+  --ink2:#5d564a;
+  --line:#e2d8c4;
+  --grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%' height='100%' filter='url(%23g)'/></svg>");
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){--bg:#15130f;--paper:#1f1c17;--card:#211d17;--ink:#f2ede2;--ink2:#a0977f;--line:#39342b}
+}
+:root[data-theme="dark"]{--bg:#15130f;--paper:#1f1c17;--card:#211d17;--ink:#f2ede2;--ink2:#a0977f;--line:#39342b}
+
+/* spot cards: warm paper with a little tooth, lifted off the page */
+.book{background:var(--card);border-color:color-mix(in oklab,var(--line),var(--ink) 6%);box-shadow:0 1px 0 rgba(28,27,24,.05)}
+.book::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background-image:var(--grain);background-size:160px;opacity:.07;mix-blend-mode:multiply}
+.book.vbook{background:transparent;box-shadow:none}
+.book.vbook::after{display:none}
+.bk-no{background:#fbf7ee;color:#1c1b18;box-shadow:0 0 0 1px rgba(28,27,24,.12)}
+
+/* artwork: a fine halftone screen and slightly softer colour, as if offset printed */
+.bk-art img,.bk-art svg{filter:saturate(.94) contrast(1.03)}
+.bk-art::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;opacity:.11;mix-blend-mode:multiply;
+  background-image:radial-gradient(circle at center,#1c1b18 .7px,transparent 1.1px);background-size:3px 3px}
+.art img,.art svg{filter:saturate(.95) contrast(1.03)}
+.art::before{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background-image:var(--grain);background-size:180px;opacity:.12;mix-blend-mode:multiply}
+
+/* the Fivehundrd card: the same paper, a touch of grain */
+.lc{box-shadow:4px 4px 0 #1c1b18;border-color:#1c1b18}
+.lc::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background-image:var(--grain);background-size:160px;opacity:.09;mix-blend-mode:multiply}
+
+/* dark UI in washed charcoal, never screen black */
+.btn-create{background-color:#1d1c19;color:#fbf7ee;background-image:var(--grain);background-size:120px;background-blend-mode:soft-light;box-shadow:inset 0 0 0 1px rgba(255,255,255,.05)}
+.btn-create:hover{background-color:var(--pink);color:#1c1b18}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .btn-create{background-color:#f2ede2;color:#1c1b18}}
+:root[data-theme="dark"] .btn-create{background-color:#f2ede2;color:#1c1b18}

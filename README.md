@@ -54,6 +54,7 @@ which were signed off:
 4. The index strip is removed. The reference only hid it, and it took no space.
 5. Keep my card shows the official Google and Apple marks (§12).
 6. On phones, Keep my card closes the card first, so the login sheet opens in front of it. In the reference it opened behind the card.
+7. Art direction: a lighter warm off-white page, warm paper spot cards that lift off it, washed charcoal instead of screen black (the Create button most of all), and subtle grain and halftone on cards and artwork. Layout, sizes, spacing and hierarchy are unchanged.
 
 CSS for these lives in `app/wall/overrides.css`. The visual suite applies it
 to the reference too, so the baselines are "the reference plus the approved
