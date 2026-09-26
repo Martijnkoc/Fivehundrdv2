@@ -2,13 +2,14 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { DESCRIPTION, NAME, orgJsonLd, SITE_URL, TAGLINE } from "../../lib/site/facts";
+import { NAME, orgJsonLd, POSITIONING, SITE_URL, TAGLINE } from "../../lib/site/facts";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: `${NAME}. The wall: 500 spots, 72 hours each`, template: `%s · ${NAME}` },
-  description: DESCRIPTION,
+  title: { default: `${NAME}. The Wall: 500 spots per lane, 72 hours each`, template: `%s · ${NAME}` },
+  description: `${POSITIONING.replace("Fivehundrd is a", "A")} 500 spots per lane, 72 hours each.`,
   applicationName: NAME,
+  category: "discovery",
   keywords: [
     "discover new music",
     "indie books",
@@ -21,8 +22,8 @@ export const metadata: Metadata = {
     "no algorithm",
   ],
   alternates: { canonical: "/" },
-  openGraph: { type: "website", siteName: NAME, title: `${NAME}. ${TAGLINE}`, description: DESCRIPTION, url: "/", locale: "en_US" },
-  twitter: { card: "summary_large_image", title: `${NAME}. ${TAGLINE}`, description: DESCRIPTION },
+  openGraph: { type: "website", siteName: NAME, title: `${NAME}. ${TAGLINE}`, description: POSITIONING, url: "/", locale: "en_US" },
+  twitter: { card: "summary_large_image", title: `${NAME}. ${TAGLINE}`, description: POSITIONING },
   robots: { index: true, follow: true },
   appleWebApp: { capable: true, statusBarStyle: "default" },
   formatDetection: { telephone: false },

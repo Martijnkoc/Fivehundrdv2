@@ -9,7 +9,7 @@ import { PGlite } from "@electric-sql/pglite";
  * the wall does goes through the same functions the app calls.
  */
 /* every migration but the platform one (pg_cron, Storage: Supabase only) */
-const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links", "20260926090600_founder_data"];
+const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links", "20260926090600_founder_data", "20260926090700_indexable_stories"];
 const schema = (
   await Promise.all(MIGRATIONS.map((m) => readFile(new URL(`../supabase/migrations/${m}.sql`, import.meta.url), "utf8")))
 ).join("\n");
@@ -392,6 +392,33 @@ describe("lasting links", () => {
     await one("select public.admin_hide($1, $2, false)", [KEY, a.id]);
     await one("select public.admin_remove($1, $2, 'spam')", [KEY, a.id]);
     assert.equal(await byCode(slug), null);
+  });
+
+  test("the sitemap lists paid stories, live and ended, and never unpaid, hidden or removed ones", async () => {
+    const indexable = async () => (await one("select public.stories_indexable(0, 100) r")).r.map((x) => x.slug);
+    const count = async () => (await one("select public.stories_indexable_count() n")).n;
+    const code = async (id) => (await one("select slug from public.stories where id = $1", [id])).slug;
+    const unpaid = await reserve(story({ no: 1 }));
+    const live = await reserve(story({ no: 2 }));
+    await complete(live.id);
+    const ended = await reserve(story({ no: 3 }));
+    await complete(ended.id);
+    await age(ended.id, "73 hours");
+    await db.query("select private.wall_tick()");
+    const hidden = await reserve(story({ no: 4 }));
+    await complete(hidden.id);
+    await one("select public.admin_hide($1, $2, true)", [KEY, hidden.id]);
+    const removed = await reserve(story({ no: 5 }));
+    await complete(removed.id);
+    await one("select public.admin_remove($1, $2, 'spam')", [KEY, removed.id]);
+    const list = await indexable();
+    assert.deepEqual(list.sort(), [await code(live.id), await code(ended.id)].sort());
+    assert.ok(!list.includes(await code(unpaid.id)));
+    assert.equal(await count(), 2);
+    /* public data only: callable without the server key */
+    await db.exec("set role anon");
+    assert.equal((await one("select public.stories_indexable_count() n")).n, 2);
+    await db.exec("reset role");
   });
 });
 

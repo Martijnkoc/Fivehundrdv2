@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { LANES, laneBySlug, NAME } from "../../../../lib/site/facts";
-import WallPage from "../../page";
+import { LANES, laneBySlug, NAME, SITE_URL } from "../../../../lib/site/facts";
+import { WallPage } from "../../../wall/WallPage";
 
 type Props = { params: Promise<{ lane: string }> };
 
@@ -21,6 +21,31 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default function LanePage() {
-  return <WallPage />;
+export default async function LanePage({ params }: Props) {
+  const l = laneBySlug((await params).lane)!;
+  const url = `${SITE_URL}/lanes/${l.slug}`;
+  return (
+    <WallPage
+      heading={`${l.label} on The Wall: ${l.what}`}
+      ld={[
+        {
+          "@context": "https://schema.org",
+          "@type": "CollectionPage",
+          "@id": url,
+          url,
+          name: `${l.label} on ${NAME}`,
+          description: `500 spots for ${l.who}, each a 72-hour placement on The Wall, with ${l.preview}.`,
+          isPartOf: { "@id": `${SITE_URL}/#site` },
+        },
+        {
+          "@context": "https://schema.org",
+          "@type": "BreadcrumbList",
+          itemListElement: [
+            { "@type": "ListItem", position: 1, name: NAME, item: `${SITE_URL}/` },
+            { "@type": "ListItem", position: 2, name: l.label, item: url },
+          ],
+        },
+      ]}
+    />
+  );
 }

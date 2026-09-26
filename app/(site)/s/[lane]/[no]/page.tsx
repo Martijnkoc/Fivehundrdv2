@@ -4,7 +4,7 @@ import type { Feed } from "../../../../../lib/wall/live";
 import { mediaURL } from "../../../../../lib/wall/live";
 import { LANE, pad, type LaneId } from "../../../../../lib/wall/model";
 import { left, short } from "../../../../../lib/wall/time";
-import WallPage from "../../../page";
+import { WallPage } from "../../../../wall/WallPage";
 
 type Props = { params: Promise<{ lane: string; no: string }> };
 
@@ -32,4 +32,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default WallPage;
+export default function SpotNumberPage() {
+  return <WallPage />;
+}

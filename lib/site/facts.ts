@@ -7,7 +7,8 @@
 import type { LaneId } from "../wall/model";
 
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://fivehundrd.com").replace(/\/$/, "");
-export const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "hello@fivehundrd.com";
+/** Only shown when the founder has set it; no address is made up. */
+export const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "";
 export const NAME = "Fivehundrd";
 export const TAGLINE = "Discover before the crowd.";
 export const SLOGAN = "Good stories find good people.";
@@ -17,6 +18,10 @@ export const UPDATED = "2026-09-26";
 /** One sentence that answers "what is Fivehundrd?" */
 export const DEFINITION =
   "Fivehundrd is a public wall where independent makers (musicians, writers, artists, game makers, podcasters and newsletter writers) pay $9.95 to show their work in one of 500 numbered spots per lane for 72 hours.";
+
+/** The positioning, for metadata and structured data (not shown as UI copy). */
+export const POSITIONING =
+  "Fivehundrd is a discovery platform where music, books, games, creators, podcasts and newsletters get a limited-time place on The Wall, to be discovered before they become mainstream.";
 
 export const DESCRIPTION =
   "A wall of 3,000 spots across Music, Books, Games, Creators, Podcasts and Newsletters. Each spot is one maker for 72 hours, $9.95. No feed, no algorithm, no front row: every visitor starts somewhere else on the wall.";
@@ -62,7 +67,7 @@ export const FAQ: { q: string; a: string }[] = [
   { q: "Which lanes are there?", a: "Music, Books, Games, Creators, Podcasts and Newsletters: 500 spots each, 3,000 in total." },
   {
     q: "Do I need an account?",
-    a: "No. Browsing and saving never need an account; your saves are kept in your browser. Keep my card is optional: sign in with an email link to keep your saves on every device and get a reminder an hour before a saved spot ends.",
+    a: "No. Browsing and saving never need an account; your saves (your Finds) are kept in your browser. Keep my card is optional: sign in to keep your saves on every device.",
   },
   {
     q: "What happens after 72 hours?",
@@ -74,7 +79,7 @@ export const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "How is the wall kept safe?",
-    a: "Every story is checked before payment: links against known harmful sites and simple rules, and the name, texts and images against the wall rules. Anyone can report a live story; reported stories are reviewed by a person and can be taken down.",
+    a: "Every story is checked before payment: its links against simple rules and lists of known harmful sites, and its name, texts and images against the wall rules. Anyone can report a live story; reported stories are reviewed by a person and can be taken down.",
   },
   { q: "Is Fivehundrd free for visitors?", a: "Yes. There are no ads and no paywall. Makers pay for their spot; visitors don't pay anything." },
 ];
@@ -88,8 +93,8 @@ export const orgJsonLd = () => ({
       name: NAME,
       url: SITE_URL,
       slogan: SLOGAN,
-      description: DEFINITION,
-      email: CONTACT_EMAIL,
+      description: POSITIONING,
+      ...(CONTACT_EMAIL && { email: CONTACT_EMAIL }),
     },
     {
       "@type": "WebSite",
@@ -99,6 +104,18 @@ export const orgJsonLd = () => ({
       description: DESCRIPTION,
       publisher: { "@id": `${SITE_URL}/#org` },
       inLanguage: "en",
+    },
+    {
+      "@type": "DefinedTermSet",
+      "@id": `${SITE_URL}/#terms`,
+      name: "Fivehundrd terms",
+      hasDefinedTerm: [
+        { "@type": "DefinedTerm", name: "The Wall", description: "Fivehundrd's public wall: six lanes of 500 numbered spots, the same for every visitor, with no feed and no algorithm." },
+        { "@type": "DefinedTerm", name: "Spot", description: "One numbered place on The Wall, held by one maker for a 72-hour placement." },
+        { "@type": "DefinedTerm", name: "Discovery", description: "A maker's work in a spot: name, artwork, pitch, preview and links, with a lasting link that keeps working after the 72 hours." },
+        { "@type": "DefinedTerm", name: "Finds", description: "The discoveries a visitor saved; they stay after the spot ends." },
+        { "@type": "DefinedTerm", name: "Create", description: "Where a maker claims a spot and builds their tile." },
+      ],
     },
     {
       "@type": "Service",

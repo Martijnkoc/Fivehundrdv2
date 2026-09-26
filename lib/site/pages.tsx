@@ -9,7 +9,8 @@ import { CONTACT_EMAIL, DEFINITION, FAQ, LANES, type PageSlug, UPDATED } from ".
 
 export type Info = { lede: string; body: ReactNode };
 
-const mail = <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>;
+/* the contact address only when the founder has set one (NEXT_PUBLIC_CONTACT_EMAIL) */
+const mail = CONTACT_EMAIL ? <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a> : <a href="/contact">contact us</a>;
 
 export const INFO: Record<PageSlug, Info> = {
   "how-it-works": {
@@ -166,8 +167,10 @@ export const INFO: Record<PageSlug, Info> = {
   },
 
   contact: {
-    lede: `Email ${CONTACT_EMAIL} for questions, press, partnerships and refunds. To report a story on the wall, use the Report button on the story itself; that reaches us fastest.`,
-    body: (
+    lede: CONTACT_EMAIL
+      ? `Email ${CONTACT_EMAIL} for questions, press, partnerships and refunds. To report a story on the wall, use the Report button on the story itself; that reaches us fastest.`
+      : "To report a story on the wall, use the Report button on the story itself; that reaches us fastest.",
+    body: CONTACT_EMAIL ? (
       <>
         <h2>Email</h2>
         <p>{mail}</p>
@@ -175,6 +178,11 @@ export const INFO: Record<PageSlug, Info> = {
         <p>Include the email address you paid with and the spot&apos;s number and lane, so we can find it quickly.</p>
         <h2>About a story</h2>
         <p>Use Report on the story, or email us with its link.</p>
+      </>
+    ) : (
+      <>
+        <h2>About a story</h2>
+        <p>Every live story has a Report button. Reports reach the people who look after the wall.</p>
       </>
     ),
   },
@@ -207,7 +215,7 @@ export const INFO: Record<PageSlug, Info> = {
           limit any rights you have under the law where you live.
         </p>
         <h2>6. Accounts</h2>
-        <p>Keep my card is optional. You can sign in with an email link to keep your saves on every device and get reminders.</p>
+        <p>Keep my card is optional. You can sign in to keep your saves on every device.</p>
         <h2>7. Liability</h2>
         <p>
           Fivehundrd is provided as it is. Links on the wall lead to other sites that we don&apos;t control. To the extent the law allows, our liability is limited to what you paid
@@ -236,11 +244,17 @@ export const INFO: Record<PageSlug, Info> = {
             <b>Which tiles were on screen</b>, so makers see how often their spot was seen.
           </li>
           <li>
-            <b>Your IP address is not stored.</b> A salted one-way hash is used briefly to limit abuse (for example too many uploads).
+            <b>We don&apos;t store IP addresses.</b> To limit abuse (for example too many uploads or reservations) we store a salted one-way hash of the address with events,
+            reports, uploads and purchases, and don&apos;t use it to identify anyone.
           </li>
         </ul>
         <h2>Keep my card (optional)</h2>
-        <p>If you sign in, we keep your email address to sync your saves across devices and to send the reminders you asked for.</p>
+        <p>If you sign in, we keep your email address to sync your saves across devices.</p>
+        <h2>Cookies and local storage</h2>
+        <p>
+          The site keeps your visitor id, your saves and your preferences in your browser&apos;s local storage. We use no advertising or third-party tracking cookies. Stripe and
+          Cloudflare may set their own cookies during checkout.
+        </p>
         <h2>Makers</h2>
         <p>
           Your story (name, texts, images, audio, links) is public while it&apos;s on the wall and through its lasting link. Your email address and payment are handled by Stripe; we
@@ -257,7 +271,7 @@ export const INFO: Record<PageSlug, Info> = {
         </ul>
         <h2>Your choices</h2>
         <p>
-          Clearing your browser&apos;s site data removes your visitor id and local saves. To see, correct or delete data linked to your email address, write to {mail}.
+          Clearing your browser&apos;s site data removes your visitor id and local saves. To see, correct or delete data linked to your email address, {CONTACT_EMAIL ? <>write to {mail}</> : "contact us"}.
         </p>
       </>
     ),

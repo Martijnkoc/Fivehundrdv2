@@ -1,27 +1,24 @@
-import { Card } from "../wall/Card";
-import { Footer, Header, Overlays, TabBar } from "../wall/Chrome";
-import { Intro } from "../wall/Intro";
-import { Rack } from "../wall/Rack";
-import { WallRuntime } from "../wall/WallRuntime";
+import { DESCRIPTION, NAME, POSITIONING, SITE_URL } from "../../lib/site/facts";
+import { WallPage } from "../wall/WallPage";
 
-export default function WallPage() {
+/** The Wall. What the page is, for machines: the site's own graph is in the layout. */
+export default function Home() {
   return (
-    <>
-      <Header />
-      <div className="stage">
-        <aside className="colophon" id="card" aria-label="Your Fivehundrd card">
-          <Card />
-        </aside>
-        <main>
-          <h1 className="sr">The wall</h1>
-          <Intro />
-          <Rack />
-        </main>
-      </div>
-      <Footer />
-      <Overlays />
-      <TabBar />
-      <WallRuntime />
-    </>
+    <WallPage
+      heading="The Wall: discover music, books, games, creators, podcasts and newsletters on Fivehundrd"
+      ld={[
+        {
+          "@context": "https://schema.org",
+          "@type": "WebPage",
+          "@id": `${SITE_URL}/#home`,
+          url: `${SITE_URL}/`,
+          name: `${NAME}. The Wall`,
+          description: `${POSITIONING} ${DESCRIPTION}`,
+          isPartOf: { "@id": `${SITE_URL}/#site` },
+          about: { "@id": `${SITE_URL}/#org` },
+          mainEntity: { "@id": `${SITE_URL}/#spot` },
+        },
+      ]}
+    />
   );
 }

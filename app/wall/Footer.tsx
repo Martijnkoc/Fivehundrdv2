@@ -68,9 +68,11 @@ export function Footer() {
               {page("contact")}
               {page("terms")}
               {page("privacy")}
-              <li>
-                <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
-              </li>
+              {CONTACT_EMAIL && (
+                <li>
+                  <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+                </li>
+              )}
             </ul>
           </nav>
         </div>

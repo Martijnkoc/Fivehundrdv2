@@ -41,14 +41,35 @@ test("Claim a spot from another page opens Create", async ({ page }) => {
   await expect(page.locator("#claimVeil")).toHaveClass(/\bon\b/);
 });
 
-test("sitemap, robots and llms.txt", async ({ request }) => {
-  const map = await (await request.get("/sitemap.xml")).text();
+test("sitemap index, robots and llms.txt", async ({ request }) => {
+  const index = await (await request.get("/sitemap.xml")).text();
+  expect(index).toContain("<sitemapindex");
+  expect(index).toMatch(/\/sitemaps\/pages\.xml<\/loc>/);
+  const map = await (await request.get("/sitemaps/pages.xml")).text();
   for (const p of [...PAGES, "lanes/music", "lanes/newsletters"]) expect(map).toContain(`/${p}</loc>`);
+  for (const bad of ["/founder", "/admin", "/api", "fixture", "demo"]) expect(map).not.toContain(bad);
+  expect((await request.get("/sitemaps/nope.xml")).status()).toBe(404);
   const robots = await (await request.get("/robots.txt")).text();
-  expect(robots).toMatch(/Disallow: \/founder/);
-  expect(robots).toMatch(/Disallow: \/api\//);
+  for (const d of ["/founder", "/admin", "/api/"]) expect(robots).toContain(`Disallow: ${d}`);
   expect(robots).toMatch(/Sitemap: .*\/sitemap\.xml/);
   const llms = await request.get("/llms.txt");
   expect(llms.headers()["content-type"]).toContain("text/markdown");
-  expect(await llms.text()).toContain("$9.95");
+  const text = await llms.text();
+  for (const t of ["The Wall", "72 hours", "Finds", "Create"]) expect(text).toContain(t);
+});
+
+test("private surfaces send noindex, and pages without a story are a real 404", async ({ request }) => {
+  for (const p of ["/founder/login", "/admin", "/api/wall"]) expect((await request.get(p)).headers()["x-robots-tag"], p).toContain("noindex");
+  expect((await request.get("/s/music/1/zzzzzzzz")).status()).toBe(404);
+  expect((await request.get("/lanes/jazz")).status()).toBe(404);
+});
+
+test("the home page tells machines what Fivehundrd is", async ({ page }) => {
+  await page.goto("/?fixture=1");
+  await expect(page.locator("h1")).toHaveCount(1);
+  await expect(page.locator('meta[property="og:image"]')).toHaveAttribute("content", /opengraph-image/);
+  const ld = (await page.locator('script[type="application/ld+json"]').allTextContents()).map((s) => JSON.parse(s));
+  const types = ld.flatMap((d) => (d["@graph"] ? d["@graph"].map((g: { "@type": string }) => g["@type"]) : [d["@type"]]));
+  for (const t of ["Organization", "WebSite", "WebPage", "DefinedTermSet"]) expect(types).toContain(t);
+  expect(await page.locator("link[rel=canonical]").getAttribute("href")).toMatch(/^https?:\/\/[^/]+\/?$/);
 });
