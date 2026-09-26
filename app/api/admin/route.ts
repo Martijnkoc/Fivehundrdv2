@@ -1,5 +1,6 @@
 import { adminFrom, hasDatabase, hasPayments, json, rpc, stripe } from "../../../lib/server/backend";
 import { refundStory } from "../../../lib/server/refunds";
+import { measured } from "../../../lib/server/ops";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const FILTERS = new Set(["attention", "live", "removed", "all"]);
@@ -10,7 +11,7 @@ const FILTERS = new Set(["attention", "live", "removed", "all"]);
  */
 
 /** GET ?view=overview | stories (&filter, &q, &offset) | reports (&id) */
-export async function GET(req: Request) {
+export const GET = measured("/api/admin", async (req: Request) => {
   if (!hasDatabase()) return json({ error: "offline" }, { status: 503 });
   if (!(await adminFrom(req))) return json({ error: "not allowed" }, { status: 403 });
   const q = new URL(req.url).searchParams;
@@ -39,12 +40,12 @@ export async function GET(req: Request) {
   } catch {
     return json({ error: "unavailable" }, { status: 502 });
   }
-}
+});
 
 type Removed = { session: string | null; paymentIntent: string | null; amount: number | null; refunded: boolean };
 
 /** POST { action: hide | unhide | approve | remove | refund, id, reason?, refund? } */
-export async function POST(req: Request) {
+export const POST = measured("/api/admin", async (req: Request) => {
   if (!hasDatabase()) return json({ error: "offline" }, { status: 503 });
   const admin = await adminFrom(req);
   if (!admin) return json({ error: "not allowed" }, { status: 403 });
@@ -85,4 +86,4 @@ export async function POST(req: Request) {
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : "failed" }, { status: 502 });
   }
-}
+});

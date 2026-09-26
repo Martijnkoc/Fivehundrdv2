@@ -1,9 +1,10 @@
 import { hasDatabase, hasPayments, json, rpc, stripe } from "../../../../lib/server/backend";
+import { measured } from "../../../../lib/server/ops";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 /** The maker backed out of Checkout: end the session and free the number straight away. */
-export async function POST(req: Request) {
+export const POST = measured("/api/checkout/cancel", async (req: Request) => {
   const { id } = (await req.json().catch(() => ({}))) as { id?: string };
   if (!id || !UUID.test(id)) return json({ error: "id" }, { status: 400 });
   if (!hasDatabase() || !hasPayments()) return json({ error: "offline" }, { status: 503 });
@@ -21,4 +22,4 @@ export async function POST(req: Request) {
   } catch {
     return json({ error: "unavailable" }, { status: 502 });
   }
-}
+});

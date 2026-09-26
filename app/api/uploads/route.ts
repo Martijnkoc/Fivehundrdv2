@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { env, hasDatabase, ipHash, json, rpc, storage } from "../../../lib/server/backend";
+import { measured, opsLog } from "../../../lib/server/ops";
 
 /* What the Create form may upload (§13): shrunk artwork and logos, and a short audio clip. */
 const TYPES: Record<string, { bucket: "art" | "audio"; ext: string; max: number }> = {
@@ -21,7 +22,7 @@ const TYPES: Record<string, { bucket: "art" | "audio"; ext: string; max: number 
  * Hands out a one-time upload link for a draft file (pending/<random>.<ext>).
  * At most 15 an hour per person; files nobody paid for are cleaned up daily.
  */
-export async function POST(req: Request) {
+export const POST = measured("/api/uploads", async (req: Request) => {
   if (!hasDatabase() || !env.supabaseSecret) return json({ error: "Uploads aren't open yet." }, { status: 503 });
   const b = (await req.json().catch(() => ({}))) as { type?: string; size?: number };
   const t = TYPES[String(b.type)];
@@ -35,7 +36,8 @@ export async function POST(req: Request) {
     const { data, error } = await storage().from(t.bucket).createSignedUploadUrl(path);
     if (error || !data) throw error;
     return json({ bucket: t.bucket, path, token: data.token });
-  } catch {
+  } catch (e) {
+    opsLog("upload", false, { route: "/api/uploads", status: 502, message: e instanceof Error ? e.message : "upload link failed" });
     return json({ error: "Your files couldn't be uploaded. Try again." }, { status: 502 });
   }
-}
+});

@@ -22,6 +22,7 @@ import type { ShareData } from "./Sheets";
 import { cardFileName, readyCard, shareCardBlob } from "./shareCard";
 import type { Bridge } from "./store";
 import * as liveApi from "./liveClient";
+import { createMoment, startTracking, watchTiles } from "./track";
 
 type Opts = { align: boolean; auto?: boolean };
 /** The live wall (Supabase): the feed it was built from and the storage base URL. */
@@ -168,6 +169,22 @@ export function startWall(bridge: Bridge, live?: Live) {
 
   /* ---------- the rack (§5, §6) ---------- */
   const rack = $("#rack");
+  /* the Control Room's measurements (live wall only): the visit, and which live tiles were seen */
+  if (live) {
+    startTracking();
+    let wq = 0;
+    const watch = () => {
+      wq = 0;
+      watchTiles(rack, ".spot[data-no]:not(.vacant)", (el) => {
+        const s = WALL[noOf(el) - 1];
+        return s && !s.vacant ? s.id : undefined;
+      });
+    };
+    new MutationObserver(() => {
+      if (!wq) wq = window.setTimeout(watch, 400);
+    }).observe(rack, { childList: true, subtree: true });
+    watch();
+  }
   let open: HTMLElement | null = null;
   /* one entry point per visitor per day, kept in the browser (a cookie in the real build) */
   let ENTRY_R = Math.random(),
@@ -1037,6 +1054,7 @@ export function startWall(bridge: Bridge, live?: Live) {
       toast(live ? `Every ${LANE[L]} spot is taken. Check back soon.` : "All 500 spots are taken. Check back soon.");
       return;
     }
+    createMoment();
     bridge.openClaim({
       no: n,
       lane: L,

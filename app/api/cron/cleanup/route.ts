@@ -1,4 +1,5 @@
 import { env, hasDatabase, json, rpc, storage } from "../../../../lib/server/backend";
+import { measured } from "../../../../lib/server/ops";
 
 /** Files uploaded more than this long ago, that no paid or held story uses, are removed. */
 const GRACE_MS = 2 * 3600e3;
@@ -7,7 +8,7 @@ const GRACE_MS = 2 * 3600e3;
  * Daily (vercel.json): removes draft uploads nobody paid for. Vercel calls it
  * with `Authorization: Bearer $CRON_SECRET`.
  */
-export async function GET(req: Request) {
+export const GET = measured("/api/cron/cleanup", async (req: Request) => {
   if (!env.cronSecret || req.headers.get("authorization") !== `Bearer ${env.cronSecret}`)
     return json({ error: "not allowed" }, { status: 401 });
   if (!hasDatabase() || !env.supabaseSecret) return json({ error: "offline" }, { status: 503 });
@@ -35,4 +36,4 @@ export async function GET(req: Request) {
     }
   }
   return json({ removed });
-}
+});

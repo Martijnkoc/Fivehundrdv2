@@ -2,6 +2,7 @@ import { checkClaim } from "../../../lib/wall/claimRules";
 import { LANE } from "../../../lib/wall/model";
 import { hasDatabase, hasPayments, humanCheck, ipHash, json, rpc, stripe } from "../../../lib/server/backend";
 import { moderate } from "../../../lib/server/moderation";
+import { measured } from "../../../lib/server/ops";
 
 const PRICE_CENTS = 995;
 /** Stripe's shortest allowed session; the spot is held for exactly as long. */
@@ -13,7 +14,7 @@ type Reserved = { id: string; lane: string; no: number };
  * §13: the maker pays $9.95 for 72 hours. The story is stored and its number
  * held first; the spot goes live when Stripe confirms the payment (webhook).
  */
-export async function POST(req: Request) {
+export const POST = measured("/api/checkout", async (req: Request) => {
   if (!hasDatabase() || !hasPayments()) return json({ error: "Payments aren't open yet." }, { status: 503 });
   let body: unknown;
   try {
@@ -77,6 +78,6 @@ export async function POST(req: Request) {
     await rpc("checkout_release", { p_story: spot.id }).catch(() => {});
     return json({ error: "Payments are unavailable right now. Try again in a minute." }, { status: 502 });
   }
-}
+});
 
 export const maxDuration = 60;

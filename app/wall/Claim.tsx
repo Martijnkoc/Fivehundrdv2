@@ -6,6 +6,7 @@ import { parseLink } from "../../lib/wall/links";
 import { LANES, PRICE, numOf, pad, type FilledSpot, type LaneId, type Link, type Palette } from "../../lib/wall/model";
 import { styleFor, until } from "../../lib/wall/time";
 import { playingIn, stopAudio } from "./audio";
+import { createMoment } from "./track";
 import { Cover } from "./Cover";
 import { bridge, wallStore } from "./store";
 import { cardFileName, shareCardBlob } from "./shareCard";
@@ -435,6 +436,8 @@ function Steps(p: StepsProps) {
   const focusRef = useRef<HTMLDivElement>(null);
   /* each step starts at its top, with its first field ready */
   useEffect(() => {
+    /* where Create loses people (the Control Room's Create funnel) */
+    if (step > 0) createMoment(step + 1);
     const sheet = document.getElementById("claimSheet");
     if (sheet) sheet.scrollTop = 0;
     const t = setTimeout(() => {

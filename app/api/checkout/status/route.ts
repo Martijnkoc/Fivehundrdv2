@@ -1,4 +1,5 @@
 import { hasDatabase, json, rpc } from "../../../../lib/server/backend";
+import { measured } from "../../../../lib/server/ops";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
@@ -12,7 +13,7 @@ export type CheckoutStatus = {
 };
 
 /** Where the maker's checkout stands, for the page Stripe sends them back to. */
-export async function GET(req: Request) {
+export const GET = measured("/api/checkout/status", async (req: Request) => {
   const id = new URL(req.url).searchParams.get("id") ?? "";
   if (!UUID.test(id)) return json({ error: "id" }, { status: 400 });
   if (!hasDatabase()) return json({ error: "offline" }, { status: 503 });
@@ -24,4 +25,4 @@ export async function GET(req: Request) {
   } catch {
     return json({ error: "unavailable" }, { status: 502 });
   }
-}
+});

@@ -9,6 +9,7 @@ import { startPlay, togglePlay } from "../../../../wall/audio";
 import { Cover } from "../../../../wall/Cover";
 import { cardFileName, shareCardBlob } from "../../../../wall/shareCard";
 import { cssVars } from "../../../../wall/Tile";
+import { startTracking } from "../../../../wall/track";
 
 /**
  * A story after its 72 hours: the same open view as on the wall (Cover),
@@ -18,7 +19,10 @@ import { cssVars } from "../../../../wall/Tile";
 export function Discovery({ story, base }: { story: PublicStory; base: string }) {
   const [s] = useState(() => toSpot(story, 1, base, new Set()));
   const [url, setUrl] = useState("");
-  useEffect(() => setUrl(location.origin + location.pathname), []);
+  useEffect(() => {
+    setUrl(location.origin + location.pathname);
+    startTracking();
+  }, []);
 
   const share = async () => {
     const text = `${s.name} on fivehundrd.`;

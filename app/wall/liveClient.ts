@@ -34,18 +34,8 @@ export function supabase() {
 
 /* ---------- the visitor ---------- */
 
-function randomId() {
-  return crypto.randomUUID();
-}
-export function visitorId() {
-  try {
-    let v = localStorage.getItem("fh-visitor");
-    if (!v) localStorage.setItem("fh-visitor", (v = randomId()));
-    return v;
-  } catch {
-    return randomId();
-  }
-}
+import { visitorId } from "./track";
+export { visitorId };
 
 /** The stories this browser paid for (so the card can show "Your story"). */
 export function mineIds(): Set<string> {
