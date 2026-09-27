@@ -302,26 +302,63 @@
 .info-main .price-box span{font-size:14px;color:var(--ink2)}
 @media (max-width:520px){.info-top nav a.info-wall{display:none}}
 
-/* above the wall (approved change): Hotspots / Newest, and what changed since your last visit */
-.spotlight{margin:0 0 18px}
-.sl-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 10px}
+/* above the wall (approved change): its own band, over the card and the wall,
+   a few shades off the page; Hotspots / Newest and what changed since your last visit */
+.spotlight{background:color-mix(in oklab,var(--bg),#1c1b18 5.5%);border-bottom:1px solid var(--line)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .spotlight{background:color-mix(in oklab,var(--bg),#fff 4%)}}
+:root[data-theme="dark"] .spotlight{background:color-mix(in oklab,var(--bg),#fff 4%)}
+.sl-in{max-width:1240px;margin:0 auto;padding:16px max(12px,env(safe-area-inset-right,0px)) 18px max(12px,env(safe-area-inset-left,0px));display:grid;gap:12px}
+.sl-head{display:flex;align-items:center;justify-content:space-between;gap:8px 12px;flex-wrap:wrap}
 .sl-tabs{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:999px;background:var(--paper)}
 .sl-tabs button{min-height:32px;padding:0 14px;border:0;border-radius:999px;background:none;font:inherit;font-size:13px;font-weight:800;letter-spacing:-.01em;color:var(--ink2);cursor:pointer}
 .sl-tabs button.on{background:var(--ink);color:var(--bg)}
 .sl-tabs button:disabled{opacity:.45;cursor:default}
 .sl-since{margin:0;font-size:13px;color:var(--ink2)}
 .sl-since b{color:var(--ink);font-weight:800}
-.sl-row{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,104px);gap:16px}
-.sl-item{display:flex;flex-direction:column;gap:6px;padding:0;border:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
-.sl-item .spot.still{pointer-events:none}
+.sl-note{display:none;margin:0;font-size:13px;line-height:1.4;color:var(--ink2)}
+.sl-row{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
+.sl-item{display:flex;flex-direction:column;gap:6px;width:100%;padding:0;border:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.sl-item .spot.still{pointer-events:none;width:100%}
 .sl-item:hover .book{transform:translateY(-2px)}
 .sl-item:focus-visible{outline:2px solid var(--ink);outline-offset:4px;border-radius:8px}
 .sl-why{font-size:11.5px;line-height:1.3;color:var(--ink2)}
-.sl-why b{color:var(--ink);font-weight:800}
-.sq-r{display:block;font-size:10px;font-weight:700;color:var(--ink2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* the wall's reach, in the band's own style (placeholder numbers until the feed carries them) */
+.sl-stats{order:3;display:grid;gap:10px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--paper)}
+.sl-sh{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sl-live{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
+.sl-live i{width:7px;height:7px;border-radius:50%;background:#2fbf71;box-shadow:0 0 0 0 rgba(47,191,113,.5);animation:sl-pulse 2s ease-out infinite}
+@keyframes sl-pulse{70%{box-shadow:0 0 0 6px rgba(47,191,113,0)}100%{box-shadow:0 0 0 0 rgba(47,191,113,0)}}
+@media (prefers-reduced-motion:reduce){.sl-live i{animation:none}}
+.sl-tabs.sm button{min-height:28px;padding:0 11px;font-size:12px}
+.sl-nums{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0}
+.sl-nums div{min-width:0}
+.sl-nums dt{font-size:11.5px;font-weight:700;color:var(--ink2)}
+.sl-nums dd{margin:2px 0 0;font-family:"Fraunces",Georgia,serif;font-weight:800;font-size:26px;line-height:1.05;letter-spacing:-.02em;font-variant-numeric:tabular-nums;color:var(--ink)}
+.sl-fomo{margin:0;font-size:13px;line-height:1.4;color:var(--ink2)}
+.sl-fomo b{color:var(--ink);font-weight:800}
+.sl-claim{display:inline;padding:0;border:0;background:none;font:inherit;font-weight:800;color:var(--ink);text-decoration:underline;text-decoration-thickness:2px;text-decoration-color:var(--pink);text-underline-offset:3px;cursor:pointer}
+.sl-claim:hover{text-decoration-color:var(--ink)}
+/* desktop: the controls over the card, the tiles over the wall, on the same grid */
+@media (min-width:980px){
+  .sl-in{grid-template-columns:320px minmax(0,820px);gap:18px 44px;padding:20px 24px 22px;justify-content:center;align-items:start}
+  .sl-head{flex-direction:column;align-items:flex-start;gap:10px}
+  .sl-note{display:block}
+  .sl-head{grid-column:1;grid-row:1}
+  .sl-stats{grid-column:1;grid-row:2}
+  .sl-row{grid-column:2;grid-row:1/3}
+}
+/* tablets: the numbers beside the fomo line */
+@media (min-width:700px) and (max-width:979px){
+  .sl-stats{grid-template-columns:auto auto 1fr;align-items:center;gap:10px 22px}
+  .sl-sh{flex-direction:column;align-items:flex-start}
+}
+/* phones: a strip to swipe */
 @media (max-width:699px){
-  .spotlight{margin:0 0 14px}
-  .sl-row{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:104px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 calc(-1 * var(--gut,16px));padding:0 var(--gut,16px) 4px;scrollbar-width:none}
+  .sl-in{padding:12px 0 14px;gap:10px}
+  .sl-head{padding:0 16px}
+  .sl-stats{margin:0 16px}
+  .sl-row{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:104px;overflow-x:auto;scroll-snap-type:x mandatory;padding:0 16px 2px;scroll-padding:0 16px;scrollbar-width:none}
   .sl-row::-webkit-scrollbar{display:none}
   .sl-row li{scroll-snap-align:start}
 }
+.sq-r{display:block;font-size:10px;font-weight:700;color:var(--ink2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

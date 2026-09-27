@@ -463,6 +463,8 @@ export function startWall(bridge: Bridge, live?: Live) {
   }
   function openSpot(el: HTMLElement | null, { align, auto }: Opts) {
     if (!el || el.classList.contains("vacant") || el.classList.contains("filler")) return;
+    /* the live wall never opens a spot by itself: people choose what to open */
+    if (auto && live) return;
     if (phoneSheet()) {
       if (auto) return;
       return showSheet(el);
@@ -976,7 +978,7 @@ export function startWall(bridge: Bridge, live?: Live) {
     if (!live) return;
     try {
       live.feed = await liveApi.fetchFeed();
-      bridge.setHot(live.feed.hot ?? null);
+      bridge.setHot(live.feed.hot ?? null, live.feed.stats ?? null);
     } catch {
       return;
     }
@@ -1237,7 +1239,7 @@ export function startWall(bridge: Bridge, live?: Live) {
       } catch {}
     }, 60e3);
   } catch {}
-  if (live) bridge.setHot(live.feed.hot ?? []);
+  if (live) bridge.setHot(live.feed.hot ?? [], live.feed.stats ?? null);
   renderLanes();
   renderRack();
   setHead();

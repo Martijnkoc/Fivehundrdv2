@@ -1,3 +1,4 @@
+import { preload } from "react-dom";
 import { Card } from "./Card";
 import { Footer, Header, Overlays, TabBar } from "./Chrome";
 import { Intro } from "./Intro";
@@ -15,9 +16,12 @@ export const ldHtml = (data: unknown) => ({ __html: JSON.stringify(data).replace
  * `ld` is that page's structured data. Neither changes what people see.
  */
 export function WallPage({ heading = "The wall", ld }: { heading?: string; ld?: unknown[] }) {
+  /* the live wall's feed starts downloading with the page, not after the scripts */
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL) preload("/api/wall", { as: "fetch", crossOrigin: "anonymous" });
   return (
     <>
       <Header />
+      <Spotlight />
       <div className="stage">
         <aside className="colophon" id="card" aria-label="Your Fivehundrd card">
           <Card />
@@ -25,7 +29,6 @@ export function WallPage({ heading = "The wall", ld }: { heading?: string; ld?: 
         <main>
           <h1 className="sr">{heading}</h1>
           <Intro />
-          <Spotlight />
           <Rack />
         </main>
       </div>

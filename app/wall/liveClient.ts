@@ -17,8 +17,9 @@ export function liveWanted() {
   return !!(SUPABASE_URL && PUBLISHABLE_KEY) && q.get("fixture") !== "1" && q.get("demo") !== "1";
 }
 
-export async function fetchFeed(): Promise<Feed> {
-  const r = await fetch("/api/wall", { cache: "no-store" });
+/** `first`: the page's load, which picks up the feed the page preloaded (see WallPage). */
+export async function fetchFeed(first = false): Promise<Feed> {
+  const r = await fetch("/api/wall", first ? {} : { cache: "no-store" });
   if (!r.ok) throw new Error("wall " + r.status);
   return r.json();
 }

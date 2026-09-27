@@ -43,6 +43,19 @@ test.describe("behaviour", () => {
     expect(inLane).not.toBeNull();
   });
 
+  test("the wall's reach: today or this week, and the way onto the wall", async ({ wall, page }) => {
+    await wall.goto("", { spotlight: true });
+    const stats = page.locator(".sl-stats");
+    const today = await stats.locator("dd").first().textContent();
+    await expect(stats.locator(".sl-fomo b")).toHaveText(`${today} people walked the wall today.`);
+    await stats.getByRole("tab", { name: "This week" }).click();
+    await expect(stats.locator("dt").first()).toHaveText("Visitors this week");
+    const week = Number((await stats.locator("dd").first().textContent())!.replace(/,/g, ""));
+    expect(week).toBeGreaterThan(Number(today!.replace(/,/g, "")));
+    await stats.getByRole("button", { name: "Put it on the wall" }).click();
+    await expect(page.locator("#claimVeil")).toHaveClass(/\bon\b/);
+  });
+
   test("hotspots follow the lane you're on", async ({ wall, page }) => {
     await wall.goto("", { spotlight: true });
     await page.locator("#lanes [data-lane='music']").click();
