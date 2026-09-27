@@ -19,6 +19,8 @@ export type CardData = {
   account: Account | null;
   /** phones and tablets: the card is the Finds tab */
   finds?: boolean;
+  /** whether reminders are sent (false on the live wall until email is set up) */
+  reminders?: boolean;
   /** each Find's history from the database, by story id (live wall) */
   history?: Finds;
 };
@@ -130,11 +132,11 @@ function Saves({ card, wall }: { card: CardData; wall: Spot[] }) {
       )}
       {all.length > 0 && !card.account && (
         <div className="keep">
-          <p>Take your card to every device, and we&apos;ll remind you before saved spots end.</p>
+          <p>{card.reminders === false ? "Take your card to every device." : "Take your card to every device, and we'll remind you before saved spots end."}</p>
           <button data-keep="">Keep my card</button>
         </div>
       )}
-      {card.account && <p className="kept">{`Card kept with ${card.account.via}.${card.account.remind ? " Reminders on." : ""}`}</p>}
+      {card.account && <p className="kept">{`Card kept with ${card.account.via}.${card.account.remind && card.reminders !== false ? " Reminders on." : ""}`}</p>}
     </div>
   );
 }

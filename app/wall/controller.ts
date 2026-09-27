@@ -93,6 +93,9 @@ export function startWall(bridge: Bridge, live?: Live) {
       });
     } catch {}
   bridge.setWall(WALL);
+  /* the live wall promises reminders only once they are sent (docs/retention.md) */
+  const REMINDERS = !live || process.env.NEXT_PUBLIC_REMINDERS === "1";
+  bridge.setMode(!!live, REMINDERS);
   /** Counts an open, save, share… on the live wall. */
   const ev = (id: string | undefined, kind: liveApi.EventKind) => {
     if (!live || !id) return;
@@ -331,6 +334,7 @@ export function startWall(bridge: Bridge, live?: Live) {
       account: ACCOUNT,
       ...(layered() && { finds: true }),
       history: FINDS,
+      reminders: REMINDERS,
     });
   }
 
@@ -1186,7 +1190,7 @@ export function startWall(bridge: Bridge, live?: Live) {
     },
     keepCard(via: string, remind: boolean, byEmail: boolean) {
       if (live) {
-        liveApi.signIn(via, remind).then((err) => {
+        liveApi.signIn(via, REMINDERS && remind).then((err) => {
           if (err) return toast(err);
           if (byEmail) {
             closeVeils();

@@ -9,7 +9,7 @@ import { PGlite } from "@electric-sql/pglite";
  * the wall does goes through the same functions the app calls.
  */
 /* every migration but the platform one (pg_cron, Storage: Supabase only) */
-const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links", "20260926090600_founder_data", "20260926090700_indexable_stories", "20260927090000_hotspots", "20260927100000_retention", "20260927110000_call_rank"];
+const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links", "20260926090600_founder_data", "20260926090700_indexable_stories", "20260927090000_hotspots", "20260927100000_retention", "20260927110000_call_rank", "20260927120000_hotspot_cfg", "20260927130000_reminders"];
 const schema = (
   await Promise.all(MIGRATIONS.map((m) => readFile(new URL(`../supabase/migrations/${m}.sql`, import.meta.url), "utf8")))
 ).join("\n");
@@ -18,7 +18,7 @@ const KEY = "test-server-key";
 const STUBS = `
   create role anon; create role authenticated;
   create schema auth;
-  create table auth.users (id uuid primary key);
+  create table auth.users (id uuid primary key, email text);
   create function auth.uid() returns uuid language sql stable as
     $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
   create schema vault;
@@ -605,6 +605,29 @@ describe("hotspots", () => {
     assert.deepEqual((await hot()).map((x) => x.id), [a.id]);
   });
 
+  test("exposure is everyone who saw it or did anything with it: no boost for being opened from Hotspots itself", async () => {
+    /* the same five people open both; only a's were also counted as tile impressions (b was opened from the band) */
+    const a = await reserve(story({ no: 31 }));
+    await complete(a.id);
+    const b = await reserve(story({ no: 32 }));
+    await complete(b.id);
+    for (let i = 0; i < 5; i++) {
+      await seen(a.id, "p" + i);
+      await ev(a.id, "open", "p" + i);
+      await ev(b.id, "open", "p" + i);
+    }
+    /* someone who saw it this morning and saves it now still counts as exposed */
+    await db.query("insert into public.impressions (story_id, visitor, at) values ($1, 'morning', now() - interval '9 hours')", [a.id]);
+    await ev(a.id, "save", "morning");
+    await ev(b.id, "save", "morning");
+    await db.query("select private.refresh_hotspots()");
+    const score = async (id) => (await one("select score from public.hotspots where story_id = $1", [id])).score;
+    const [sa, sb] = [await score(a.id), await score(b.id)];
+    assert.ok(Math.abs(sa - sb) < 1e-6, `${sa} vs ${sb}`);
+    /* (5 opens + 4 x 1 save) / sqrt(6 exposed + 20) */
+    assert.ok(Math.abs(sa - 9 / Math.sqrt(26)) < 1e-4, String(sa));
+  });
+
   test("the spotlight moves on: a top-5 spot's score halves every 6 hours", async () => {
     const a = await reserve(story({ no: 21 }));
     await complete(a.id);
@@ -743,5 +766,38 @@ describe("retention", () => {
     assert.deepEqual([r.calls.made, r.calls.hotspot, Math.round(r.calls.hoursToHotspot)], [1, 1, 2]);
     assert.deepEqual([r.since.shown, r.since.holdout, r.taps.hot, r.taps.hotKept], [1, 1, 1, 0]);
     await rejects(one("select public.fd_retention('nope', now(), now())"), /forbidden/);
+  });
+});
+
+describe("reminders", () => {
+  const due = async () => (await one("select public.reminders_due($1) r", [KEY])).r;
+  const U = "00000000-0000-4000-a000-000000000001";
+  const live = async (no) => {
+    const s = await reserve(story({ no }));
+    await complete(s.id);
+    return s;
+  };
+
+  test("a kept card hears about saved stories ending within the hour, once; anonymous saves and far-off endings don't", async () => {
+    await db.query("insert into auth.users values ($1, 'fan@example.com')", [U]);
+    await db.query("insert into public.profiles (user_id, remind) values ($1, true)", [U]);
+    const soon = await live(41), later = await live(42), anon = await live(43);
+    await age(soon.id, "71 hours 30 minutes");
+    await age(anon.id, "71 hours 30 minutes");
+    await db.query("insert into public.saves (visitor, user_id, story_id) values ('v', $1, $2), ('v', $1, $3)", [U, soon.id, later.id]);
+    await db.query("insert into public.saves (visitor, story_id) values ('nobody', $1)", [anon.id]);
+    const d = await due();
+    assert.equal(d.length, 1);
+    assert.equal(d[0].email, "fan@example.com");
+    assert.deepEqual(d[0].stories.map((s) => s.id), [soon.id]);
+    assert.equal((await one("select public.reminders_sent($1, $2, $3) r", [KEY, U, [soon.id]])).r, 1);
+    assert.deepEqual(await due(), []);
+    /* the email's off link */
+    await db.query("delete from public.reminders");
+    assert.equal((await one("select public.remind_off($1, $2) r", [KEY, U])).r, true);
+    assert.deepEqual(await due(), []);
+    await rejects(one("select public.reminders_due('nope')"), /forbidden/);
+    /* without the site's address in Vault, the ping does nothing */
+    await db.query("select private.ping_reminders()");
   });
 });

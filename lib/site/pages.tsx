@@ -267,7 +267,10 @@ export const INFO: Record<PageSlug, Info> = {
           </li>
         </ul>
         <h2>Keep my card (optional)</h2>
-        <p>If you sign in, we keep your email address to sync your saves across devices.</p>
+        <p>
+          If you sign in, we keep your email address to sync your saves across devices. Where reminders are offered and you leave them on, we also use it to email you
+          about an hour before a saved spot leaves the wall, through our email provider (Resend). Every reminder has a link to turn them off.
+        </p>
         <h2>Cookies and local storage</h2>
         <p>
           The site keeps your visitor id, your saves and your preferences in your browser&apos;s local storage. We use no advertising or third-party tracking cookies. Stripe and

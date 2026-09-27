@@ -241,6 +241,7 @@ function Report({ id, name }: { id: string; name: string }) {
 
 /** §12: Keep my card. Browsing and saving never need this. */
 function Keep() {
+  const st = useSyncExternalStore(wallStore.subscribe, wallStore.get, wallStore.getServer);
   const email = useRef<HTMLInputElement>(null);
   const remind = useRef<HTMLInputElement>(null);
   const [err, setErr] = useState("");
@@ -251,8 +252,8 @@ function Keep() {
         setErr("That email address doesn't look right. Check it and try again.");
         return;
       }
-      bridge.actions.keepCard(v, remind.current!.checked, true);
-    } else bridge.actions.keepCard(via, remind.current!.checked, false);
+      bridge.actions.keepCard(v, !!remind.current?.checked, true);
+    } else bridge.actions.keepCard(via, !!remind.current?.checked, false);
   };
   return (
     <>
@@ -287,16 +288,21 @@ function Keep() {
         Email me a link
       </button>
       {ws(2)}
-      <label className="remind">
-        <input ref={remind} type="checkbox" id="kRemind" defaultChecked />
-        {" Remind me an hour before a saved spot ends"}
-      </label>
+      {/* only offered where reminders are really sent */}
+      {st.reminders && (
+        <label className="remind">
+          <input ref={remind} type="checkbox" id="kRemind" defaultChecked />
+          {" Remind me an hour before a saved spot ends"}
+        </label>
+      )}
       {ws(2)}
       <p className="err" id="kErr" role="alert">
         {err}
       </p>
       {ws(2)}
-      <p className="fine">Prototype. No account is created.</p>
+      <p className="fine">
+        {st.live ? `Your address is only used to sign you in${st.reminders ? " and for the reminders you ask for" : ""}.` : "Prototype. No account is created."}
+      </p>
     </>
   );
 }

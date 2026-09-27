@@ -16,11 +16,22 @@ Approved 2026-09-27. Three visible layers; everything else is data.
    found early ("Found at 23 · now 1,284") → open call ("Called Sep 27") → ended
    ("Found Sep 27") → "#7 of 340".
 
-## Definitions (thresholds: `private.retention_cfg()`)
+## Rule: provenance, not competition
+
+Personal history is context, never status: no scores, levels, badges, streaks, win counts,
+leaderboards or public call counts (CLAUDE.md, "Product rules").
+
+## Definitions (thresholds: `private.retention_cfg()`, `private.hotspot_cfg()`)
 
 - **Hotspot score**: per person over 6h, (opens + 3 × link clicks + 4 × saves + 4 × shares)
-  / √(impressions + 20); ≥ 3 people; halves every 6h after first reaching the top 5.
-  `stories.hot_at` keeps that first moment for good.
+  / √(exposed + 20), where *exposed* is everyone who saw the tile or did anything with the
+  story in those 6 hours; ≥ 3 people; halves every 6h after first reaching the top 5.
+  `stories.hot_at` keeps that first moment for good. **The weights are a hypothesis**, set
+  by hand before any traffic: after a few thousand real sessions, check which early signal
+  best predicts what people keep (saves not undone), click through to and share, and
+  change the weights in `private.hotspot_cfg()`.
+- **What a call measures**: momentum on Fivehundrd (Hotspot or save growth), not success
+  elsewhere on the internet.
 - **Found early**: your first save was among the first 10% of the story's savers (by first
   save time) and it reached ≥ 20 savers — while live, only once it has 3× the savers it had
   when you saved — *or* you saved it before it became a Hotspot.
@@ -41,6 +52,14 @@ Approved 2026-09-27. Three visible layers; everything else is data.
 - `track` kinds `since_shown` (once a visit, with the item and holdout), `since_tap`,
   `hot_tap`, `new_tap` (`/api/track`, `track_surface`).
 - Control Room: Retention → "The retention loop" (`fd_retention`).
+
+## To validate with real traffic
+
+- Hotspot weights (above).
+- Found Early at very different sizes: 10% of 21 savers is 2 people, of 25,000 it is 2,500;
+  likely percentile plus an absolute cap on rank.
+- "Called 40th" reveals that 39 people called before; above some rank, "Called early".
+- "Maker is back" matches email or paying browser; a real maker account is the long-term fix.
 
 ## Not now
 

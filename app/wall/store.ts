@@ -43,6 +43,10 @@ export type WallState = {
   claimVersion: number;
   /** Phones: tile patterns as images, and the rack built a few rows at a time. */
   compact: boolean;
+  /** The live wall: accounts are real (not the demo's prototype sheet). */
+  live: boolean;
+  /** Reminders are actually sent (the demo wall shows the reference's promise; the live wall only once email is set up). */
+  reminders: boolean;
   /** How many rack items are rendered (phones build the rest when idle). */
   limit: number;
   /** Above the wall: what has traction right now (live wall; null on the demo wall), and what changed since the last visit. */
@@ -73,6 +77,8 @@ const initial: WallState = {
   claim: null,
   claimVersion: 0,
   compact: false,
+  live: false,
+  reminders: true,
   limit: Infinity,
   hot: null,
   since: null,
@@ -114,6 +120,9 @@ export const bridge = {
   /** Renders more of the rack (phones build it a few rows at a time). */
   setLimit(limit: number) {
     if (limit !== state.limit) set({ limit });
+  },
+  setMode(live: boolean, reminders: boolean) {
+    set({ live, reminders });
   },
   setCompact(compact: boolean) {
     if (compact !== state.compact) set({ compact });
