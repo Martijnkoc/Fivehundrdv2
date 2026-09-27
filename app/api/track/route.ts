@@ -16,7 +16,11 @@ type Item = {
   stories?: unknown[];
   step?: number;
   message?: string;
+  kind?: string;
+  story?: string;
+  props?: { item?: unknown; holdout?: unknown };
 };
+const SURFACE = new Set(["since_shown", "since_tap", "hot_tap", "new_tap"]);
 
 /**
  * The wall's measurement beacon (app/wall/track.ts): visits, impressions,
@@ -67,6 +71,14 @@ export const POST = measured("/api/track", async (req: Request) => {
             p_step: step,
             p_props: {},
             p_client_at: clientAt ?? null,
+          });
+        } else if (it.t === "surface" && it.kind && SURFACE.has(it.kind)) {
+          /* the band above the wall: what it showed, and taps on it */
+          await rpc("track_surface", {
+            p_visitor: visitor,
+            p_kind: it.kind,
+            p_story: it.story && UUID.test(it.story) ? it.story : null,
+            p_props: { item: str(it.props?.item, 20) ?? null, holdout: it.props?.holdout === true },
           });
         } else if (it.t === "error") {
           await rpc("track_event", {

@@ -6,7 +6,6 @@
  * Each spot gets a place on this visitor's wall (`no`, 1…n, the order the
  * wall walks round) and keeps its own lane and number (`lane`, `num`).
  */
-import type { WallStats } from "./stats";
 import { PAL } from "./demo";
 import { LANES, type FilledSpot, type LaneId, type Spot, type VacantSpot } from "./model";
 
@@ -39,7 +38,7 @@ export type FeedStory = {
   opens: number;
   saves: number;
 };
-export type Feed = { now: string; stories: FeedStory[]; held: [LaneId, number][]; hot?: HotEntry[]; stats?: WallStats };
+export type Feed = { now: string; stories: FeedStory[]; held: [LaneId, number][]; hot?: HotEntry[] };
 
 const LANE_ORDER = LANES.map(([k]) => k);
 

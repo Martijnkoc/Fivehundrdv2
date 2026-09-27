@@ -9,7 +9,7 @@ import { PGlite } from "@electric-sql/pglite";
  * the wall does goes through the same functions the app calls.
  */
 /* every migration but the platform one (pg_cron, Storage: Supabase only) */
-const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links", "20260926090600_founder_data", "20260926090700_indexable_stories", "20260927090000_hotspots"];
+const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links", "20260926090600_founder_data", "20260926090700_indexable_stories", "20260927090000_hotspots", "20260927100000_retention"];
 const schema = (
   await Promise.all(MIGRATIONS.map((m) => readFile(new URL(`../supabase/migrations/${m}.sql`, import.meta.url), "utf8")))
 ).join("\n");
@@ -624,3 +624,118 @@ describe("hotspots", () => {
   });
 });
 
+
+describe("retention", () => {
+  const ev = (id, kind, visitor, at = "now()") => db.query(`insert into public.events (story_id, kind, visitor, at) values ($1, $2, $3, ${at})`, [id, kind, visitor]);
+  const call = async (id, visitor) => (await one("select public.call_story($1, $2, $3, 'ip') r", [KEY, visitor, id])).r;
+  const finds = async (visitor, ids) => (await one("select public.finds_status($1, $2, $3) r", [KEY, visitor, ids])).r;
+  const live = async (extra = {}) => {
+    const s = await reserve(story({ no: null, ...extra }));
+    await complete(s.id);
+    return s;
+  };
+
+  test("a story keeps the moment it first became a Hotspot; shares count", async () => {
+    const a = await live();
+    for (let i = 0; i < 3; i++) await ev(a.id, "share", "s" + i);
+    await db.query("select private.refresh_hotspots()");
+    const h = await one("select shares, rank from public.hotspots where story_id = $1", [a.id]);
+    assert.deepEqual([h.shares, h.rank], [3, 1]);
+    const first = (await one("select hot_at from public.stories where id = $1", [a.id])).hot_at;
+    assert.ok(first);
+    await db.query("select private.refresh_hotspots()");
+    assert.equal((await one("select hot_at from public.stories where id = $1", [a.id])).hot_at.getTime(), first.getTime());
+  });
+
+  test("Call it: once per story with a frozen snapshot, also a save; three a day; not own, hot or ended stories", async () => {
+    const a = await live({ visitor: "maker" });
+    for (let i = 0; i < 4; i++) await ev(a.id, "open", "o" + i);
+    await ev(a.id, "save", "o0");
+    const r = await call(a.id, "caller");
+    assert.equal(r.status, "called");
+    assert.equal(r.left, 2);
+    const c = await one("select * from public.calls where visitor = 'caller'");
+    assert.deepEqual([c.opens, c.saves, c.was_hot, c.lane], [4, 1, false, "music"]);
+    /* the call kept it */
+    assert.ok(await one("select 1 from public.saves where visitor = 'caller' and story_id = $1", [a.id]));
+    /* calling again doesn't move the moment */
+    await db.query("update public.calls set called_at = called_at - interval '1 hour'");
+    const again = await call(a.id, "caller");
+    assert.equal(again.status, "called");
+    assert.equal(new Date(again.calledAt).getTime(), new Date(c.called_at.getTime() - 3600e3).getTime());
+    assert.equal((await call(a.id, "maker")).status, "own");
+    const b = await live(), d = await live(), e = await live();
+    assert.equal((await call(b.id, "caller")).status, "called");
+    assert.equal((await call(d.id, "caller")).status, "called");
+    assert.equal((await call(e.id, "caller")).status, "limit");
+    await db.query("update public.stories set hot_at = now() where id = $1", [e.id]);
+    assert.equal((await call(e.id, "other")).status, "hot");
+    await age(b.id, "73 hours");
+    assert.equal((await call(b.id, "other")).status, "unavailable");
+    await rejects(one("select public.call_story('nope', 'v', $1)", [a.id]), /forbidden/);
+  });
+
+  test("a call comes true when the story becomes a Hotspot after it, or when saves after it double (and reach 15)", async () => {
+    const a = await live(), b = await live(), c = await live();
+    for (let i = 0; i < 10; i++) await ev(b.id, "save", "early" + i);
+    await call(a.id, "v");
+    await call(b.id, "v");
+    await call(c.id, "v");
+    /* b: 10 savers before, 19 after (not 2x); c: 0 before, 15 after */
+    for (let i = 0; i < 19; i++) await ev(b.id, "save", "late" + i);
+    for (let i = 0; i < 15; i++) await ev(c.id, "save", "late" + i);
+    await db.query("select private.settle_calls()");
+    const out = async (id) => (await one("select outcome from public.calls where story_id = $1", [id])).outcome;
+    assert.equal(await out(b.id), null);
+    assert.equal(await out(c.id), "moved");
+    await ev(b.id, "save", "late19");
+    await db.query("update public.stories set hot_at = now() where id = $1", [a.id]);
+    await db.query("select private.settle_calls()");
+    assert.equal(await out(a.id), "hotspot");
+    assert.equal(await out(b.id), "moved");
+    /* settled once the story is over */
+    await age(a.id, "73 hours");
+    await db.query("select private.settle_calls()");
+    assert.ok((await one("select settled_at from public.calls where story_id = $1", [a.id])).settled_at);
+  });
+
+  test("Finds: when you saved it, how many had, found early, your call, and the maker back on the wall", async () => {
+    const a = await live({ email: "Maker@Example.com" });
+    /* 30 savers; you are the 2nd */
+    await ev(a.id, "save", "first", "now() - interval '3 hours'");
+    await ev(a.id, "save", "you", "now() - interval '2 hours'");
+    for (let i = 0; i < 28; i++) await ev(a.id, "save", "later" + i, "now() - interval '1 hour'");
+    await db.query("update public.stories set saves = 30 where id = $1", [a.id]);
+    let [f] = await finds("you", [a.id]);
+    assert.deepEqual([f.rank, f.savers, f.saves, f.early, f.gone, f.back, f.call], [2, 30, 30, true, false, null, null]);
+    /* the same maker, a new spot */
+    const b = await live({ email: "maker@example.com", lane: "games" });
+    [f] = await finds("you", [a.id]);
+    assert.equal(f.back.id, b.id);
+    /* late savers aren't early; nobody else's Finds */
+    const [late] = await finds("later27", [a.id]);
+    assert.equal(late.early, false);
+    assert.deepEqual(await finds("stranger", [a.id]), []);
+    /* small stories: early only if saved before it became a Hotspot */
+    const c = await live();
+    await ev(c.id, "save", "you", "now() - interval '2 hours'");
+    await db.query("update public.stories set hot_at = now() - interval '1 hour' where id = $1", [c.id]);
+    const [small] = await finds("you", [c.id]);
+    assert.equal(small.early, true);
+  });
+
+  test("the Control Room's retention numbers", async () => {
+    const a = await live();
+    await call(a.id, "caller");
+    await db.query("update public.stories set hot_at = now() + interval '2 hours' where id = $1", [a.id]);
+    await db.query("select private.settle_calls()");
+    await one("select public.track_surface($1, 'v1', 'since_shown', null, '{\"holdout\":false}')", [KEY]);
+    await one("select public.track_surface($1, 'v2', 'since_shown', null, '{\"holdout\":true}')", [KEY]);
+    await one("select public.track_surface($1, 'v1', 'hot_tap', $2, null)", [KEY, a.id]);
+    assert.equal((await one("select public.track_surface($1, 'v1', 'create_start') r", [KEY])).r, false);
+    const r = (await one("select public.fd_retention($1, now() - interval '1 day', now() + interval '1 day') r", [KEY])).r;
+    assert.deepEqual([r.calls.made, r.calls.hotspot, Math.round(r.calls.hoursToHotspot)], [1, 1, 2]);
+    assert.deepEqual([r.since.shown, r.since.holdout, r.taps.hot, r.taps.hotKept], [1, 1, 1, 0]);
+    await rejects(one("select public.fd_retention('nope', now(), now())"), /forbidden/);
+  });
+});

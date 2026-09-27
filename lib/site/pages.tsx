@@ -56,9 +56,21 @@ export const INFO: Record<PageSlug, Info> = {
         </p>
         <h2>Hotspots and Newest</h2>
         <p>
-          Above the wall, Hotspots shows five spots with traction right now: how many people opened them, visited the maker and saved them in the last hours, weighed against how
+          Above the wall, Hotspots shows five spots with traction right now: how many people opened them, visited the maker, saved them and shared them in the last hours, weighed against how
           often they were seen, so a spot that joined an hour ago can be there too. A spot&apos;s turn in Hotspots fades after a few hours. Switch to Newest for the five that
-          joined last. When you come back, the wall tells you how many spots are new since your last visit.
+          joined last. When you come back, the wall tells you how many spots are new since your last visit, and the one thing that changed for you: a Find about to
+          end, Finds gaining saves, or a maker you found back on the wall.
+        </p>
+        <h2>Call it</h2>
+        <p>
+          Think a discovery is going to take off? Open it and tap Call it. Your call is private: nobody sees it, it doesn&apos;t count toward Hotspots, and there is no
+          score. The spot goes into your Finds, and if it becomes a Hotspot or clearly gains saves afterwards, your Finds says so, for example &quot;Called 14h early&quot;.
+          Three calls a day.
+        </p>
+        <h2>Your Finds</h2>
+        <p>
+          Each Find keeps one line of its history: how many people had saved it when you did and how many have now, whether you found it early (among its first 10% of
+          savers, or before it became a Hotspot), and whether its maker is back on the wall. Finds stay after their 72 hours.
         </p>
         <h2>The lanes</h2>
         <ul>
@@ -241,7 +253,7 @@ export const INFO: Record<PageSlug, Info> = {
         <h2>Visitors</h2>
         <ul>
           <li>
-            <b>A random visitor id</b> stored in your browser, and your saves. They keep your card working and count opens, saves and shares.
+            <b>A random visitor id</b> stored in your browser, and your saves. They keep your card working, count opens, saves and shares, and keep your calls (Call it) so your Finds can show how they went.
           </li>
           <li>
             <b>How you arrived and on what</b>: the referring site, campaign tags in the link, device type (phone, tablet or computer) and country. Never your exact location.

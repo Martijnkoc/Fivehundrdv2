@@ -1,9 +1,11 @@
 "use client";
 
-import { memo, useEffect, useState } from "react";
+import { memo, useEffect, useState, useSyncExternalStore } from "react";
 import { ICON } from "../../lib/wall/icons";
 import { LANE, LIFE, numOf, pad, rng, type FilledSpot } from "../../lib/wall/model";
+import { CALLS_PER_DAY, callKey, callable } from "../../lib/wall/retention";
 import { left, long } from "../../lib/wall/time";
+import { bridge, wallStore } from "./store";
 import { GenArt, LaneIcon } from "./Tile";
 
 const PLAY = '<path d="M6 4l15 8-15 8z"/>';
@@ -107,6 +109,72 @@ function Trailer({ s }: { s: FilledSpot }) {
  * content inline on desktop and in the phone sheet; `preview` is the Create
  * form's live preview, without the actions.
  */
+const NOT_CALLED: Record<string, string> = {
+  limit: `That's today's ${CALLS_PER_DAY === 3 ? "three" : CALLS_PER_DAY} calls. More tomorrow.`,
+  hot: "Already a Hotspot.",
+  own: "That's your own spot.",
+  unavailable: "This spot has just ended.",
+  error: "That didn't go through. Try again.",
+};
+
+/**
+ * Call it (docs/retention.md): a private prediction that this discovery will
+ * move. One small step to confirm, then back to the spot; no counter, no
+ * score. Not on Hotspots, your own spot, or once its time is up.
+ */
+function CallIt({ s }: { s: FilledSpot }) {
+  const st = useSyncExternalStore(wallStore.subscribe, wallStore.get, wallStore.getServer);
+  const [step, setStep] = useState<"idle" | "ask" | "busy">("idle");
+  const [note, setNote] = useState("");
+  useEffect(() => {
+    if (!note) return;
+    const t = setTimeout(() => setNote(""), 4000);
+    return () => clearTimeout(t);
+  }, [note]);
+  const at = st.calls[callKey(s)];
+  if (at)
+    return (
+      <span className="act call done" title="You called this. Your Finds will show how it goes.">
+        {`Called · ${new Date(at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
+      </span>
+    );
+  const hot = new Set((st.hot ?? []).filter((h) => h.rank <= 5).map((h) => h.id));
+  if (!callable(s, hot)) return null;
+  if (note)
+    return (
+      <span className="call-note" role="status">
+        {note}
+      </span>
+    );
+  if (step === "idle")
+    return (
+      <button type="button" className="act call" onClick={() => setStep("ask")} title="Think this one will move? Call it, and see later if you were right.">
+        Call it
+      </button>
+    );
+  return (
+    <span className="call-q" role="group" aria-label="Call it">
+      <span>Think this one will move?</span>
+      <button
+        type="button"
+        className="act solid call"
+        disabled={step === "busy"}
+        onClick={async (e) => {
+          setStep("busy");
+          const r = await bridge.actions.call(s.no, e.currentTarget);
+          setStep("idle");
+          if (r !== "called") setNote(NOT_CALLED[r] ?? NOT_CALLED.error);
+        }}
+      >
+        Call it
+      </button>
+      <button type="button" className="call-x" onClick={() => setStep("idle")}>
+        Cancel
+      </button>
+    </span>
+  );
+}
+
 export const Cover = memo(function Cover({ s, saved, preview }: { s: FilledSpot; saved: boolean; preview?: boolean }) {
   return (
     <div className="cover">
@@ -154,6 +222,7 @@ export const Cover = memo(function Cover({ s, saved, preview }: { s: FilledSpot;
             <button className="act" data-next="">
               Next spot
             </button>
+            <CallIt s={s} />
             {/* live stories only: anyone can flag one for a person to look at */}
             {s.id && (
               <button className="act report" data-report="" aria-label={`Report ${s.name}`}>

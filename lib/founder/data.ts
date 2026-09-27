@@ -13,6 +13,7 @@ import type {
   Kpis,
   LaneRow,
   Live,
+  Loop,
   Ops,
   Point,
   SpotDetail,
@@ -104,6 +105,11 @@ export async function transactions(v: View): Promise<Transaction[]> {
 export async function cohorts(weeks = 12): Promise<Cohort[]> {
   if (isDemo()) return demo.cohorts(weeks, TZ);
   return rpc<Cohort[]>("fd_cohorts", { p_weeks: weeks, p_tz: TZ });
+}
+/** The retention loop (docs/retention.md): Call it, Found Early, since your last visit, Hotspots and Newest, who comes back. */
+export async function loop(p: Period): Promise<Loop> {
+  if (isDemo()) return demo.loop(p.from, p.to);
+  return rpc<Loop>("fd_retention", { p_from: p.from, p_to: p.to });
 }
 export async function feed(since: string, limit = 60): Promise<FeedItem[]> {
   if (isDemo()) return demo.feed(since, limit, TZ);

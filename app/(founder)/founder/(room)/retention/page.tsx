@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { cohorts, kpisFor } from "../../../../../lib/founder/data";
-import { rate } from "../../../../../lib/founder/format";
+import { cohorts, kpisFor, loop } from "../../../../../lib/founder/data";
+import { fmt, rate } from "../../../../../lib/founder/format";
+import type { Loop } from "../../../../../lib/founder/types";
 import { LineChart } from "../../_kit/Chart";
 import { Filters } from "../../_kit/Filters";
 import { NoData, room, type Params } from "../../_kit/page";
-import { Card, Empty, Heatmap, Kpi, PageHead } from "../../_kit/ui";
+import { Card, Empty, Heatmap, Kpi, PageHead, Stat } from "../../_kit/ui";
 
 export const metadata: Metadata = { title: "Retention" };
 
@@ -12,7 +13,7 @@ export const metadata: Metadata = { title: "Retention" };
 export default async function Retention({ searchParams }: { searchParams: Promise<Params> }) {
   const { v, ready } = await room(searchParams);
   if (!ready) return <NoData />;
-  const [{ now: k, prev }, rows] = await Promise.all([kpisFor(v), cohorts(12)]);
+  const [{ now: k, prev }, rows, l] = await Promise.all([kpisFor(v), cohorts(12), loop(v.period)]);
   /* averages only over cohorts old enough to have had the chance */
   const age = (w: string) => (Date.now() - Date.parse(w)) / 864e5;
   const avg = (key: "d1" | "d7" | "d30", days: number) => {
@@ -40,6 +41,7 @@ export default async function Retention({ searchParams }: { searchParams: Promis
         <Kpi label="Returning visitors" value={k.visitors - k.newVisitors} prev={prev ? prev.visitors - prev.newVisitors : undefined} sub={`${Math.round((100 * (k.visitors - k.newVisitors)) / Math.max(1, k.visitors))}% of this period's visitors`} />
         <Kpi label="Saves per saver" value={k.savers ? k.saves / k.savers : null} format="dec" sub="saving is the reason to return" />
       </div>
+      <LoopCards l={l} />
       <div className="section">
         <Card title="Weekly cohorts" desc="Each row is the people first seen that week (Monday to Sunday); cells show the share active again. Empty cells haven't happened yet. Cohorts use all visitors, not the filters above.">
           {rows.length ? <Heatmap rows={rows} /> : <Empty title="No cohorts yet.">Cohorts appear once visits are being recorded; day 7 needs a week, day 30 a month.</Empty>}
@@ -63,6 +65,67 @@ export default async function Retention({ searchParams }: { searchParams: Promis
           )}
         </Card>
       </div>
+    </div>
+  );
+}
+
+const pct = (v: number | null) => fmt("pct", v);
+const vs = (a: number | null, b: number | null) => (a == null || b == null ? "not enough data yet" : `${pct(a)} against ${pct(b)}`);
+
+/**
+ * The retention loop (docs/retention.md), one product question per number:
+ * Discover → Keep → Leave → something changes → Return → see what changed.
+ */
+function LoopCards({ l }: { l: Loop }) {
+  const s = l.since,
+    t = l.taps,
+    c = l.calls,
+    r = l.returns;
+  const came = c.hotspot + c.moved;
+  return (
+    <div className="section">
+      <Card
+        title="The retention loop"
+        desc="Each number answers one question about why people come back. Calls, Found Early and the since line are private to each visitor; nothing here is shown on the wall."
+      >
+        <div className="stats">
+          <Stat
+            label="Does the since line deepen a visit?"
+            value={s.opensShown == null ? "—" : `${fmt("dec", s.opensShown)} opens`}
+            sub={`in 30 min after it showed; ${s.opensHoldout == null ? "control: no data yet" : `control ${fmt("dec", s.opensHoldout)}`}`}
+          />
+          <Stat label="Does it bring people back?" value={pct(s.backShown)} sub={`back within 7 days; ${vs(s.backShown, s.backHoldout)} for the 10% control`} />
+          <Stat label="Do people act on it?" value={pct(rate(s.taps, s.shown))} sub={`${fmt("int", s.taps)} taps on ${fmt("int", s.shown)} returning visits`} />
+          <Stat
+            label="Do Hotspots lead to keeps?"
+            value={pct(rate(t.hotKept, t.hot))}
+            sub={`saved or shared after a Hotspot tap (${fmt("int", t.hot)}); the wall: ${pct(rate(t.wallKept, t.wallOpens))} of opens`}
+          />
+          <Stat label="Does Newest?" value={pct(rate(t.newKept, t.new))} sub={`saved or shared after a Newest tap (${fmt("int", t.new)})`} />
+          <Stat label="Is Call it used?" value={fmt("int", c.made)} sub={`calls, by ${fmt("int", c.callers)} people`} />
+          <Stat
+            label="Do calls mean something?"
+            value={pct(rate(came, c.made))}
+            sub={`${fmt("int", c.hotspot)} became a Hotspot, ${fmt("int", c.moved)} moved, of ${fmt("int", c.made)} calls (${fmt("int", c.made - c.settled)} still open)`}
+          />
+          <Stat
+            label="How early are good calls?"
+            value={c.hoursToHotspot == null ? "—" : `${c.hoursToHotspot.toFixed(1)}h`}
+            sub="median time from a call to its Hotspot"
+          />
+          <Stat label="Is Found Early rare and real?" value={pct(rate(l.early.early, l.early.saves))} sub={`of ${fmt("int", l.early.saves)} saves on stories that ended in the period`} />
+          <Stat
+            label="Do people with Finds return more?"
+            value={vs(rate(r.savedBack, r.saved), rate(r.notSavedBack, r.notSaved))}
+            sub={`7-day return, saved on day one or not (${fmt("int", r.visitors)} new visitors); a correlation, not proof`}
+          />
+          <Stat
+            label="Do people who call return more?"
+            value={vs(rate(r.calledBack, r.called), rate(r.notCalledBack, r.notCalled))}
+            sub={`7-day return, called on day one or not (${fmt("int", r.called)} callers); a correlation, not proof`}
+          />
+        </div>
+      </Card>
     </div>
   );
 }

@@ -13,7 +13,7 @@ export const NAME = "Fivehundrd";
 export const TAGLINE = "Discover before the crowd.";
 export const SLOGAN = "Good stories find good people.";
 export const PRICE_USD = "9.95";
-export const UPDATED = "2026-09-26";
+export const UPDATED = "2026-09-27";
 
 /** One sentence that answers "what is Fivehundrd?" */
 export const DEFINITION =
@@ -62,7 +62,7 @@ export const FAQ: { q: string; a: string }[] = [
   { q: "How much does it cost?", a: "$9.95 per spot for 72 hours, paid once through Stripe. There is no subscription. Browsing, opening, saving and sharing spots is free." },
   {
     q: "Is there an algorithm or a feed?",
-    a: "No feed, and no algorithm deciding what you see. Everyone sees the same numbered wall, and each visitor begins at a different spot. Above the wall, Hotspots shows five spots with traction right now (opens, visits to the maker and saves in the last hours, per person and per time seen); a spot's turn there fades after a few hours, so it keeps changing. Or switch to Newest.",
+    a: "No feed, and no algorithm deciding what you see. Everyone sees the same numbered wall, and each visitor begins at a different spot. Above the wall, Hotspots shows five spots with traction right now (opens, visits to the maker, saves and shares in the last hours, per person and per time seen); a spot's turn there fades after a few hours, so it keeps changing. Or switch to Newest.",
   },
   { q: "Which lanes are there?", a: "Music, Books, Games, Creators, Podcasts and Newsletters: 500 spots each, 3,000 in total." },
   {

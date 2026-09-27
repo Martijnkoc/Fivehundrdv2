@@ -9,6 +9,7 @@
 import { LANE_IDS, LANE_LABEL, addDays, dayOf, dayStart, type Filters } from "./filters";
 import type {
   Cohort,
+  Loop,
   CreateFunnel,
   CreatorRow,
   DimRow,
@@ -948,6 +949,22 @@ export const demo = {
         paymentIntent: s.pi,
         session: null,
       }));
+  },
+
+  /** Made-up retention-loop numbers in proportion to the period's length. */
+  loop(fromIso: string, toIso: string): Loop {
+    const days = Math.max(1, Math.min(90, (Date.parse(toIso) - Date.parse(fromIso)) / 864e5));
+    const k = (n: number) => Math.round(n * days);
+    return {
+      calls: { made: k(41), callers: k(29), settled: k(33), hotspot: k(6), moved: k(5), hoursToHotspot: 13.5 },
+      early: { saves: k(1180), early: k(97) },
+      since: { shown: k(610), holdout: k(66), taps: k(142), opensShown: 3.4, opensHoldout: 2.7, backShown: 0.31, backHoldout: 0.26 },
+      taps: { hot: k(520), new: k(260), hotKept: k(118), newKept: k(47), wallOpens: k(4800), wallKept: k(610) },
+      returns: {
+        visitors: k(900), saved: k(260), savedBack: k(96), notSaved: k(640), notSavedBack: k(90),
+        called: k(18), calledBack: k(9), notCalled: k(882), notCalledBack: k(177),
+      },
+    };
   },
 
   cohorts(weeks: number, tz: string): Cohort[] {

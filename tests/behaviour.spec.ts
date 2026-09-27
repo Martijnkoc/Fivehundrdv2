@@ -827,8 +827,10 @@ for (const ph of PHONES) {
 
     test("an open spot's buttons are thumb-sized", async ({ wall, page }) => {
       appOnly("approved change: mobile audit");
-      await wall.goto();
+      /* Call it included (docs/retention.md) */
+      await wall.goto("", { call: true });
       await wall.openTile(0);
+      await expect(wall.openView.getByRole("button", { name: "Call it" })).toBeVisible();
       const small = await page.evaluate(() =>
         [...document.querySelectorAll<HTMLElement>("#dsheet .acts button, #dsheet .dclose, #dsheet [data-play]")]
           .map((e) => [e.textContent!.trim() || e.getAttribute("aria-label"), e.getBoundingClientRect().height] as const)

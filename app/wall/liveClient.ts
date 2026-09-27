@@ -7,6 +7,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { PAL } from "../../lib/wall/demo";
 import type { Feed } from "../../lib/wall/live";
 import type { Draft } from "./Claim";
+import type { CallResult, FindStatus } from "../../lib/wall/retention";
 
 export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "";
@@ -64,6 +65,25 @@ export function sendEvent(story: string, kind: EventKind) {
     }
   } catch {}
   fetch("/api/events", { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true }).catch(() => {});
+}
+
+/* ---------- retention: Call it and the Finds' history (docs/retention.md) ---------- */
+
+export async function callStory(story: string): Promise<CallResult | null> {
+  try {
+    const r = await fetch("/api/call", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ story, visitor: visitorId() }) });
+    return r.ok ? r.json() : null;
+  } catch {
+    return null;
+  }
+}
+export async function findsStatus(ids: string[]): Promise<FindStatus[] | null> {
+  try {
+    const r = await fetch("/api/finds", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ visitor: visitorId(), ids }) });
+    return r.ok ? r.json() : null;
+  } catch {
+    return null;
+  }
 }
 
 /* ---------- claiming: upload the draft's media, then pay ---------- */

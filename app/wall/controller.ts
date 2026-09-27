@@ -15,6 +15,7 @@ import { LANE, LIFE, numOf, pad, seenKey, type FilledSpot, type LaneId, type Nav
 import { buildRack } from "../../lib/wall/rack";
 import { savesOrder as savesOrderOf, skey, type SaveEntry } from "../../lib/wall/saves";
 import { sinceLastVisit, type VisitMemory } from "../../lib/wall/hot";
+import { CALLS_PER_DAY, callsToday, inHoldout, personalItem, type Calls, type Finds } from "../../lib/wall/retention";
 import { left, short, styleFor } from "../../lib/wall/time";
 import { startPlay, stopAudio, togglePlay } from "./audio";
 import type { Account } from "./Card";
@@ -24,7 +25,7 @@ import { cardFileName, readyCard, shareCardBlob } from "./shareCard";
 import type { Bridge } from "./store";
 import * as liveApi from "./liveClient";
 import { laneBySlug, lanePath } from "../../lib/site/facts";
-import { createMoment, startTracking, watchTiles } from "./track";
+import { createMoment, startTracking, surface, visitorId, watchTiles } from "./track";
 
 type Opts = { align: boolean; auto?: boolean };
 /** The live wall (Supabase): the feed it was built from and the storage base URL. */
@@ -268,6 +269,16 @@ export function startWall(bridge: Bridge, live?: Live) {
     SAVES = JSON.parse(localStorage.getItem("fh-saves") || "[]");
   } catch {}
   bridge.setSaved(SAVES.map((x) => x.k));
+  /* retention (docs/retention.md): each Find's save count as the last visit
+     left it (for "moving"), its history from the database, this browser's calls */
+  const PRIOR = new Map(SAVES.map((x) => [x.k, x.count] as const));
+  let FINDS: Finds = {};
+  let CALLS: Calls = {};
+  try {
+    FINDS = JSON.parse(localStorage.getItem("fh-finds") || "{}");
+    CALLS = JSON.parse(localStorage.getItem("fh-calls") || "{}");
+  } catch {}
+  bridge.setCalls(CALLS);
   const isSaved = (s: FilledSpot) => SAVES.some((x) => x.k === skey(s));
   function persistSaves() {
     try {
@@ -319,10 +330,12 @@ export function startWall(bridge: Bridge, live?: Live) {
       savesShown,
       account: ACCOUNT,
       ...(layered() && { finds: true }),
+      history: FINDS,
     });
   }
 
-  function toggleSave(li: HTMLElement, s: FilledSpot, btn: HTMLElement) {
+  /** `called`: saved by Call it, which the server already counted as a save. */
+  function toggleSave(li: HTMLElement, s: FilledSpot, btn: HTMLElement, called = false) {
     const on = !isSaved(s);
     if (on)
       SAVES.unshift({
@@ -342,7 +355,7 @@ export function startWall(bridge: Bridge, live?: Live) {
       });
     else SAVES = SAVES.filter((x) => x.k !== skey(s));
     s.saves = Math.max(0, (s.saves || 0) + (on ? 1 : -1));
-    ev(s.id, on ? "save" : "unsave");
+    if (!called) ev(s.id, on ? "save" : "unsave");
     persistSaves();
     const from = on && !sheetOn ? li.querySelector(".book")!.getBoundingClientRect() : null;
     if (on && !mobileCard()) {
@@ -357,7 +370,7 @@ export function startWall(bridge: Bridge, live?: Live) {
         btn.classList.add("pop");
         bumpTab();
       } else flyToCard(li, s, from);
-      toast(layered() ? "Saved to your Finds." : "Saved to your Fivehundrd card.");
+      toast(called ? `Called. It's in your ${layered() ? "Finds" : "saves"}; see how it goes.` : layered() ? "Saved to your Finds." : "Saved to your Fivehundrd card.");
       try {
         localStorage.setItem("fh-intro", "1");
       } catch {}
@@ -978,7 +991,7 @@ export function startWall(bridge: Bridge, live?: Live) {
     if (!live) return;
     try {
       live.feed = await liveApi.fetchFeed();
-      bridge.setHot(live.feed.hot ?? null, live.feed.stats ?? null);
+      bridge.setHot(live.feed.hot ?? null);
     } catch {
       return;
     }
@@ -1208,7 +1221,9 @@ export function startWall(bridge: Bridge, live?: Live) {
       closeVeils();
       openSpot(spotEl(no), { align: true });
     },
-    openHot(no: number) {
+    openHot(no: number, from?: "hot" | "new" | "since") {
+      const s = WALL[no - 1];
+      if (from && s && !s.vacant) surface(from === "hot" ? "hot_tap" : from === "new" ? "new_tap" : "since_tap", s.id);
       /* not on this lane or search: back to the whole wall first */
       if (!rack.querySelector(`[data-no="${no}"]`) && !spotEl(no)) {
         $<HTMLInputElement>("#q").value = "";
@@ -1217,7 +1232,69 @@ export function startWall(bridge: Bridge, live?: Live) {
       }
       openSpot(spotEl(no), { align: true });
     },
+    /** Finds, from "since your last visit" when what changed is more than one spot. */
+    openFinds() {
+      surface("since_tap");
+      if (mobileCard()) setCard(true);
+      else window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
+    },
+    /** Call it: a private prediction; it also keeps the story. */
+    async call(no: number, el: HTMLElement) {
+      const s = WALL[no - 1];
+      if (!s || s.vacant) return "unavailable";
+      const k = skey(s);
+      if (CALLS[k]) return "called";
+      if (callsToday(CALLS, Date.now()) >= CALLS_PER_DAY) return "limit";
+      /* found before the store update re-renders the button away */
+      const btn = el.closest(".acts")?.querySelector<HTMLElement>("[data-save]"),
+        li = spotEl(no);
+      let at = Date.now();
+      if (live) {
+        if (!s.id) return "unavailable";
+        const r = await liveApi.callStory(s.id);
+        if (!r) return "error";
+        if (r.status !== "called") return r.status;
+        at = Date.parse(r.calledAt ?? "") || at;
+      }
+      CALLS = { ...CALLS, [k]: at };
+      try {
+        localStorage.setItem("fh-calls", JSON.stringify(CALLS));
+      } catch {}
+      bridge.setCalls(CALLS);
+      if (!isSaved(s) && btn && li) toggleSave(li, s, btn, true);
+      else toast("Called. See how it goes.");
+      return "called";
+    },
   } satisfies Bridge["actions"]);
+
+  /* ---------- since your last visit: one thing that changed for you ---------- */
+  let SINCE_AT: number | null = null,
+    sinceSent = false;
+  /** `final`: the Finds' history is in (or won't come); measured once a visit. */
+  function refreshSince(final: boolean) {
+    if (SINCE_AT == null) return;
+    const item = personalItem({ saves: savesOrder(), prior: PRIOR, finds: FINDS, since: SINCE_AT, wall: WALL });
+    /* the live wall keeps 10% without it, to measure what it changes */
+    const holdout = !!live && inHoldout(visitorId());
+    bridge.setSinceItem(holdout ? null : item);
+    if (final && live && !sinceSent) {
+      sinceSent = true;
+      surface("since_shown", item?.story, { item: item?.kind ?? "none", holdout });
+    }
+  }
+  /** The Finds' history from the database (live wall): once a visit, and after a call. */
+  async function loadFinds() {
+    const ids = [...new Set([...SAVES.map((x) => x.k), ...Object.keys(CALLS)])];
+    const r = ids.length ? await liveApi.findsStatus(ids) : [];
+    if (r) {
+      FINDS = Object.fromEntries(r.map((f) => [f.id, f]));
+      try {
+        localStorage.setItem("fh-finds", JSON.stringify(FINDS));
+      } catch {}
+      renderCard();
+    }
+    refreshSince(true);
+  }
 
   /* ---------- boot ---------- */
   /* the card says "Finds" on phones and tablets */
@@ -1230,6 +1307,8 @@ export function startWall(bridge: Bridge, live?: Live) {
     const r = sinceLastVisit(mem, WALL, Date.now());
     localStorage.setItem("fh-visits", JSON.stringify(r.mem));
     bridge.setSince(r.since);
+    SINCE_AT = r.since?.at ?? null;
+    refreshSince(!live);
     /* staying keeps it the same visit */
     setInterval(() => {
       if (document.hidden) return;
@@ -1239,7 +1318,7 @@ export function startWall(bridge: Bridge, live?: Live) {
       } catch {}
     }, 60e3);
   } catch {}
-  if (live) bridge.setHot(live.feed.hot ?? [], live.feed.stats ?? null);
+  if (live) bridge.setHot(live.feed.hot ?? []);
   renderLanes();
   renderRack();
   setHead();
@@ -1255,6 +1334,7 @@ export function startWall(bridge: Bridge, live?: Live) {
   if (live) {
     bootLive();
     syncAccount();
+    loadFinds();
     return;
   }
   const h = location.hash.replace("#", "");

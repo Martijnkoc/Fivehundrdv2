@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { hotspots, newest } from "../../lib/wall/hot";
-import { placeholderStats, type WallStats } from "../../lib/wall/stats";
 import { numOf, pad } from "../../lib/wall/model";
 import { bridge, wallStore } from "./store";
 import { SpotTile } from "./Tile";
@@ -23,6 +22,7 @@ export function Spotlight() {
   const shown = view === tab ? picks : newest(st.wall, st.lane);
   if (!shown.length) return null;
   const since = st.since && (st.since.fresh || st.since.gone) ? st.since : null;
+  const item = st.sinceItem;
   return (
     <section className="spotlight" aria-label={view === "hot" ? "Hotspots" : "Newest spots"}>
       <div className="sl-in">
@@ -35,21 +35,29 @@ export function Spotlight() {
             Newest
           </button>
         </div>
-        {since && (
+        {(since || item) && (
           <p className="sl-since">
-            {since.fresh > 0 && <b>{`${since.fresh} new`}</b>}
-            {since.fresh > 0 && since.gone > 0 && " · "}
-            {since.gone > 0 && `${since.gone} gone`}
-            {" since your last visit"}
+            {since && since.fresh > 0 && <b>{`${since.fresh} new`}</b>}
+            {since && since.fresh > 0 && since.gone > 0 && !item && " · "}
+            {since && since.gone > 0 && (!item || !since.fresh) && `${since.gone} gone`}
+            {since && " since your last visit"}
+            {/* one thing that changed for you (lib/wall/retention.ts) */}
+            {item && (
+              <>
+                {since && " · "}
+                <button type="button" className="sl-mine" onClick={() => (item.no ? bridge.actions.openHot(item.no, "since") : bridge.actions.openFinds())}>
+                  {item.text}
+                </button>
+              </>
+            )}
           </p>
         )}
         <p className="sl-note">{view === "hot" ? "Traction right now. Changes every few hours." : "Just joined the wall."}</p>
       </div>
-      <Reach stats={st.stats} />
       <ol className="sl-row">
         {shown.map(({ s, why }) => (
           <li key={s.id ?? s.no}>
-            <button type="button" className="sl-item" onClick={() => bridge.actions.openHot(s.no)} aria-label={`${s.name}, No. ${pad(numOf(s))}${why ? `: ${why}` : ""}`}>
+            <button type="button" className="sl-item" onClick={() => bridge.actions.openHot(s.no, view)} aria-label={`${s.name}, No. ${pad(numOf(s))}${why ? `: ${why}` : ""}`}>
               <SpotTile s={s} />
               {why && <span className="sl-why">{why}</span>}
             </button>
@@ -61,56 +69,3 @@ export function Spotlight() {
   );
 }
 
-const n = (v: number) => v.toLocaleString("en-US");
-
-/**
- * The wall's reach: people on the wall and spots saved, today or this week,
- * and what that means for a maker who isn't on it. Placeholder numbers until
- * the live feed carries them (lib/wall/stats.ts).
- */
-function Reach({ stats }: { stats: WallStats | null }) {
-  const [span, setSpan] = useState<"today" | "week">("today");
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    if (stats) return;
-    const t = setInterval(() => setNow(Date.now()), 20e3);
-    return () => clearInterval(t);
-  }, [stats]);
-  const r = (stats ?? placeholderStats(now))[span];
-  const when = span === "today" ? "today" : "this week";
-  return (
-    <div className="sl-stats">
-      <div className="sl-sh">
-        <span className="sl-live">
-          <i aria-hidden="true" />
-          Live
-        </span>
-        <div className="sl-tabs sm" role="tablist" aria-label="Period">
-          <button type="button" role="tab" aria-selected={span === "today"} className={span === "today" ? "on" : undefined} onClick={() => setSpan("today")}>
-            Today
-          </button>
-          <button type="button" role="tab" aria-selected={span === "week"} className={span === "week" ? "on" : undefined} onClick={() => setSpan("week")}>
-            This week
-          </button>
-        </div>
-      </div>
-      <dl className="sl-nums">
-        <div>
-          <dt>{`Visitors ${when}`}</dt>
-          <dd>{n(r.visitors)}</dd>
-        </div>
-        <div>
-          <dt>{`Spots saved ${when}`}</dt>
-          <dd>{n(r.saves)}</dd>
-        </div>
-      </dl>
-      <p className="sl-fomo">
-        <b>{`${n(r.visitors)} people walked the wall ${when}.`}</b>
-        {" Not one of them saw your work. "}
-        <button type="button" className="sl-claim" data-claim="">
-          Put it on the wall
-        </button>
-      </p>
-    </div>
-  );
-}

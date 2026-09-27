@@ -202,3 +202,16 @@ export type ExportRow = {
   error: string | null;
   schedule: string | null;
 };
+
+/** fd_retention: the retention loop's product questions (docs/retention.md). */
+export type Loop = {
+  calls: { made: number; callers: number; settled: number; hotspot: number; moved: number; hoursToHotspot: number | null };
+  early: { saves: number; early: number };
+  since: { shown: number; holdout: number; taps: number; opensShown: number | null; opensHoldout: number | null; backShown: number | null; backHoldout: number | null };
+  taps: { hot: number; new: number; hotKept: number; newKept: number; wallOpens: number; wallKept: number };
+  returns: {
+    visitors: number;
+    saved: number; savedBack: number; notSaved: number; notSavedBack: number;
+    called: number; calledBack: number; notCalled: number; notCalledBack: number;
+  };
+};

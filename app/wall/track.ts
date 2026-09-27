@@ -30,7 +30,9 @@ type Beacon =
   | { t: "visit"; landing: string; slug?: string; referrer?: string; utm?: Record<string, string> }
   | { t: "imp"; stories: string[] }
   | { t: "create"; step?: number }
-  | { t: "error"; message: string };
+  | { t: "error"; message: string }
+  | { t: "surface"; kind: Surface; story?: string; props?: { item: string; holdout: boolean } };
+type Surface = "since_shown" | "since_tap" | "hot_tap" | "new_tap";
 
 function send(items: Beacon[]) {
   if (!items.length) return;
@@ -144,6 +146,14 @@ export function watchTiles(root: ParentNode, selector: string, idOf: (el: Elemen
     watched.add(el);
     io!.observe(el);
   });
+}
+
+/* ---------- the band above the wall ---------- */
+
+/** What "since your last visit" showed, and taps on Hotspots, Newest and it (docs/retention.md). */
+export function surface(kind: Surface, story?: string, props?: { item: string; holdout: boolean }) {
+  if (!started) return;
+  send([{ t: "surface", kind, ...(story && { story }), ...(props && { props }) }]);
 }
 
 /* ---------- Create and errors ---------- */

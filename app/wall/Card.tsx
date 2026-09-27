@@ -2,6 +2,7 @@
 
 import { Fragment, useSyncExternalStore } from "react";
 import { BIND, LANE, LANES, TOTAL, lum, numOf, pad, seenKey, type FilledSpot, type Spot } from "../../lib/wall/model";
+import { provenance, type FindStatus, type Finds } from "../../lib/wall/retention";
 import { savesOrder, skey, type OrderedSave, type SaveEntry } from "../../lib/wall/saves";
 import { left, short, styleFor } from "../../lib/wall/time";
 import { wallStore } from "./store";
@@ -18,6 +19,8 @@ export type CardData = {
   account: Account | null;
   /** phones and tablets: the card is the Finds tab */
   finds?: boolean;
+  /** each Find's history from the database, by story id (live wall) */
+  history?: Finds;
 };
 
 /* Whitespace text nodes as in the reference's renderCard template. */
@@ -32,10 +35,9 @@ const initials = (name: string) =>
     .join("")
     .toUpperCase();
 
-const ordinal = (n: number) => n + (n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] ?? "th");
 
 /** One save: a small square in the wall tile's visual language (§11). */
-function SaveTile({ x }: { x: OrderedSave }) {
+function SaveTile({ x, f }: { x: OrderedSave; f?: FindStatus }) {
   const cur = x.cur as FilledSpot;
   const st = x.liveNow ? styleFor(cur) : styleFor({ lane: x.lane, start: x.start, seed: 0 });
   const src: { img?: string | null; logo?: string | null; seed?: number; pal?: SaveEntry["pal"] } = x.liveNow ? cur : x;
@@ -55,14 +57,13 @@ function SaveTile({ x }: { x: OrderedSave }) {
   ) : (
     <span className="sq-t off">Ended</span>
   );
-  /* approved change: how early you were ("#7 of 340") */
-  const now = x.liveNow && cur.saves != null ? Math.max(cur.saves, x.rank ?? 0) : x.count;
-  const rank =
-    x.rank != null && now != null ? (
-      <span className="sq-r" title={`You were the ${ordinal(x.rank)} to save this. ${now} ${now === 1 ? "person has" : "people have"} now.`}>
-        {`#${x.rank} of ${now}`}
-      </span>
-    ) : null;
+  /* approved change: one line of this Find's history (lib/wall/retention.ts) */
+  const p = provenance(x, f);
+  const rank = p ? (
+    <span className={`sq-r${p.kind === "rank" ? "" : " " + p.kind}`} title={p.title}>
+      {p.text}
+    </span>
+  ) : null;
   const inner = (
     <>
       <span className="sq-art">{art}</span>
@@ -113,7 +114,7 @@ function Saves({ card, wall }: { card: CardData; wall: Spot[] }) {
         <>
           <ul className="sv-list">
             {shown.map((x) => (
-              <SaveTile key={x.k} x={x} />
+              <SaveTile key={x.k} x={x} f={card.history?.[x.cur && !x.cur.vacant && x.cur.id ? x.cur.id : x.k]} />
             ))}
           </ul>
           {all.length > card.savesShown ? (

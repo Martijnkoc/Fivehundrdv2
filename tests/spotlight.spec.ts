@@ -43,19 +43,6 @@ test.describe("behaviour", () => {
     expect(inLane).not.toBeNull();
   });
 
-  test("the wall's reach: today or this week, and the way onto the wall", async ({ wall, page }) => {
-    await wall.goto("", { spotlight: true });
-    const stats = page.locator(".sl-stats");
-    const today = await stats.locator("dd").first().textContent();
-    await expect(stats.locator(".sl-fomo b")).toHaveText(`${today} people walked the wall today.`);
-    await stats.getByRole("tab", { name: "This week" }).click();
-    await expect(stats.locator("dt").first()).toHaveText("Visitors this week");
-    const week = Number((await stats.locator("dd").first().textContent())!.replace(/,/g, ""));
-    expect(week).toBeGreaterThan(Number(today!.replace(/,/g, "")));
-    await stats.getByRole("button", { name: "Put it on the wall" }).click();
-    await expect(page.locator("#claimVeil")).toHaveClass(/\bon\b/);
-  });
-
   test("hotspots follow the lane you're on", async ({ wall, page }) => {
     await wall.goto("", { spotlight: true });
     await page.locator("#lanes [data-lane='music']").click();
@@ -91,7 +78,18 @@ test.describe("behaviour", () => {
       ),
     );
     await wall.goto();
-    await expect(page.locator(".sq-r")).toHaveText("#7 of 340");
-    await expect(page.locator(".sq-r")).toHaveAttribute("title", /7th to save this\. 340 people have now/);
+    /* ended: when you found it (docs/retention.md) */
+    await expect(page.locator(".sq-r")).toHaveText("Found Sep 24");
+    await expect(page.locator(".sq-r")).toHaveAttribute("title", "Gone from the wall. You found it on Sep 24.");
+    /* live: how early you were */
+    await wall.save(1);
+    await page.evaluate(() => {
+      const saves = JSON.parse(localStorage.getItem("fh-saves")!);
+      Object.assign(saves[0], { rank: 7, count: 340 });
+      localStorage.setItem("fh-saves", JSON.stringify(saves));
+    });
+    await wall.goto();
+    await expect(page.locator(".sq-r").first()).toHaveText(/^#7 of \d+$/);
+    await expect(page.locator(".sq-r").first()).toHaveAttribute("title", /7th to save this\. \d+ people have now/);
   });
 });
