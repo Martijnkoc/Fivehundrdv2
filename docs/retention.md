@@ -7,11 +7,12 @@ Approved 2026-09-27. Three visible layers; everything else is data.
    gaining saves (≥ max(5, 50%) since your last visit) → a maker you found is back.
    10% of live visitors (fixed by visitor id) don't see it: the control group.
 2. **Call it** on an opened spot (`app/wall/Cover.tsx`): after Next spot; one inline
-   question; also saves. Three a day (UTC). Not on current top-5 Hotspots, stories that
+   question; also saves. Shows which caller you were ("Called 3rd · Sep 27"), derived
+   from the order of calls and shown only to you. Three a day (UTC). Not on current top-5 Hotspots, stories that
    have ever been one, your own spot or ended spots. Private: never shown, never counted
    in Hotspots.
 3. **Finds** (`app/wall/Card.tsx`): one line each, by priority: call became a Hotspot
-   ("Called 14h early") → call moved ("Called at 12 · now 380") → maker is back →
+   ("Called 3rd · 14h early") → call moved ("Called at 12 · now 380") → maker is back →
    found early ("Found at 23 · now 1,284") → open call ("Called Sep 27") → ended
    ("Found Sep 27") → "#7 of 340".
 

@@ -9,7 +9,7 @@ import { PGlite } from "@electric-sql/pglite";
  * the wall does goes through the same functions the app calls.
  */
 /* every migration but the platform one (pg_cron, Storage: Supabase only) */
-const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links", "20260926090600_founder_data", "20260926090700_indexable_stories", "20260927090000_hotspots", "20260927100000_retention"];
+const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links", "20260926090600_founder_data", "20260926090700_indexable_stories", "20260927090000_hotspots", "20260927100000_retention", "20260927110000_call_rank"];
 const schema = (
   await Promise.all(MIGRATIONS.map((m) => readFile(new URL(`../supabase/migrations/${m}.sql`, import.meta.url), "utf8")))
 ).join("\n");
@@ -664,6 +664,12 @@ describe("retention", () => {
     assert.equal(again.status, "called");
     assert.equal(new Date(again.calledAt).getTime(), new Date(c.called_at.getTime() - 3600e3).getTime());
     assert.equal((await call(a.id, "maker")).status, "own");
+    /* which caller you were: yours alone, and it stays the same */
+    assert.equal(r.rank, 1);
+    assert.equal((await call(a.id, "second")).rank, 2);
+    assert.equal((await call(a.id, "caller")).rank, 1);
+    const [mine] = await finds("second", [a.id]);
+    assert.equal(mine.call.rank, 2);
     const b = await live(), d = await live(), e = await live();
     assert.equal((await call(b.id, "caller")).status, "called");
     assert.equal((await call(d.id, "caller")).status, "called");

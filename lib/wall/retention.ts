@@ -22,7 +22,8 @@ export type FindStatus = {
   endsAt: string | null;
   gone: boolean;
   early: boolean;
-  call: { calledAt: string; outcome: "hotspot" | "moved" | null; outcomeAt: string | null; savesThen: number } | null;
+  /** rank: which caller you were (1 = the first to call it) */
+  call: { calledAt: string; outcome: "hotspot" | "moved" | null; outcomeAt: string | null; savesThen: number; rank?: number } | null;
   back: { id: string; lane: LaneId; no: number; slug: string; name: string } | null;
 };
 
@@ -42,17 +43,20 @@ export type Provenance = { text: string; title: string; kind: "called" | "back" 
  */
 export function provenance(x: OrderedSave, f: FindStatus | undefined): Provenance | null {
   const call = f?.call;
+  /* "Called 3rd": which caller you were, when the database knows */
+  const nth = call?.rank ? ` ${ordinal(call.rank)}` : "";
+  const who = call?.rank ? ` You were the ${ordinal(call.rank)} to call it.` : "";
   if (call?.outcome === "hotspot" && call.outcomeAt) {
     const h = hoursBetween(call.calledAt, call.outcomeAt);
     return h >= 1
-      ? { kind: "called", text: `Called ${h}h early`, title: `You called this ${h} ${h === 1 ? "hour" : "hours"} before it became a Hotspot.` }
-      : { kind: "called", text: "Called before Hotspot", title: "You called this before it became a Hotspot." };
+      ? { kind: "called", text: `Called${nth} · ${h}h early`, title: `You called this ${h} ${h === 1 ? "hour" : "hours"} before it became a Hotspot.${who}` }
+      : { kind: "called", text: `Called${nth} · before Hotspot`, title: `You called this before it became a Hotspot.${who}` };
   }
   if (call?.outcome === "moved" && f)
     return {
       kind: "called",
-      text: `Called at ${n(call.savesThen)} · now ${n(f.saves)}`,
-      title: `You called this when ${n(call.savesThen)} ${call.savesThen === 1 ? "person" : "people"} had saved it. ${n(f.saves)} keep it now.`,
+      text: `Called${nth} at ${n(call.savesThen)} · now ${n(f.saves)}`,
+      title: `You called this when ${n(call.savesThen)} ${call.savesThen === 1 ? "person" : "people"} had saved it.${who} ${n(f.saves)} keep it now.`,
     };
   if (f?.back)
     return { kind: "back", text: "Maker is back", title: `${f.back.name} is back on the wall, at No. ${String(f.back.no).padStart(3, "0")}.` };
@@ -67,7 +71,7 @@ export function provenance(x: OrderedSave, f: FindStatus | undefined): Provenanc
         : `You were the ${ordinal(f.rank)} to save this${share ? `, among the first ${share}% of the people who did` : ""}. ${n(f.saves)} keep it now.`,
     };
   }
-  if (call && x.liveNow) return { kind: "called", text: `Called ${day(call.calledAt)}`, title: `You called this on ${day(call.calledAt)}.` };
+  if (call && x.liveNow) return { kind: "called", text: `Called${nth} · ${day(call.calledAt)}`, title: `You called this on ${day(call.calledAt)}.${who}` };
   if (!x.liveNow) return { kind: "found", text: `Found ${day(x.savedAt)}`, title: `Gone from the wall. You found it on ${day(x.savedAt)}.` };
   const now = x.cur && !x.cur.vacant && x.cur.saves != null ? Math.max(x.cur.saves, x.rank ?? 0) : x.count;
   if (x.rank != null && now != null)
@@ -147,11 +151,24 @@ export function inHoldout(visitor: string) {
 
 export const CALLS_PER_DAY = 3;
 /** What /api/call answers (call_story): called, or why not. */
-export type CallResult = { status: "called" | "own" | "hot" | "limit" | "unavailable"; calledAt?: string; left?: number };
-/** This browser's calls: story key → when. */
-export type Calls = Record<string, number>;
+export type CallResult = { status: "called" | "own" | "hot" | "limit" | "unavailable"; calledAt?: string; rank?: number; left?: number };
+/** This browser's calls: story key → when, and which caller you were (live wall). */
+export type Call = { at: number; rank?: number };
+export type Calls = Record<string, Call>;
+/** Reads stored calls (early ones were only a time). */
+export function readCalls(raw: unknown): Calls {
+  const out: Calls = {};
+  if (raw && typeof raw === "object")
+    for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
+      if (typeof v === "number") out[k] = { at: v };
+      else if (v && typeof v === "object" && typeof (v as Call).at === "number") out[k] = { at: (v as Call).at, ...(typeof (v as Call).rank === "number" && { rank: (v as Call).rank }) };
+    }
+  return out;
+}
 const utcDay = (t: number) => new Date(t).toISOString().slice(0, 10);
-export const callsToday = (calls: Calls, now: number) => Object.values(calls).filter((t) => utcDay(t) === utcDay(now)).length;
+export const callsToday = (calls: Calls, now: number) => Object.values(calls).filter((c) => utcDay(c.at) === utcDay(now)).length;
+/** "Called 3rd · Sep 27" on the spot. */
+export const calledLabel = (c: Call) => `Called${c.rank ? ` ${ordinal(c.rank)}` : ""} · ${day(c.at)}`;
 
 /** Whether Call it is offered on a spot: live, not your own, and not (yet) a Hotspot. */
 export function callable(s: FilledSpot, hotIds: Set<string>) {

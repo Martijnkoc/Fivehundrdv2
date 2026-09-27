@@ -23,7 +23,7 @@ test.describe("behaviour", () => {
         localStorage.setItem(
           "fh-finds",
           JSON.stringify({
-            [keys[0]]: st(keys[0], { call: { calledAt: new Date(t - 20 * h).toISOString(), outcome: "hotspot", outcomeAt: new Date(t - 6 * h).toISOString(), savesThen: 4 } }),
+            [keys[0]]: st(keys[0], { call: { calledAt: new Date(t - 20 * h).toISOString(), outcome: "hotspot", outcomeAt: new Date(t - 6 * h).toISOString(), savesThen: 4, rank: 3 } }),
             [keys[1]]: st(keys[1], { early: true, rank: 23, savers: 400, saves: 1284, savedAt: new Date(t - 30 * h).toISOString() }),
             [keys[2]]: st(keys[2], { back: { id: "b", lane: "music", no: 212, slug: "abcdefgh", name: "Lowtide Club" } }),
           }),
@@ -36,8 +36,8 @@ test.describe("behaviour", () => {
     const lines = page.locator("#card .sq-r");
     /* Finds are ordered by time left, so compare as a set */
     await expect(lines).toHaveCount(3);
-    expect((await lines.allInnerTexts()).sort()).toEqual(["Called 14h early", "Found at 23 · now 1,284", "Maker is back"].sort());
-    await expect(page.locator("#card .sq-r.called")).toHaveAttribute("title", "You called this 14 hours before it became a Hotspot.");
+    expect((await lines.allInnerTexts()).sort()).toEqual(["Called 3rd · 14h early", "Found at 23 · now 1,284", "Maker is back"].sort());
+    await expect(page.locator("#card .sq-r.called")).toHaveAttribute("title", "You called this 14 hours before it became a Hotspot. You were the 3rd to call it.");
     await expect(page.locator("#card .sq-r.early")).toHaveAttribute("title", /You were the 23rd to save this, among the first 10% of the people who did\. 1,284 keep it now\./);
   });
 
@@ -91,6 +91,25 @@ test.describe("behaviour", () => {
     await wall.openView.getByRole("button", { name: "Cancel" }).click();
     await expect(wall.openView.locator(".call-q")).toHaveCount(0);
     expect(Object.keys(await page.evaluate(() => JSON.parse(localStorage.getItem("fh-calls")!)))).toHaveLength(3);
+  });
+
+  test("Call it: which caller you were, when the database knows", async ({ wall, page }) => {
+    await wall.goto("", { call: true });
+    await wall.openTile(1);
+    await wall.openView.getByRole("button", { name: "Call it" }).click();
+    await wall.openView.locator(".call-q").getByRole("button", { name: "Call it" }).click();
+    const no = await wall.openView.getAttribute("data-no");
+    /* the live wall stores the rank the server answered with */
+    await page.evaluate(() => {
+      const calls = JSON.parse(localStorage.getItem("fh-calls")!);
+      for (const k of Object.keys(calls)) calls[k].rank = 2;
+      localStorage.setItem("fh-calls", JSON.stringify(calls));
+    });
+    await wall.goto("", { call: true });
+    await wall.openTile(1);
+    expect(await wall.openView.getAttribute("data-no")).toBe(no);
+    await expect(wall.openView.locator(".act.call.done")).toHaveText("Called 2nd · Sep 24");
+    await expect(wall.openView.locator(".act.call.done")).toHaveAttribute("title", /the 2nd to call it/);
   });
 });
 

@@ -15,7 +15,7 @@ import { LANE, LIFE, numOf, pad, seenKey, type FilledSpot, type LaneId, type Nav
 import { buildRack } from "../../lib/wall/rack";
 import { savesOrder as savesOrderOf, skey, type SaveEntry } from "../../lib/wall/saves";
 import { sinceLastVisit, type VisitMemory } from "../../lib/wall/hot";
-import { CALLS_PER_DAY, callsToday, inHoldout, personalItem, type Calls, type Finds } from "../../lib/wall/retention";
+import { CALLS_PER_DAY, callsToday, inHoldout, ordinal, personalItem, readCalls, type Calls, type Finds } from "../../lib/wall/retention";
 import { left, short, styleFor } from "../../lib/wall/time";
 import { startPlay, stopAudio, togglePlay } from "./audio";
 import type { Account } from "./Card";
@@ -276,7 +276,7 @@ export function startWall(bridge: Bridge, live?: Live) {
   let CALLS: Calls = {};
   try {
     FINDS = JSON.parse(localStorage.getItem("fh-finds") || "{}");
-    CALLS = JSON.parse(localStorage.getItem("fh-calls") || "{}");
+    CALLS = readCalls(JSON.parse(localStorage.getItem("fh-calls") || "{}"));
   } catch {}
   bridge.setCalls(CALLS);
   const isSaved = (s: FilledSpot) => SAVES.some((x) => x.k === skey(s));
@@ -335,7 +335,7 @@ export function startWall(bridge: Bridge, live?: Live) {
   }
 
   /** `called`: saved by Call it, which the server already counted as a save. */
-  function toggleSave(li: HTMLElement, s: FilledSpot, btn: HTMLElement, called = false) {
+  function toggleSave(li: HTMLElement, s: FilledSpot, btn: HTMLElement, called = false, callRank?: number) {
     const on = !isSaved(s);
     if (on)
       SAVES.unshift({
@@ -370,7 +370,7 @@ export function startWall(bridge: Bridge, live?: Live) {
         btn.classList.add("pop");
         bumpTab();
       } else flyToCard(li, s, from);
-      toast(called ? `Called. It's in your ${layered() ? "Finds" : "saves"}; see how it goes.` : layered() ? "Saved to your Finds." : "Saved to your Fivehundrd card.");
+      toast(called ? `Called${callRank ? `, the ${ordinal(callRank)} to call it` : ""}. It's in your ${layered() ? "Finds" : "saves"}; see how it goes.` : layered() ? "Saved to your Finds." : "Saved to your Fivehundrd card.");
       try {
         localStorage.setItem("fh-intro", "1");
       } catch {}
@@ -1248,21 +1248,23 @@ export function startWall(bridge: Bridge, live?: Live) {
       /* found before the store update re-renders the button away */
       const btn = el.closest(".acts")?.querySelector<HTMLElement>("[data-save]"),
         li = spotEl(no);
-      let at = Date.now();
+      let at = Date.now(),
+        rank: number | undefined;
       if (live) {
         if (!s.id) return "unavailable";
         const r = await liveApi.callStory(s.id);
         if (!r) return "error";
         if (r.status !== "called") return r.status;
         at = Date.parse(r.calledAt ?? "") || at;
+        rank = r.rank;
       }
-      CALLS = { ...CALLS, [k]: at };
+      CALLS = { ...CALLS, [k]: { at, ...(rank && { rank }) } };
       try {
         localStorage.setItem("fh-calls", JSON.stringify(CALLS));
       } catch {}
       bridge.setCalls(CALLS);
-      if (!isSaved(s) && btn && li) toggleSave(li, s, btn, true);
-      else toast("Called. See how it goes.");
+      if (!isSaved(s) && btn && li) toggleSave(li, s, btn, true, rank);
+      else toast(rank ? `Called. You're the ${ordinal(rank)} to call it; see how it goes.` : "Called. See how it goes.");
       return "called";
     },
   } satisfies Bridge["actions"]);
@@ -1288,6 +1290,19 @@ export function startWall(bridge: Bridge, live?: Live) {
     const r = ids.length ? await liveApi.findsStatus(ids) : [];
     if (r) {
       FINDS = Object.fromEntries(r.map((f) => [f.id, f]));
+      /* which caller you were, as the database counts it */
+      let ranked = false;
+      for (const f of r)
+        if (f.call?.rank && CALLS[f.id] && CALLS[f.id].rank !== f.call.rank) {
+          CALLS = { ...CALLS, [f.id]: { ...CALLS[f.id], rank: f.call.rank } };
+          ranked = true;
+        }
+      if (ranked) {
+        try {
+          localStorage.setItem("fh-calls", JSON.stringify(CALLS));
+        } catch {}
+        bridge.setCalls(CALLS);
+      }
       try {
         localStorage.setItem("fh-finds", JSON.stringify(FINDS));
       } catch {}

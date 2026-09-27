@@ -3,7 +3,7 @@
 import { memo, useEffect, useState, useSyncExternalStore } from "react";
 import { ICON } from "../../lib/wall/icons";
 import { LANE, LIFE, numOf, pad, rng, type FilledSpot } from "../../lib/wall/model";
-import { CALLS_PER_DAY, callKey, callable } from "../../lib/wall/retention";
+import { CALLS_PER_DAY, callKey, callable, calledLabel, ordinal } from "../../lib/wall/retention";
 import { left, long } from "../../lib/wall/time";
 import { bridge, wallStore } from "./store";
 import { GenArt, LaneIcon } from "./Tile";
@@ -131,11 +131,11 @@ function CallIt({ s }: { s: FilledSpot }) {
     const t = setTimeout(() => setNote(""), 4000);
     return () => clearTimeout(t);
   }, [note]);
-  const at = st.calls[callKey(s)];
-  if (at)
+  const c = st.calls[callKey(s)];
+  if (c)
     return (
-      <span className="act call done" title="You called this. Your Finds will show how it goes.">
-        {`Called · ${new Date(at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}`}
+      <span className="act call done" title={`You called this${c.rank ? `, the ${ordinal(c.rank)} to call it` : ""}. Your Finds will show how it goes.`}>
+        {calledLabel(c)}
       </span>
     );
   const hot = new Set((st.hot ?? []).filter((h) => h.rank <= 5).map((h) => h.id));
