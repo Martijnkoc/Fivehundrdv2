@@ -9,7 +9,7 @@ import { PGlite } from "@electric-sql/pglite";
  * the wall does goes through the same functions the app calls.
  */
 /* every migration but the platform one (pg_cron, Storage: Supabase only) */
-const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links", "20260926090600_founder_data", "20260926090700_indexable_stories", "20260927090000_hotspots", "20260927100000_retention", "20260927110000_call_rank", "20260927120000_hotspot_cfg", "20260927130000_reminders"];
+const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links", "20260926090600_founder_data", "20260926090700_indexable_stories", "20260927090000_hotspots", "20260927100000_retention", "20260927110000_call_rank", "20260927120000_hotspot_cfg", "20260927130000_reminders", "20260927140000_hotspot_not_own"];
 const schema = (
   await Promise.all(MIGRATIONS.map((m) => readFile(new URL(`../supabase/migrations/${m}.sql`, import.meta.url), "utf8")))
 ).join("\n");
@@ -626,6 +626,19 @@ describe("hotspots", () => {
     assert.ok(Math.abs(sa - sb) < 1e-6, `${sa} vs ${sb}`);
     /* (5 opens + 4 x 1 save) / sqrt(6 exposed + 20) */
     assert.ok(Math.abs(sa - 9 / Math.sqrt(26)) < 1e-4, String(sa));
+  });
+
+  test("a maker's own activity doesn't make their spot a Hotspot", async () => {
+    const a = await reserve(story({ no: 33, visitor: "maker-1" }));
+    await complete(a.id);
+    for (const k of ["open", "save", "share", "link_click"]) await ev(a.id, k, "maker-1");
+    await ev(a.id, "open", "fan-1");
+    await ev(a.id, "open", "fan-2");
+    await db.query("select private.refresh_hotspots()");
+    assert.deepEqual(await hot(), []);
+    await ev(a.id, "open", "fan-3");
+    await db.query("select private.refresh_hotspots()");
+    assert.equal((await hot())[0].opens, 3);
   });
 
   test("the spotlight moves on: a top-5 spot's score halves every 6 hours", async () => {

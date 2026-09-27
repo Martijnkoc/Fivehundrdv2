@@ -126,3 +126,35 @@ for (const viewport of [viewports[0], viewports[2]])
       await expect(acts).toHaveScreenshot(["approved", `${viewport.name}-call-ask.png`]);
     });
   });
+
+/* The maker's journey, start to finish: Create, pay, see it, share it, come back. */
+for (const viewport of [viewports[2], viewports[0]])
+  test.describe(`maker journey, ${viewport.name}`, () => {
+    test.use({ viewport: { width: viewport.width, height: viewport.height }, viewportSpec: viewport, hasTouch: viewport.width < 700 });
+    test("from Create to their own spot on the wall, and first in Newest on the next visit", async ({ wall, page }) => {
+      await wall.goto("", { spotlight: true, call: true });
+      await wall.openCreate();
+      if (wall.createsInSteps) {
+        await page.locator(".st-lane", { hasText: "Music" }).click();
+        await page.locator(".st-next").click();
+        await page.locator("#fName").fill("Lowtide Club");
+        await page.locator(".st-next").click();
+        await page.locator(".st-next").click();
+        await page.locator("[data-link]").first().fill("open.spotify.com/artist/lowtide");
+        await page.locator(".st-next").click();
+      } else {
+        await page.locator("#fName").fill("Lowtide Club");
+        await page.locator("[data-link]").first().fill("open.spotify.com/artist/lowtide");
+      }
+      await page.locator("#fPay").click();
+      await expect(page.locator("#claimH")).toHaveText("You're on the wall.");
+      await page.locator("#dSee").click();
+      await expect(wall.openView.locator(".title")).toHaveText("Lowtide Club");
+      /* nobody calls their own spot */
+      await expect(wall.openView.locator("[data-share]")).toBeVisible();
+      await expect(wall.openView.locator(".act.call")).toHaveCount(0);
+      await wall.goto("", { spotlight: true, call: true });
+      await page.locator(".sl-tabs").getByRole("tab", { name: "Newest" }).click();
+      await expect(page.locator(".sl-item").first()).toHaveAttribute("aria-label", /^Lowtide Club, No\. \d{3}: joined/);
+    });
+  });
