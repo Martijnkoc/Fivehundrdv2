@@ -6,11 +6,14 @@ import { env } from "./backend";
 export const reminderConfig = () => ({ key: process.env.RESEND_API_KEY ?? "", from: process.env.REMINDER_FROM ?? "" });
 export const hasReminders = () => !!(reminderConfig().key && reminderConfig().from && env.serverKey);
 
-/** The off link's signature: only the person the email went to can turn their reminders off. */
-const sig = (user: string) => createHmac("sha256", env.serverKey).update("remind-off:" + user).digest("base64url");
+/**
+ * Off links' signatures: only the person an email went to can stop it.
+ * "remind" signs a user id (reminders), "maker" a story id (maker notices).
+ */
+const sig = (id: string, kind: "remind" | "maker" = "remind") => createHmac("sha256", env.serverKey).update(`${kind}-off:` + id).digest("base64url");
 export const offToken = sig;
-export function offTokenOk(user: string, token: string) {
-  const a = Buffer.from(sig(user)),
+export function offTokenOk(id: string, token: string, kind: "remind" | "maker" = "remind") {
+  const a = Buffer.from(sig(id, kind)),
     b = Buffer.from(token);
   return a.length === b.length && timingSafeEqual(a, b);
 }

@@ -16,6 +16,12 @@ Approved 2026-09-27. Three visible layers; everything else is data.
    found early ("Found at 23 · now 1,284") → open call ("Called Sep 27") → ended
    ("Found Sep 27") → "#7 of 340".
 
+4. **For makers** (`app/wall/Card.tsx`, `maker_stats`): under "Your story" on their card,
+   their own spot's numbers in people, without their own activity ("Hotspot · 1,204 saw it ·
+   312 opened · 48 kept · 21 to your links · 3 shared"). Emails to the checkout address when
+   the spot becomes a Hotspot and when it has about 6 hours left (`maker_notices_due`,
+   sent with the reminders), once each, with a stop link per spot.
+
 ## Rule: provenance, not competition
 
 Personal history is context, never status: no scores, levels, badges, streaks, win counts,

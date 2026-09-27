@@ -279,7 +279,8 @@ export const INFO: Record<PageSlug, Info> = {
         <h2>Makers</h2>
         <p>
           Your story (name, texts, images, audio, links) is public while it&apos;s on the wall and through its lasting link. Your email address and payment are handled by Stripe; we
-          store the email to contact you about your spot and a reference to the payment, never card details.
+          store the email to contact you about your spot and a reference to the payment, never card details. Where email is set up, we write when your spot becomes a Hotspot
+          and when it has about six hours left, with how many people saw, opened, kept and shared it; every such email has a link to stop them for that spot.
         </p>
         <h2>Who processes data for us</h2>
         <ul>
@@ -289,6 +290,7 @@ export const INFO: Record<PageSlug, Info> = {
           <li>Anthropic: the automatic check of a story&apos;s texts and images before payment.</li>
           <li>Google Safe Browsing: checking links in a story against known harmful sites.</li>
           <li>Cloudflare Turnstile: an invisible check that a buyer is human.</li>
+          <li>Resend: sending reminder and spot emails, where they are set up.</li>
         </ul>
         <h2>Your choices</h2>
         <p>

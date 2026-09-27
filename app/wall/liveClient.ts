@@ -8,6 +8,7 @@ import { PAL } from "../../lib/wall/demo";
 import type { Feed } from "../../lib/wall/live";
 import type { Draft } from "./Claim";
 import type { CallResult, FindStatus } from "../../lib/wall/retention";
+import type { MakerNumbers } from "../../lib/site/reminderEmail";
 
 export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "";
@@ -72,6 +73,14 @@ export function sendEvent(story: string, kind: EventKind) {
 export async function callStory(story: string): Promise<CallResult | null> {
   try {
     const r = await fetch("/api/call", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ story, visitor: visitorId() }) });
+    return r.ok ? r.json() : null;
+  } catch {
+    return null;
+  }
+}
+export async function makerStats(ids: string[]): Promise<(MakerNumbers & { id: string })[] | null> {
+  try {
+    const r = await fetch("/api/mine", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ visitor: visitorId(), ids }) });
     return r.ok ? r.json() : null;
   } catch {
     return null;

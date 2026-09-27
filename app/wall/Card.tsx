@@ -3,6 +3,7 @@
 import { Fragment, useSyncExternalStore } from "react";
 import { BIND, LANE, LANES, TOTAL, lum, numOf, pad, seenKey, type FilledSpot, type Spot } from "../../lib/wall/model";
 import { provenance, type FindStatus, type Finds } from "../../lib/wall/retention";
+import { numbersLine, type MakerNumbers } from "../../lib/site/reminderEmail";
 import { savesOrder, skey, type OrderedSave, type SaveEntry } from "../../lib/wall/saves";
 import { left, short, styleFor } from "../../lib/wall/time";
 import { wallStore } from "./store";
@@ -19,6 +20,8 @@ export type CardData = {
   account: Account | null;
   /** phones and tablets: the card is the Finds tab */
   finds?: boolean;
+  /** "Your story": the maker's own numbers, by story id (live wall; people, without the maker) */
+  makers?: Record<string, MakerNumbers>;
   /** whether reminders are sent (false on the live wall until email is set up) */
   reminders?: boolean;
   /** each Find's history from the database, by story id (live wall) */
@@ -39,6 +42,29 @@ const initials = (name: string) =>
 
 
 /** One save: a small square in the wall tile's visual language (§11). */
+/**
+ * Approved change: under "Your story", how the maker's own spot is doing,
+ * in people (docs/retention.md). Only the maker sees it; never a rank.
+ */
+function MakerLine({ s, m }: { s: FilledSpot; m?: MakerNumbers }) {
+  const n = (v: number) => v.toLocaleString("en-US");
+  const nums = m ?? { seen: 0, opened: s.opens ?? 0, kept: s.saves ?? 0, clicked: 0, shared: 0, hotAt: null };
+  const parts = [
+    nums.hotAt && "Hotspot",
+    nums.seen > 0 && `${n(nums.seen)} saw it`,
+    nums.opened > 0 && `${n(nums.opened)} opened`,
+    nums.kept > 0 && `${n(nums.kept)} kept`,
+    nums.clicked > 0 && `${n(nums.clicked)} to your links`,
+    nums.shared > 0 && `${n(nums.shared)} shared`,
+  ].filter(Boolean) as string[];
+  const line = numbersLine(nums);
+  return (
+    <small className="mine-nums" title={line ? `So far, ${line}.` : undefined}>
+      {parts.length ? parts.join(" · ") : "Live now. Your first numbers show up here."}
+    </small>
+  );
+}
+
 function SaveTile({ x, f }: { x: OrderedSave; f?: FindStatus }) {
   const cur = x.cur as FilledSpot;
   const st = x.liveNow ? styleFor(cur) : styleFor({ lane: x.lane, start: x.start, seed: 0 });
@@ -217,6 +243,7 @@ function CardBody({ card, wall }: { card: CardData; wall: Spot[] }) {
             <span>Your story</span>
             <b>{`No. ${pad(numOf(mine))} ${mine.name}`}</b>
             <em>{`${short(left(mine))} left`}</em>
+            <MakerLine s={mine} m={mine.id ? card.makers?.[mine.id] : undefined} />
           </button>
         )}
         {ws(4)}

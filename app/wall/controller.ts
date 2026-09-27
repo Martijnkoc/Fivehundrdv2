@@ -15,6 +15,7 @@ import { LANE, LIFE, numOf, pad, seenKey, type FilledSpot, type LaneId, type Nav
 import { buildRack } from "../../lib/wall/rack";
 import { savesOrder as savesOrderOf, skey, type SaveEntry } from "../../lib/wall/saves";
 import { sinceLastVisit, type VisitMemory } from "../../lib/wall/hot";
+import type { MakerNumbers } from "../../lib/site/reminderEmail";
 import { CALLS_PER_DAY, callsToday, inHoldout, ordinal, personalItem, readCalls, type Calls, type Finds } from "../../lib/wall/retention";
 import { left, short, styleFor } from "../../lib/wall/time";
 import { startPlay, stopAudio, togglePlay } from "./audio";
@@ -335,6 +336,7 @@ export function startWall(bridge: Bridge, live?: Live) {
       ...(layered() && { finds: true }),
       history: FINDS,
       reminders: REMINDERS,
+      makers: MAKERS,
     });
   }
 
@@ -1288,6 +1290,16 @@ export function startWall(bridge: Bridge, live?: Live) {
       surface("since_shown", item?.story, { item: item?.kind ?? "none", holdout });
     }
   }
+  /** "Your story": the maker's own numbers (live wall), on load and every few minutes. */
+  let MAKERS: Record<string, MakerNumbers> = {};
+  async function loadMakerStats() {
+    const ids = [...liveApi.mineIds()];
+    if (!ids.length) return;
+    const r = await liveApi.makerStats(ids);
+    if (!r) return;
+    MAKERS = Object.fromEntries(r.map((m) => [m.id, m]));
+    renderCard();
+  }
   /** The Finds' history from the database (live wall): once a visit, and after a call. */
   async function loadFinds() {
     const ids = [...new Set([...SAVES.map((x) => x.k), ...Object.keys(CALLS)])];
@@ -1354,6 +1366,8 @@ export function startWall(bridge: Bridge, live?: Live) {
     bootLive();
     syncAccount();
     loadFinds();
+    loadMakerStats();
+    setInterval(() => document.hidden || loadMakerStats(), 5 * 60e3);
     return;
   }
   const h = location.hash.replace("#", "");

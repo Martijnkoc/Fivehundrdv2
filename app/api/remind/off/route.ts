@@ -9,11 +9,23 @@ const page = (msg: string, status = 200) =>
     { status, headers: { "Content-Type": "text/html; charset=utf-8", "X-Robots-Tag": "noindex" } },
   );
 
-/** The link in every reminder email: turns that person's reminders off. (POST: one-click unsubscribe from mail apps.) */
+/** The link in every reminder email: turns that person's reminders off; `s`: a maker's notices for one spot. (POST: one-click unsubscribe from mail apps.) */
 async function off(req: Request) {
   const q = new URL(req.url).searchParams;
   const u = q.get("u") ?? "",
-    t = q.get("t") ?? "";
+    t = q.get("t") ?? "",
+    story = q.get("s") ?? "";
+  /* a maker's notices for one spot */
+  if (story) {
+    if (!UUID.test(story) || !t || !offTokenOk(story, t, "maker")) return page("That link doesn't work. Open it from the email again.", 400);
+    if (!hasDatabase()) return page("Something went wrong. Try again in a minute.", 503);
+    try {
+      await rpc("maker_notices_off", { p_story: story });
+    } catch {
+      return page("Something went wrong. Try again in a minute.", 502);
+    }
+    return page("Done. We won't email you about this spot again. It stays on the wall until its time is up.");
+  }
   if (!UUID.test(u) || !t || !offTokenOk(u, t)) return page("That link doesn't work. Open it from the email again.", 400);
   if (!hasDatabase()) return page("Something went wrong. Try again in a minute.", 503);
   try {

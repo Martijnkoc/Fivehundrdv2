@@ -9,7 +9,7 @@ import { PGlite } from "@electric-sql/pglite";
  * the wall does goes through the same functions the app calls.
  */
 /* every migration but the platform one (pg_cron, Storage: Supabase only) */
-const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links", "20260926090600_founder_data", "20260926090700_indexable_stories", "20260927090000_hotspots", "20260927100000_retention", "20260927110000_call_rank", "20260927120000_hotspot_cfg", "20260927130000_reminders", "20260927140000_hotspot_not_own"];
+const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links", "20260926090600_founder_data", "20260926090700_indexable_stories", "20260927090000_hotspots", "20260927100000_retention", "20260927110000_call_rank", "20260927120000_hotspot_cfg", "20260927130000_reminders", "20260927140000_hotspot_not_own", "20260927150000_makers"];
 const schema = (
   await Promise.all(MIGRATIONS.map((m) => readFile(new URL(`../supabase/migrations/${m}.sql`, import.meta.url), "utf8")))
 ).join("\n");
@@ -812,5 +812,43 @@ describe("reminders", () => {
     await rejects(one("select public.reminders_due('nope')"), /forbidden/);
     /* without the site's address in Vault, the ping does nothing */
     await db.query("select private.ping_reminders()");
+  });
+});
+
+describe("makers", () => {
+  const ev = (id, kind, visitor) => db.query("insert into public.events (story_id, kind, visitor) values ($1, $2, $3)", [id, kind, visitor]);
+  const due = async () => (await one("select public.maker_notices_due($1) r", [KEY])).r;
+
+  test("a maker sees their own spot's numbers, people only and without themselves; nobody else can", async () => {
+    const s = await reserve(story({ no: 51, visitor: "maker-1" }));
+    await complete(s.id);
+    await db.query("insert into public.impressions (story_id, visitor) values ($1, 'a'), ($1, 'b'), ($1, 'c'), ($1, 'maker-1')", [s.id]);
+    for (const v of ["a", "b", "maker-1"]) await ev(s.id, "open", v);
+    await ev(s.id, "link_click", "a");
+    await ev(s.id, "link_click", "a");
+    await ev(s.id, "share", "b");
+    await db.query("insert into public.saves (visitor, story_id) values ('a', $1), ('maker-1', $1)", [s.id]);
+    await ev(s.id, "open", "d"); /* opened from a shared link without seeing the tile */
+    const [m] = (await one("select public.maker_stats($1, 'maker-1', $2) r", [KEY, [s.id]])).r;
+    assert.deepEqual([m.seen, m.opened, m.kept, m.clicked, m.shared, m.hotAt], [4, 3, 1, 1, 1, null]);
+    assert.deepEqual((await one("select public.maker_stats($1, 'someone-else', $2) r", [KEY, [s.id]])).r, []);
+  });
+
+  test("emails: once when it becomes a Hotspot, once with 6 hours left, never after stop", async () => {
+    const s = await reserve(story({ no: 52 }));
+    await complete(s.id);
+    assert.deepEqual(await due(), []);
+    await db.query("update public.stories set hot_at = now() where id = $1", [s.id]);
+    let d = await due();
+    assert.deepEqual(d.map((x) => [x.kind, x.email, x.name]), [["hot", "maker@example.com", "Lowtide Club"]]);
+    assert.equal(typeof d[0].stats.seen, "number");
+    await one("select public.maker_notice_sent($1, $2, 'hot')", [KEY, s.id]);
+    assert.deepEqual(await due(), []);
+    await age(s.id, "67 hours");
+    d = await due();
+    assert.deepEqual(d.map((x) => x.kind), ["ending"]);
+    await one("select public.maker_notices_off($1, $2)", [KEY, s.id]);
+    assert.deepEqual(await due(), []);
+    await rejects(one("select public.maker_notices_due('nope')"), /forbidden/);
   });
 });

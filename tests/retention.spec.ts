@@ -153,6 +153,8 @@ for (const viewport of [viewports[2], viewports[0]])
       /* nobody calls their own spot */
       await expect(wall.openView.locator("[data-share]")).toBeVisible();
       await expect(wall.openView.locator(".act.call")).toHaveCount(0);
+      /* "Your story" on the card: the maker's own numbers */
+      await expect(page.locator("#card .mine .mine-nums")).toHaveText(/^(\d[\d,]* (saw it|opened|kept|to your links|shared)( · )?)+$|^Live now\./);
       await wall.goto("", { spotlight: true, call: true });
       await page.locator(".sl-tabs").getByRole("tab", { name: "Newest" }).click();
       await expect(page.locator(".sl-item").first()).toHaveAttribute("aria-label", /^Lowtide Club, No\. \d{3}: joined/);

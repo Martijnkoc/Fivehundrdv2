@@ -1,13 +1,15 @@
 import { SITE_URL } from "../../../../lib/site/facts";
-import { reminderEmail, type DueStory } from "../../../../lib/site/reminderEmail";
+import { makerEmail, reminderEmail, type DueStory, type MakerNotice } from "../../../../lib/site/reminderEmail";
 import { env, hasDatabase, json, rpc } from "../../../../lib/server/backend";
 import { measured } from "../../../../lib/server/ops";
 import { hasReminders, offToken, sendEmail } from "../../../../lib/server/reminders";
 
 type Due = { user: string; email: string; stories: DueStory[] };
+type Notice = MakerNotice & { story: string; email: string };
 
 /**
- * Sends what's due: "One of your Finds leaves The Wall in an hour". Called
+ * Sends what's due: "One of your Finds leaves The Wall in an hour" to
+ * visitors, and "your spot is a Hotspot" / "6 hours left" to makers. Called
  * every 10 minutes by the database (pg_cron → private.ping_reminders, with
  * the server key) or by a scheduler with CRON_SECRET. Each story is reminded
  * once per person; nothing is marked sent unless the email went out.
@@ -31,7 +33,21 @@ async function run(req: Request) {
       /* the next run tries again */
     }
   }
-  return json({ due: due.length, sent });
+  /* makers: "your spot is a Hotspot", "6 hours left" */
+  const notices = await rpc<Notice[]>("maker_notices_due");
+  let told = 0;
+  for (const n of notices.slice(0, 200)) {
+    const off = `${SITE_URL}/api/remind/off?s=${n.story}&t=${offToken(n.story, "maker")}`;
+    try {
+      if (await sendEmail(n.email, makerEmail(n, SITE_URL, off), off)) {
+        await rpc("maker_notice_sent", { p_story: n.story, p_kind: n.kind });
+        told++;
+      }
+    } catch {
+      /* the next run tries again */
+    }
+  }
+  return json({ due: due.length, sent, makers: told });
 }
 
 export const GET = measured("/api/cron/reminders", run);
