@@ -5,8 +5,9 @@ import { measured } from "../../../lib/server/ops";
 export const GET = measured("/api/wall", async (req: Request) => {
   if (!hasDatabase()) return json({ error: "offline" }, { status: 503 });
   try {
-    const feed = await rpc("wall_public", {}, false);
-    return Response.json(feed, { headers: { "Cache-Control": "public, s-maxage=15, stale-while-revalidate=45" } });
+    /* the wall, and what has traction right now (hot_public(), refreshed every 10 minutes) */
+    const [feed, hot] = await Promise.all([rpc<Record<string, unknown>>("wall_public", {}, false), rpc("hot_public", {}, false).catch(() => [])]);
+    return Response.json({ ...feed, hot }, { headers: { "Cache-Control": "public, s-maxage=15, stale-while-revalidate=45" } });
   } catch {
     return json({ error: "unavailable" }, { status: 502 });
   }

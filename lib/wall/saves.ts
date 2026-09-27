@@ -20,6 +20,10 @@ export type SaveEntry = {
   pal?: Palette;
   img?: string | null;
   savedAt: number;
+  /** "You were #7": how many had saved it, you included, when you did (live wall) */
+  rank?: number;
+  /** its save count the last time the wall showed it */
+  count?: number;
 };
 
 export type OrderedSave = SaveEntry & { liveNow: boolean; cur: Spot | undefined };

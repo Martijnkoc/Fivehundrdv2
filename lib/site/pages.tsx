@@ -52,7 +52,13 @@ export const INFO: Record<PageSlug, Info> = {
         <h2>No front row</h2>
         <p>
           Everyone sees the same numbered wall. The only thing that changes is where your visit starts: each visitor begins at a different spot, so every spot gets its turn at the
-          top. There is no ranking, no paid boost and no algorithm deciding who gets seen.
+          top. There is no ranking of the wall itself and no paid boost.
+        </p>
+        <h2>Hotspots and Newest</h2>
+        <p>
+          Above the wall, Hotspots shows five spots with traction right now: how many people opened them, visited the maker and saved them in the last hours, weighed against how
+          often they were seen, so a spot that joined an hour ago can be there too. A spot&apos;s turn in Hotspots fades after a few hours. Switch to Newest for the five that
+          joined last. When you come back, the wall tells you how many spots are new since your last visit.
         </p>
         <h2>The lanes</h2>
         <ul>

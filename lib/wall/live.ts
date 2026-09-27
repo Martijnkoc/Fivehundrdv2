@@ -12,6 +12,8 @@ import { LANES, type FilledSpot, type LaneId, type Spot, type VacantSpot } from 
 export const WALL_SIZE = 500;
 export const PER_LANE = 500;
 
+import type { HotEntry } from "./hot";
+
 /** One live story as /api/wall returns it (wall_public() in the database). */
 export type FeedStory = {
   id: string;
@@ -36,7 +38,7 @@ export type FeedStory = {
   opens: number;
   saves: number;
 };
-export type Feed = { now: string; stories: FeedStory[]; held: [LaneId, number][] };
+export type Feed = { now: string; stories: FeedStory[]; held: [LaneId, number][]; hot?: HotEntry[] };
 
 const LANE_ORDER = LANES.map(([k]) => k);
 

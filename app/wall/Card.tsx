@@ -32,6 +32,8 @@ const initials = (name: string) =>
     .join("")
     .toUpperCase();
 
+const ordinal = (n: number) => n + (n % 100 >= 11 && n % 100 <= 13 ? "th" : ["th", "st", "nd", "rd"][n % 10] ?? "th");
+
 /** One save: a small square in the wall tile's visual language (§11). */
 function SaveTile({ x }: { x: OrderedSave }) {
   const cur = x.cur as FilledSpot;
@@ -53,11 +55,20 @@ function SaveTile({ x }: { x: OrderedSave }) {
   ) : (
     <span className="sq-t off">Ended</span>
   );
+  /* approved change: how early you were ("#7 of 340") */
+  const now = x.liveNow && cur.saves != null ? Math.max(cur.saves, x.rank ?? 0) : x.count;
+  const rank =
+    x.rank != null && now != null ? (
+      <span className="sq-r" title={`You were the ${ordinal(x.rank)} to save this. ${now} ${now === 1 ? "person has" : "people have"} now.`}>
+        {`#${x.rank} of ${now}`}
+      </span>
+    ) : null;
   const inner = (
     <>
       <span className="sq-art">{art}</span>
       {tl}
       <span className="sq-n">{x.name}</span>
+      {rank}
     </>
   );
   const label = `${x.name}, ${LANE[x.lane]}, No. ${pad(x.num ?? x.no)}${x.liveNow ? "" : ", ended"}`;

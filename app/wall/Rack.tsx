@@ -49,6 +49,7 @@ function Item({ item, st }: { item: RackItem; st: WallState }) {
             saves={s.vacant ? undefined : s.saves}
             minute={st.minute}
             compact={st.compact}
+            since={st.since?.at}
           />
         ))}
         {Array.from({ length: item.fillers }, (_, i) => (

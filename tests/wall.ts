@@ -32,10 +32,14 @@ export class Wall {
     return this.viewport.width < 980;
   }
 
-  async goto(hash = "") {
+  async goto(hash = "", { spotlight = false } = {}) {
     await this.page.goto(`${this.path}?fixture=1${hash}`);
     /* the baselines are the reference plus the approved changes */
     if (this.isReference) await this.page.addStyleTag({ path: "app/wall/overrides.css" });
+    /* Hotspots above the wall (approved change) has its own screenshots
+       (spotlight.spec.ts); hidden here, the rest of the wall is still compared
+       with the reference pixel for pixel */
+    if (!this.isReference && !spotlight) await this.page.addStyleTag({ content: ".spotlight{display:none!important}" });
     await this.page.waitForSelector("#rack .spot");
     /* phones build the wall a few rows at a time */
     if (!this.isReference) await this.page.waitForSelector("#rack[data-complete]");

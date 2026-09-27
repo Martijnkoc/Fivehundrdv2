@@ -14,6 +14,7 @@ import { buildLiveWall, mediaURL, mergeFeed, openNumbers, type Feed } from "../.
 import { LANE, LIFE, numOf, pad, seenKey, type FilledSpot, type LaneId, type NavId, type Spot } from "../../lib/wall/model";
 import { buildRack } from "../../lib/wall/rack";
 import { savesOrder as savesOrderOf, skey, type SaveEntry } from "../../lib/wall/saves";
+import { sinceLastVisit, type VisitMemory } from "../../lib/wall/hot";
 import { left, short, styleFor } from "../../lib/wall/time";
 import { startPlay, stopAudio, togglePlay } from "./audio";
 import type { Account } from "./Card";
@@ -117,7 +118,7 @@ export function startWall(bridge: Bridge, live?: Live) {
     renderRack();
     window.scrollTo({ top: 0 });
     requestAnimationFrame(() => {
-      const f = document.querySelector(".spot:not(.vacant):not(.filler)");
+      const f = $("#rack").querySelector(".spot:not(.vacant):not(.filler)");
       if (f) openSpot(f as HTMLElement, { align: false, auto: true });
     });
   }
@@ -168,7 +169,7 @@ export function startWall(bridge: Bridge, live?: Live) {
       query = (e.target as HTMLInputElement).value.trim().toLowerCase();
       renderRack();
       window.scrollTo({ top: 0 });
-      const f = document.querySelector(".spot:not(.vacant):not(.filler)");
+      const f = $("#rack").querySelector(".spot:not(.vacant):not(.filler)");
       if (query && f) openSpot(f as HTMLElement, { align: false, auto: true });
     }, 140);
   });
@@ -297,6 +298,19 @@ export function startWall(bridge: Bridge, live?: Live) {
   }
   const savesOrder = () => savesOrderOf(SAVES, WALL);
   function renderCard() {
+    /* a saved story's latest count, kept for after its spot has ended */
+    if (live) {
+      let changed = false;
+      for (const x of SAVES) {
+        if (x.rank == null) continue;
+        const cur = WALL.find((w) => !w.vacant && skey(w) === x.k) as FilledSpot | undefined;
+        if (cur && cur.saves != null && cur.saves !== x.count) {
+          x.count = Math.max(cur.saves, x.rank);
+          changed = true;
+        }
+      }
+      if (changed) persistSaves();
+    }
     bridge.setCard({
       entryNo,
       ...(live && WALL[entryNo - 1] && { entryNum: numOf(WALL[entryNo - 1]) }),
@@ -323,6 +337,8 @@ export function startWall(bridge: Bridge, live?: Live) {
         seed: s.seed,
         pal: s.pal,
         savedAt: Date.now(),
+        /* "You were #7": on the live wall, where the counts are everyone's */
+        ...(live && { rank: (s.saves || 0) + 1, count: (s.saves || 0) + 1 }),
       });
     else SAVES = SAVES.filter((x) => x.k !== skey(s));
     s.saves = Math.max(0, (s.saves || 0) + (on ? 1 : -1));
@@ -960,6 +976,7 @@ export function startWall(bridge: Bridge, live?: Live) {
     if (!live) return;
     try {
       live.feed = await liveApi.fetchFeed();
+      bridge.setHot(live.feed.hot ?? null);
     } catch {
       return;
     }
@@ -1189,6 +1206,15 @@ export function startWall(bridge: Bridge, live?: Live) {
       closeVeils();
       openSpot(spotEl(no), { align: true });
     },
+    openHot(no: number) {
+      /* not on this lane or search: back to the whole wall first */
+      if (!rack.querySelector(`[data-no="${no}"]`) && !spotEl(no)) {
+        $<HTMLInputElement>("#q").value = "";
+        query = "";
+        setLane("all");
+      }
+      openSpot(spotEl(no), { align: true });
+    },
   } satisfies Bridge["actions"]);
 
   /* ---------- boot ---------- */
@@ -1196,6 +1222,22 @@ export function startWall(bridge: Bridge, live?: Live) {
   matchMedia("(max-width:979px)").addEventListener("change", () => renderCard());
   matchMedia("(max-width:699px)").addEventListener("change", (e) => bridge.setCompact(e.matches));
   const setHead = () => document.documentElement.style.setProperty("--headY", $("#top").getBoundingClientRect().bottom + 12 + "px");
+  /* what changed since the last visit (a new visit after 30 minutes away) */
+  try {
+    const mem = JSON.parse(localStorage.getItem("fh-visits") || "null") as VisitMemory | null;
+    const r = sinceLastVisit(mem, WALL, Date.now());
+    localStorage.setItem("fh-visits", JSON.stringify(r.mem));
+    bridge.setSince(r.since);
+    /* staying keeps it the same visit */
+    setInterval(() => {
+      if (document.hidden) return;
+      try {
+        const m = JSON.parse(localStorage.getItem("fh-visits") || "null") as VisitMemory | null;
+        if (m) localStorage.setItem("fh-visits", JSON.stringify({ ...m, active: Date.now() }));
+      } catch {}
+    }, 60e3);
+  } catch {}
+  if (live) bridge.setHot(live.feed.hot ?? []);
   renderLanes();
   renderRack();
   setHead();

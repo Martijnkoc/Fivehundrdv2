@@ -1,5 +1,6 @@
 import { flushSync } from "react-dom";
 import type { FilledSpot, LaneId, NavId, Spot } from "../../lib/wall/model";
+import type { HotEntry } from "../../lib/wall/hot";
 import type { Rack } from "../../lib/wall/rack";
 import type { CardData } from "./Card";
 import type { ClaimStart, ClaimView, Draft } from "./Claim";
@@ -43,6 +44,9 @@ export type WallState = {
   compact: boolean;
   /** How many rack items are rendered (phones build the rest when idle). */
   limit: number;
+  /** Above the wall: what has traction right now (live wall; null on the demo wall), and what changed since the last visit. */
+  hot: HotEntry[] | null;
+  since: { at: number; fresh: number; gone: number } | null;
 };
 
 const initial: WallState = {
@@ -66,6 +70,8 @@ const initial: WallState = {
   claimVersion: 0,
   compact: false,
   limit: Infinity,
+  hot: null,
+  since: null,
 };
 let state = initial;
 const listeners = new Set<() => void>();
@@ -117,6 +123,12 @@ export const bridge = {
   fillSheet(no: number | null) {
     set({ sheetNo: no });
   },
+  setHot(hot: HotEntry[] | null) {
+    set({ hot });
+  },
+  setSince(since: WallState["since"]) {
+    set({ since });
+  },
   setSaved(keys: string[]) {
     set({ saved: new Set(keys), rev: state.rev + 1 });
   },
@@ -159,6 +171,8 @@ export const bridge = {
     /** Opens the share sheet (every card size, save, copy) without trying the native sheet first. */
     shareSheet: (spot: FilledSpot) => void;
     seeOnWall: (no: number) => void;
+    /** Opens a spot from Hotspots or Newest, on the whole wall if the current lane or search hides it. */
+    openHot: (no: number) => void;
     spotURL: (spot: FilledSpot) => string;
   },
 };

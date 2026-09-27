@@ -9,7 +9,7 @@ import { PGlite } from "@electric-sql/pglite";
  * the wall does goes through the same functions the app calls.
  */
 /* every migration but the platform one (pg_cron, Storage: Supabase only) */
-const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links", "20260926090600_founder_data", "20260926090700_indexable_stories"];
+const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links", "20260926090600_founder_data", "20260926090700_indexable_stories", "20260927090000_hotspots"];
 const schema = (
   await Promise.all(MIGRATIONS.map((m) => readFile(new URL(`../supabase/migrations/${m}.sql`, import.meta.url), "utf8")))
 ).join("\n");
@@ -572,3 +572,55 @@ describe("the Control Room's data", () => {
     await rejects(db.query("select public.track_visit('nope', '{}')"), /forbidden/);
   });
 });
+
+describe("hotspots", () => {
+  const hot = async () => (await one("select public.hot_public() r")).r;
+  const ev = (id, kind, visitor) => db.query("insert into public.events (story_id, kind, visitor) values ($1, $2, $3)", [id, kind, visitor]);
+  const seen = (id, visitor) => db.query("insert into public.impressions (story_id, visitor) values ($1, $2)", [id, visitor]);
+
+  test("traction per person and per exposure; one visitor can't make a hotspot; only live stories", async () => {
+    const a = await reserve(story({ no: 11 }));
+    await complete(a.id);
+    const b = await reserve(story({ no: 12 }));
+    await complete(b.id);
+    /* a: seen by 100 people, opened by 5; b: seen by 5 people, 3 of them saved it */
+    for (let i = 0; i < 100; i++) await seen(a.id, "va" + i);
+    for (let i = 0; i < 5; i++) await ev(a.id, "open", "va" + i);
+    for (let i = 0; i < 5; i++) await seen(b.id, "vb" + i);
+    for (let i = 0; i < 3; i++) {
+      await ev(b.id, "open", "vb" + i);
+      await ev(b.id, "save", "vb" + i);
+    }
+    /* one visitor clicking a lot on c doesn't count */
+    const c = await reserve(story({ no: 13 }));
+    await complete(c.id);
+    for (let i = 0; i < 20; i++) await ev(c.id, "link_click", "same");
+    await db.query("select private.refresh_hotspots()");
+    const list = await hot();
+    assert.deepEqual(list.map((x) => x.id), [b.id, a.id]);
+    assert.equal(list[0].saves, 3);
+    /* ended or removed: out */
+    await one("select public.admin_remove($1, $2, 'spam')", [KEY, b.id]);
+    await db.query("select private.refresh_hotspots()");
+    assert.deepEqual((await hot()).map((x) => x.id), [a.id]);
+  });
+
+  test("the spotlight moves on: a top-5 spot's score halves every 6 hours", async () => {
+    const a = await reserve(story({ no: 21 }));
+    await complete(a.id);
+    for (let i = 0; i < 4; i++) await ev(a.id, "save", "v" + i);
+    await db.query("select private.refresh_hotspots()");
+    const first = (await one("select score, top_at from public.hotspots where story_id = $1", [a.id]));
+    assert.ok(first.top_at);
+    await db.query("update public.hotspots set top_at = now() - interval '6 hours' where story_id = $1", [a.id]);
+    await db.query("select private.refresh_hotspots()");
+    const later = (await one("select score from public.hotspots where story_id = $1", [a.id])).score;
+    assert.ok(Math.abs(later - first.score / 2) < 0.01, `${later} vs ${first.score}`);
+    /* public: callable without the server key, and the table itself isn't readable */
+    await db.exec("set role anon");
+    assert.equal((await hot()).length, 1);
+    await rejects(db.query("select * from public.hotspots"), /permission denied/);
+    await db.exec("reset role");
+  });
+});
+

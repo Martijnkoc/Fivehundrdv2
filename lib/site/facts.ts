@@ -62,7 +62,7 @@ export const FAQ: { q: string; a: string }[] = [
   { q: "How much does it cost?", a: "$9.95 per spot for 72 hours, paid once through Stripe. There is no subscription. Browsing, opening, saving and sharing spots is free." },
   {
     q: "Is there an algorithm or a feed?",
-    a: "No. Everyone sees the same numbered wall. The only difference is where your visit starts: each visitor begins at a different spot, so there is no permanent front row and every spot gets its turn at the top.",
+    a: "No feed, and no algorithm deciding what you see. Everyone sees the same numbered wall, and each visitor begins at a different spot. Above the wall, Hotspots shows five spots with traction right now (opens, visits to the maker and saves in the last hours, per person and per time seen); a spot's turn there fades after a few hours, so it keeps changing. Or switch to Newest.",
   },
   { q: "Which lanes are there?", a: "Music, Books, Games, Creators, Podcasts and Newsletters: 500 spots each, 3,000 in total." },
   {

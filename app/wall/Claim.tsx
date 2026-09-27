@@ -256,7 +256,7 @@ function ClaimForm({ start }: { start: ClaimStart }) {
         </button>
       </p>
       {ws(2)}
-      <p className="promise">There&apos;s no front row. Every visitor starts somewhere else on the wall, so every spot gets its turn at the top.</p>
+      <p className="promise">There&apos;s no front row. Every visitor starts somewhere else on the wall, and Hotspots changes every few hours, so every spot gets its turn at the top.</p>
       {ws(2)}
       <div className="claim-grid">
         {ws(3)}

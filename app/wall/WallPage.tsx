@@ -2,6 +2,7 @@ import { Card } from "./Card";
 import { Footer, Header, Overlays, TabBar } from "./Chrome";
 import { Intro } from "./Intro";
 import { Rack } from "./Rack";
+import { Spotlight } from "./Spotlight";
 import { WallRuntime } from "./WallRuntime";
 
 /** JSON-LD, safe inside a script tag. */
@@ -24,6 +25,7 @@ export function WallPage({ heading = "The wall", ld }: { heading?: string; ld?: 
         <main>
           <h1 className="sr">{heading}</h1>
           <Intro />
+          <Spotlight />
           <Rack />
         </main>
       </div>

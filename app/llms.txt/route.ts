@@ -19,6 +19,7 @@ ${DESCRIPTION}
 
 - The Wall: six lanes (${LANES.map((l) => l.label).join(", ")}) of 500 numbered spots each. Everyone sees the same wall; each visit starts at a different spot.
 - A Spot is one maker's placement for 72 hours. Makers claim a spot in Create, add artwork, a pitch, up to three links and a preview, and pay once.
+- Hotspots, above The Wall: five spots with traction right now (opens, visits to the maker and saves in recent hours, per person and per time seen); a spot's turn fades after a few hours. Newest: the five that joined last.
 - Visitors open a Discovery to play, read or watch its preview, save it to their Finds, and share its lasting link.
 - After 72 hours the spot's number opens up for the next maker. The Discovery's lasting link keeps working and says its time on The Wall has ended.
 

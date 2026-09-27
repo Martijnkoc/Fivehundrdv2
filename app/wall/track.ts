@@ -47,12 +47,12 @@ let lastSeen = 0;
 function stamp() {
   lastSeen = Date.now();
   try {
-    localStorage.setItem("fh-seen", String(lastSeen));
+    localStorage.setItem("fh-active", String(lastSeen));
   } catch {}
 }
 function previous() {
   try {
-    return Math.max(lastSeen, +(localStorage.getItem("fh-seen") || 0));
+    return Math.max(lastSeen, +(localStorage.getItem("fh-active") || 0) || 0);
   } catch {
     return lastSeen;
   }

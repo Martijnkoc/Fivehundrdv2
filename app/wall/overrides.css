@@ -301,3 +301,27 @@
 .info-main .price-box b{font-family:"Fraunces",Georgia,serif;font-size:44px;line-height:1}
 .info-main .price-box span{font-size:14px;color:var(--ink2)}
 @media (max-width:520px){.info-top nav a.info-wall{display:none}}
+
+/* above the wall (approved change): Hotspots / Newest, and what changed since your last visit */
+.spotlight{margin:0 0 18px}
+.sl-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 10px}
+.sl-tabs{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:999px;background:var(--paper)}
+.sl-tabs button{min-height:32px;padding:0 14px;border:0;border-radius:999px;background:none;font:inherit;font-size:13px;font-weight:800;letter-spacing:-.01em;color:var(--ink2);cursor:pointer}
+.sl-tabs button.on{background:var(--ink);color:var(--bg)}
+.sl-tabs button:disabled{opacity:.45;cursor:default}
+.sl-since{margin:0;font-size:13px;color:var(--ink2)}
+.sl-since b{color:var(--ink);font-weight:800}
+.sl-row{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,104px);gap:16px}
+.sl-item{display:flex;flex-direction:column;gap:6px;padding:0;border:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.sl-item .spot.still{pointer-events:none}
+.sl-item:hover .book{transform:translateY(-2px)}
+.sl-item:focus-visible{outline:2px solid var(--ink);outline-offset:4px;border-radius:8px}
+.sl-why{font-size:11.5px;line-height:1.3;color:var(--ink2)}
+.sl-why b{color:var(--ink);font-weight:800}
+.sq-r{display:block;font-size:10px;font-weight:700;color:var(--ink2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+@media (max-width:699px){
+  .spotlight{margin:0 0 14px}
+  .sl-row{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:104px;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 calc(-1 * var(--gut,16px));padding:0 var(--gut,16px) 4px;scrollbar-width:none}
+  .sl-row::-webkit-scrollbar{display:none}
+  .sl-row li{scroll-snap-align:start}
+}
