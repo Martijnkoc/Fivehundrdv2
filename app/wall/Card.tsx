@@ -117,7 +117,7 @@ function SaveTile({ x, f }: { x: OrderedSave; f?: FindStatus }) {
   return (
     <li className={`msp${x.liveNow ? "" : " gone"}`} data-k={x.k} style={cssVars(st)}>
       {tile}
-      <button className="sv-x" data-unsave={x.k} aria-label={`Remove ${x.name} from your saves`}>
+      <button className="sv-x" data-unsave={x.k} aria-label={`Remove ${x.name} from your Finds`}>
         &times;
       </button>
     </li>
@@ -186,7 +186,7 @@ function Saves({ card, wall }: { card: CardData; wall: Spot[] }) {
       )}
       {all.length > 0 && !card.account && (
         <div className="keep">
-          <p>{card.reminders === false ? "Take your card to every device." : "Take your card to every device, and we'll remind you before saved spots end."}</p>
+          <p>{card.reminders === false ? "Take your card to every device." : "Take your card to every device, and we'll remind you before your Finds leave the wall."}</p>
           <button data-keep="">Keep my card</button>
         </div>
       )}

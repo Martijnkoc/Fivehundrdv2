@@ -58,7 +58,7 @@ function Share({ d, spot }: { d: ShareData; spot: FilledSpot }) {
     try {
       await navigator.share({ files: [file], title: d.title, text: `${d.text} ${d.url}` });
     } catch (e) {
-      if ((e as Error).name !== "AbortError") bridge.toast("Sharing didn't work here. Save the card instead.");
+      if ((e as Error).name !== "AbortError") bridge.toast("Sharing didn't work here. Download the card instead.");
     }
   };
   const copyImage = async () => {
@@ -67,7 +67,7 @@ function Share({ d, spot }: { d: ShareData; spot: FilledSpot }) {
       await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
       bridge.toast("Card copied");
     } catch {
-      bridge.toast("Couldn't copy the image here. Save it instead.");
+      bridge.toast("Couldn't copy the image here. Download it instead.");
     }
   };
   /* Instagram and TikTok take the image from your photos and the link as a sticker */
@@ -75,7 +75,7 @@ function Share({ d, spot }: { d: ShareData; spot: FilledSpot }) {
     const copied = await copyLink(true);
     if (canShareFile) await shareFile();
     else download();
-    bridge.toast(copied ? "Card saved and link copied. Add it as a link sticker." : "Card saved. Add the link as a sticker.");
+    bridge.toast(copied ? "Card downloaded and link copied. Add it as a link sticker." : "Card downloaded. Add the link as a sticker.");
   };
 
   return (
@@ -109,7 +109,7 @@ function Share({ d, spot }: { d: ShareData; spot: FilledSpot }) {
           </button>
         ) : (
           <button className="pay" onClick={download} disabled={!blob}>
-            Save card
+            Download card
           </button>
         )}
         <div className="sc-row">
@@ -123,7 +123,7 @@ function Share({ d, spot }: { d: ShareData; spot: FilledSpot }) {
           )}
           {canShareFile && (
             <button className="act" onClick={download} disabled={!blob}>
-              Save card
+              Download card
             </button>
           )}
           <button className="act" onClick={forStories} disabled={!blob}>
@@ -263,7 +263,7 @@ function Keep() {
       {ws(2)}
       <h2 id="shareH">Keep your card</h2>
       {ws(2)}
-      <p className="sub">Log in to keep your saves on every device. Browsing the wall never needs an account.</p>
+      <p className="sub">Log in to keep your Finds on every device. Browsing the wall never needs an account.</p>
       {ws(2)}
       <div className="sharelist">
         {ws(4)}
@@ -292,7 +292,7 @@ function Keep() {
       {st.reminders && (
         <label className="remind">
           <input ref={remind} type="checkbox" id="kRemind" defaultChecked />
-          {" Remind me an hour before a saved spot ends"}
+          {" Remind me an hour before a Find leaves the wall"}
         </label>
       )}
       {ws(2)}

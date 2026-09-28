@@ -38,7 +38,7 @@ test.describe("behaviour", () => {
     await expect(lines).toHaveCount(3);
     expect((await lines.allInnerTexts()).sort()).toEqual(["Called 3rd · 14h early", "Found at 23 · now 1,284", "Maker is back"].sort());
     await expect(page.locator("#card .sq-r.called")).toHaveAttribute("title", "You called this 14 hours before it became a Hotspot. You were the 3rd to call it.");
-    await expect(page.locator("#card .sq-r.early")).toHaveAttribute("title", /You were the 23rd to save this, among the first 10% of the people who did\. 1,284 keep it now\./);
+    await expect(page.locator("#card .sq-r.early")).toHaveAttribute("title", /You were the 23rd to give this a Timeheart, among the first 10% of the people who did\. 1,284 keep it now\./);
   });
 
   test("since your last visit: the wall's news plus one thing that changed for you", async ({ wall, page }) => {

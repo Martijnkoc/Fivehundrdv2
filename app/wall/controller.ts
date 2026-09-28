@@ -14,7 +14,7 @@ import { buildLiveWall, mediaURL, mergeFeed, openNumbers, type Feed } from "../.
 import { LANE, LIFE, numOf, pad, seenKey, type FilledSpot, type LaneId, type NavId, type Spot } from "../../lib/wall/model";
 import { buildRack } from "../../lib/wall/rack";
 import { savesOrder as savesOrderOf, skey, type SaveEntry } from "../../lib/wall/saves";
-import { hotspots, sinceLastVisit, type VisitMemory } from "../../lib/wall/hot";
+import { bigSpots as bigSpotsFor, sinceLastVisit, type VisitMemory } from "../../lib/wall/hot";
 import type { MakerNumbers } from "../../lib/site/reminderEmail";
 import { CALLS_PER_DAY, callsToday, inHoldout, ordinal, personalItem, readCalls, type Calls, type Finds } from "../../lib/wall/retention";
 import { left, short, styleFor } from "../../lib/wall/time";
@@ -257,14 +257,12 @@ export function startWall(bridge: Bridge, live?: Live) {
   }
   /*
    * Craft pass: the spots with traction right now are shown big on the wall.
-   * On the live wall that is the database's Hotspot ranking (hot_public(),
-   * up to 30); the demo wall ranks by its own counters, about one in twenty.
-   * Fixed at each build of the wall, so nothing moves under the visitor.
+   * Rare on purpose: lib/wall/hot.ts (bigSpots) caps them and needs real
+   * activity behind each. Fixed at each build of the wall, so nothing moves
+   * under the visitor.
    */
   function bigSpots() {
-    const hot = live ? (live.feed.hot ?? []) : null;
-    const filled = WALL.filter((s) => !s.vacant && (lane === "all" || s.lane === lane)).length;
-    return new Set(hotspots(WALL, hot, lane, hot ? 30 : Math.max(3, Math.round(filled / 20))).map((p) => p.s.no));
+    return bigSpotsFor(WALL, live ? (live.feed.hot ?? []) : null, lane);
   }
   function renderRack() {
     open = null;
@@ -411,7 +409,7 @@ export function startWall(bridge: Bridge, live?: Live) {
         bumpTab();
       } else flyToCard(li, s, from);
       heartbeat(btn, li);
-      toast(called ? `Called${callRank ? `, the ${ordinal(callRank)} to call it` : ""}. It's in your ${layered() ? "Finds" : "saves"}; see how it goes.` : layered() ? "Kept in your Finds." : "Kept on your Fivehundrd card.");
+      toast(called ? `Called${callRank ? `, the ${ordinal(callRank)} to call it` : ""}. It's in your Finds, kept; see how it goes.` : layered() ? "Kept in your Finds." : "Kept on your Fivehundrd card.");
       try {
         localStorage.setItem("fh-intro", "1");
       } catch {}

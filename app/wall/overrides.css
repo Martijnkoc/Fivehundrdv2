@@ -364,14 +364,13 @@
 .rack[data-lane]:not([data-lane="all"]) .bk-strip small{display:none}
 .bk-no{background:color-mix(in oklab,#fbf7ee,transparent 10%);font-weight:800;letter-spacing:.03em;font-variant-numeric:tabular-nums;transition:background-color .2s,color .2s}
 
-/* Last chance: the final six hours read to the minute on a printed label,
-   the time bar breathes and the artwork's ink starts to fade. No red. */
+/* Last chance: the final six hours read to the minute on a printed label
+   and the time bar breathes. The maker's artwork is never altered. No red. */
 .spot[data-phase="last"] .cap-l .t{background:#1c1b18;color:#d8ff45;padding:1px 6px;border-radius:2px;font-variant-numeric:tabular-nums}
-.spot[data-phase="last"] .bk-art img,.spot[data-phase="last"] .bk-art svg{filter:saturate(.78) sepia(.1) contrast(1.02)}
 .spot[data-phase="last"] .book .prog{animation:fh-breathe 2.4s ease-in-out infinite}
 @keyframes fh-breathe{50%{opacity:.35}}
 /* narrow tiles: the label and the Timehearts stay on one line */
-@media (max-width:429px){.spot[data-phase="last"] .cap-l .t{padding:1px 4px;font-size:10.5px;letter-spacing:-.01em}.spot[data-phase="last"] .cap-l{flex-wrap:nowrap}}
+@media (max-width:453px){.spot[data-phase="last"] .cap-l .t{padding:1px 4px;font-size:10.5px;letter-spacing:-.01em}.spot[data-phase="last"] .cap-l{flex-wrap:nowrap}}
 /* Rising: its first three hours; the new dot has a soft halo that fades as it settles */
 .spot[data-phase="rising"] .book .new{box-shadow:0 0 0 2px #1c1b18,0 0 0 5px color-mix(in oklab,#ff7bc3,transparent 55%)}
 
@@ -484,10 +483,14 @@
   .vacant:hover .v2{color:var(--ink);text-decoration:underline;text-decoration-color:#ff7bc3;text-decoration-thickness:2px;text-underline-offset:3px}
 }
 
-/* two columns on phones: a little more room inside each cover */
-@media (max-width:429px){
+/* two columns on phones (the wall is two columns below a 430px rack, a
+   453px screen): a little more room inside each cover, and names get two
+   lines instead of being cut, every tile the same height */
+@media (max-width:453px){
   .books{gap:12px}
-  .bk-strip b{font-size:14px}
+  .bk-strip b{font-size:14px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
+  .bk-strip{min-height:66px}
+  .spot.big .bk-strip{min-height:0}
   .bk-strip small{font-size:11px}
   .cap-l .t{font-size:12px}
 }

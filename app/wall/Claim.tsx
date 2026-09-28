@@ -698,7 +698,7 @@ function Done({ s }: { s: FilledSpot }) {
           </div>
           {ws(4)}
           <p className="sub" id="dHint" style={{ fontSize: 13 }}>
-            On your phone, press and hold the card to save it to your photos.
+            On your phone, press and hold the card to add it to your photos.
           </p>
           {ws(3)}
         </div>

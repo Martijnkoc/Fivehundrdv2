@@ -19,10 +19,10 @@ ${DESCRIPTION}
 
 - The Wall: six lanes (${LANES.map((l) => l.label).join(", ")}) of 500 numbered spots each. Everyone sees the same wall; each visit starts at a different spot.
 - A Spot is one maker's placement for 72 hours. Makers claim a spot in Create, add artwork, a pitch, up to three links and a preview, and pay once.
-- Hotspots, above The Wall: five spots with traction right now (opens, visits to the maker, saves and shares in recent hours, per person and per time seen); a spot's turn fades after a few hours. Newest: the five that joined last.
-- Visitors open a Discovery to play, read or watch its preview, save it to their Finds, and share its lasting link.
+- Hotspots, above The Wall: five spots with traction right now (opens, visits to the maker, Timehearts and shares in recent hours, per person and per time seen); a spot's turn fades after a few hours. Newest: the five that joined last.
+- Visitors open a Discovery to play, read or watch its preview, give it a Timeheart to keep it in their Finds, and share its lasting link.
 - Call it: a visitor can privately predict that a Discovery will take off (three a day). Calls are never public and never affect Hotspots; Finds later shows whether the call came true.
-- Finds keep each Discovery's history for that visitor: how many people had saved it when they did, whether they found it early (among its first 10% of savers, or before it became a Hotspot), and whether its maker is back.
+- Finds keep each Discovery's history for that visitor: how many people had kept it when they did, whether they found it early (among the first 10% to keep it, or before it became a Hotspot), and whether its maker is back.
 - After 72 hours the spot's number opens up for the next maker. The Discovery's lasting link keeps working and says its time on The Wall has ended.
 
 ## Key facts
@@ -30,7 +30,7 @@ ${DESCRIPTION}
 - 6 lanes: ${LANES.map((l) => l.label).join(", ")}; 500 numbered spots each, 3,000 in total.
 - One spot is one maker for 72 hours, $9.95, paid once through Stripe. No subscription.
 - No feed and no algorithm: everyone sees the same numbered wall; each visit starts at a different spot, so there is no front row.
-- Free for visitors: browse, open, save and share without an account. No ads.
+- Free for visitors: browse, open, keep and share without an account. No ads.
 - Every story is checked against the wall rules before payment; anyone can report a live story.
 ${CONTACT_EMAIL ? `- Contact: ${CONTACT_EMAIL}\n` : ""}
 ## Lanes
