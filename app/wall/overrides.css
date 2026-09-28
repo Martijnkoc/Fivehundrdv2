@@ -176,6 +176,9 @@
   nav.primary{gap:22px;margin:0 calc(-1 * clamp(16px,2.6vw,36px));padding:0 clamp(16px,2.6vw,36px);
     -webkit-mask-image:linear-gradient(90deg,#000 86%,transparent);mask-image:linear-gradient(90deg,#000 86%,transparent)}
   nav.primary a{padding:13px 0 11px;font-size:15px}
+  /* iPhone pass: short lane names still get a 44px-wide target (half the gap on each side) */
+  nav.primary a{position:relative}
+  nav.primary a::before{content:"";position:absolute;inset:0 -11px -2px}
 
   /* thumb-sized controls: 44px or more */
   .dsheet .act{min-height:44px;padding:11px 18px}
@@ -238,7 +241,7 @@
 .st-lane[aria-checked="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
 .st-lane:focus-visible{outline:2px solid var(--pink);outline-offset:2px}
 .st-note{margin:4px 0 0;font-size:14px;color:var(--ink2);line-height:1.5}
-.st-link{all:unset;cursor:pointer;font-weight:700;color:var(--ink);text-decoration:underline;text-underline-offset:3px;padding:10px 0}
+.st-link{all:unset;cursor:pointer;font-weight:700;color:var(--ink);text-decoration:underline;text-underline-offset:3px;padding:12px 0}
 .st-upload{position:relative;display:block;cursor:pointer}
 .st-upload input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
 .st-btn{display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:999px;background:var(--ink);color:var(--paper);font-weight:800;font-size:16px}
@@ -339,6 +342,9 @@
   .sl-since{margin-left:auto}
   .sl-row{grid-template-columns:repeat(7,minmax(0,1fr));gap:14px}
 }
+/* waiting for the wall: phones keep the rail's height (a constant 275px there); wider screens show nothing yet */
+.sl-wait{display:none}
+@media (max-width:699px){.sl-wait{display:block;height:275px}}
 /* below desktop: five, as before */
 @media (max-width:979px){.sl-row li:nth-child(n+6){display:none}}
 /* phones: a strip to swipe */
@@ -651,7 +657,9 @@
   .proof-line{font-size:14px}
   .proof-cta{margin:0;min-height:44px}
   .steps3 ol{flex-direction:column;gap:6px}
-  .steps3 li{display:grid;grid-template-columns:84px minmax(0,1fr);gap:8px;font-size:13px;line-height:1.35}
+  .steps3 li{display:grid;grid-template-columns:98px minmax(0,1fr);gap:8px;font-size:13px;line-height:1.35}
+  /* iPhone pass: the promise breaks between its two sentences, not inside them */
+  .hero-h span{display:block}
   .proof-sub{width:100%}
 }
 
@@ -722,3 +730,14 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .sl-row .book::before{box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),inset 0 1px 0 rgba(255,255,255,.22);opacity:.7}}
 :root[data-theme="dark"] .sl-row .book::before{box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),inset 0 1px 0 rgba(255,255,255,.22);opacity:.7}
 @media (prefers-reduced-motion:reduce){.sl-row .book,.sl-row .book::before{transition:none}}
+
+/* iPhone pass: 44px targets where the look stays smaller (the toggle, the sheet's grabber) */
+@media (max-width:699px){
+  .sl-tabs button{position:relative}
+  .sl-tabs button::before{content:"";position:absolute;inset:-7px -1px}
+}
+/* the grabber: an 88x44 button with the same 40x5 bar at the same place; the card below doesn't move */
+@media (max-width:979px){
+  .sheet-handle{position:relative;z-index:2;width:88px;height:44px;margin:-8px auto -15px;background:none;border-radius:0}
+  .sheet-handle::after{content:"";position:absolute;left:24px;right:24px;top:12px;height:5px;border-radius:3px;background:var(--line)}
+}

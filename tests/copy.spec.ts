@@ -160,6 +160,45 @@ test.describe("phone", () => {
     expect(await page.evaluate(() => (window as unknown as { cls: number }).cls)).toBeLessThan(0.02);
   });
 
+  test("iPhone pass: small-looking controls are real 44px targets", async ({ wall, page }) => {
+    await wall.goto("", { spotlight: true });
+    /* the corners of a 44px box around the centre still land on the control */
+    const target = (sel: string, i = 0) =>
+      page.evaluate(([sel, i]) => {
+        const e = document.querySelectorAll<HTMLElement>(sel as string)[i as number];
+        e.scrollIntoView({ block: "center" });
+        const r = e.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+        return [[-21, -21], [21, -21], [-21, 21], [21, 21]].every(([dx, dy]) => { const t = document.elementFromPoint(x + dx, y + dy); return !!t && (t === e || e.contains(t)); });
+      }, [sel, i] as const);
+    expect(await target("nav.primary a", 0)).toBe(true);
+    expect(await target(".sl-tabs button", 0)).toBe(true);
+    expect(await target(".sl-tabs button", 1)).toBe(true);
+    await wall.showCard();
+    expect(await target(".sheet-handle")).toBe(true);
+  });
+
+  test("iPhone pass: a returning visitor's wall doesn't jump when Hotspots arrive", async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem("fh-intro", "1");
+      (window as unknown as { cls: number }).cls = 0;
+      new PerformanceObserver((l) => {
+        for (const e of l.getEntries() as unknown as { value: number; hadRecentInput: boolean }[]) if (!e.hadRecentInput) (window as unknown as { cls: number }).cls += e.value;
+      }).observe({ type: "layout-shift", buffered: true });
+    });
+    await page.goto("/?fixture=1");
+    await page.waitForSelector("#rack[data-complete]");
+    await expect(page.locator(".sl-row")).toBeVisible();
+    await page.waitForTimeout(300);
+    expect(await page.evaluate(() => (window as unknown as { cls: number }).cls)).toBeLessThan(0.02);
+  });
+
+  test("iPhone pass: the promise breaks between its two sentences", async ({ wall, page }) => {
+    await wall.goto("", { hero: true });
+    const tops = await page.locator(".hero-h span").evaluateAll((els) => els.map((e) => e.getBoundingClientRect().top));
+    expect(tops).toHaveLength(2);
+    expect(tops[1]).toBeGreaterThan(tops[0]);
+  });
+
   test("the tab bar's Create is Claim", async ({ wall, page }) => {
     await wall.goto();
     await expect(page.locator('.tabbar [data-tab="create"]')).toHaveText("Claim");

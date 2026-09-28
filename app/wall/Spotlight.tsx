@@ -17,7 +17,9 @@ const RAIL = 7;
 export function Spotlight() {
   const st = useSyncExternalStore(wallStore.subscribe, wallStore.get, wallStore.getServer);
   const [tab, setTab] = useState<"hot" | "new">("hot");
-  if (!st.rack || st.rack.empty) return null;
+  /* phones: the rail's room is kept until the wall is in, so it doesn't push the wall down when it arrives */
+  if (!st.rack) return <section className="spotlight sl-wait" aria-hidden="true" />;
+  if (st.rack.empty) return null;
   const picks = tab === "hot" ? hotspots(st.wall, st.hot, st.lane, RAIL) : newest(st.wall, st.lane, RAIL);
   const hotCount = tab === "hot" ? picks.length : hotspots(st.wall, st.hot, st.lane, RAIL).length;
   /* nothing has traction yet: show the newest instead of an empty row */

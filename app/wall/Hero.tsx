@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { BRAND, PROOF, STEPS } from "../../lib/site/copy";
 import { bridge } from "./store";
 
@@ -63,8 +63,14 @@ export function Hero() {
     <section className="hero" aria-labelledby="heroH">
       <div className="hero-in">
         <div className="hero-main">
+          {/* each sentence its own line on phones (hero-h span), one run of text above that */}
           <h2 className="hero-h" id="heroH">
-            {BRAND.line}
+            {BRAND.line.split(/(?<=\.) /).map((t, i) => (
+              <Fragment key={t}>
+                {i > 0 && " "}
+                <span>{t}</span>
+              </Fragment>
+            ))}
           </h2>
           <p className="hero-sub">{BRAND.support}</p>
         </div>
