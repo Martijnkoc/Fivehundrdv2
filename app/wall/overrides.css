@@ -513,3 +513,19 @@
 .sv-order button[aria-checked="true"]{color:#141210;border-bottom-color:#ff7bc3}
 .sv-order button:focus-visible{outline:2px solid #ff7bc3;outline-offset:2px}
 @media (max-width:979px){.sv-order button{min-height:44px;padding:0;display:inline-flex;align-items:center}}
+
+/*
+ * Craft pass, part 4: phones. Create is a lime disc in the tab bar instead
+ * of the loudest block on the screen; the wall's covers lead.
+ */
+@media (max-width:979px){
+  .tabbar .tb-create{background:none;margin:0;color:var(--ink)}
+  .tabbar .tb-create svg{width:18px;height:18px;padding:6px;box-sizing:content-box;border-radius:50%;background:#d8ff45;color:#1c1b18;
+    transition:transform .35s cubic-bezier(.2,1.5,.4,1)}
+  .tabbar .tb-create:active svg{transform:scale(.9) rotate(90deg);transition-duration:.1s}
+  .tabbar button:active{opacity:.75}
+}
+@media (prefers-reduced-motion:reduce){.tabbar .tb-create svg{transition:none}}
+/* the Hotspots strip on phones: time left on one line, the count left to the wall */
+.cap-l .t{white-space:nowrap}
+@media (max-width:699px){.sl-row .cap .meta{display:none}}

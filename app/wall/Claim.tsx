@@ -237,7 +237,8 @@ function ClaimForm({ start }: { start: ClaimStart }) {
         &times;
       </button>
       {ws(2)}
-      <h2 id="claimH">Create your story</h2>
+      {/* craft pass: the mental model is putting something on the wall */}
+      <h2 id="claimH">Put it on the wall.</h2>
       {ws(2)}
       <p className="sub">
         {"Spot "}
@@ -361,7 +362,7 @@ function ClaimForm({ start }: { start: ClaimStart }) {
           </p>
           {ws(4)}
           <button className="pay" id="fPay" type="submit" disabled={placing}>
-            {placing ? "Placing you on the wall…" : `Pay ${PRICE} and go live`}
+            {placing ? "Placing you on the wall…" : `Place it · ${PRICE} for 72 hours`}
           </button>
           {ws(4)}
           <p className="fine">
@@ -632,7 +633,7 @@ function Steps(p: StepsProps) {
       ) : (
         <div className="st-pay">
           <button className="pay" id="fPay" type="button" onClick={p.place} disabled={p.placing}>
-            {p.placing ? "Placing you on the wall…" : `Pay ${PRICE} and go live`}
+            {p.placing ? "Placing you on the wall…" : `Place it · ${PRICE} for 72 hours`}
           </button>
           <p className="fine">{live ? "Secure payment with Stripe. Refunded if your spot doesn't go live." : "Prototype. No payment is taken."}</p>
         </div>
