@@ -11,13 +11,6 @@ import { expect, test, viewports } from "./wall";
  * (tests/__baselines__/…/approved/, committed; `pnpm test:approve` rewrites
  * them after a signed-off change).
  */
-/*
- * The empty Finds line on the card renders in one of two ways from run to
- * run in headless Chromium (its second line lands a subpixel apart; the
- * same with or without kerning). It is masked in the screenshots here, and
- * its words and layout are checked in tests/craft.spec.ts instead.
- */
-const unstable = (page: import("@playwright/test").Page) => ({ mask: [page.locator("#card .sv-empty")], maskColor: "#f3ead3" });
 
 const approved = (reason: string) => test.skip(test.info().project.name === "reference", `approved change: ${reason}`);
 
@@ -43,21 +36,21 @@ for (const viewport of viewports) {
       test("wall as it loads", async ({ wall, page }) => {
         await wall.goto();
         await wall.quiet();
-        await expect(page).toHaveScreenshot(shot("wall-load"), unstable(page));
+        await expect(page).toHaveScreenshot(shot("wall-load"));
       });
 
       test("wall with nothing open", async ({ wall, page }) => {
         await wall.goto();
         await wall.closeOpenTile();
         await wall.quiet();
-        await expect(page).toHaveScreenshot(shot("wall-closed"), unstable(page));
+        await expect(page).toHaveScreenshot(shot("wall-closed"));
       });
 
       test("a tile open (sheet on phones, inline above)", async ({ wall, page }) => {
         await wall.goto();
         await wall.openTile(1);
         await wall.quiet();
-        await expect(page).toHaveScreenshot(shot("tile-open"), unstable(page));
+        await expect(page).toHaveScreenshot(shot("tile-open"));
       });
 
       test("each lane filter", async ({ wall, page }) => {
@@ -66,7 +59,7 @@ for (const viewport of viewports) {
           await page.locator(`#lanes [data-lane="${lane}"]`).click();
           await expect(page.locator(`#lanes [data-lane="${lane}"]`)).toHaveClass(/is-active/);
           await wall.quiet();
-          await expect(page).toHaveScreenshot(shot(`lane-${lane}`), unstable(page));
+          await expect(page).toHaveScreenshot(shot(`lane-${lane}`));
         }
       });
 
@@ -80,7 +73,7 @@ for (const viewport of viewports) {
         await expect(page.locator("#rack .no-hits")).toBeVisible();
         await page.locator("#q").blur();
         await wall.quiet();
-        await expect(page).toHaveScreenshot(approvedShot("search-empty"), unstable(page));
+        await expect(page).toHaveScreenshot(approvedShot("search-empty"));
       });
 
       test("create your story (approved)", async ({ wall, page }) => {
@@ -88,7 +81,7 @@ for (const viewport of viewports) {
         await wall.goto();
         await wall.openCreate();
         await wall.quiet();
-        await expect(page).toHaveScreenshot(approvedShot("create"), unstable(page));
+        await expect(page).toHaveScreenshot(approvedShot("create"));
       });
 
       test("success screen with the share card (approved)", async ({ wall, page }) => {
@@ -99,7 +92,7 @@ for (const viewport of viewports) {
         await expect(page.locator("#claimSheet .card-img")).toBeVisible({ timeout: 10_000 });
         await page.locator("#claimSheet .card-img").evaluate((i: HTMLImageElement) => i.decode());
         await wall.quiet();
-        await expect(page).toHaveScreenshot(approvedShot("create-done"), unstable(page));
+        await expect(page).toHaveScreenshot(approvedShot("create-done"));
       });
 
       test("after Next spot ten times and closing", async ({ wall, page }) => {
@@ -112,7 +105,7 @@ for (const viewport of viewports) {
         }
         await wall.closeOpenTile();
         await wall.quiet();
-        await expect(page).toHaveScreenshot(shot("next-then-close"), unstable(page));
+        await expect(page).toHaveScreenshot(shot("next-then-close"));
       });
 
       test("share sheet (approved)", async ({ wall, page }) => {
@@ -124,7 +117,7 @@ for (const viewport of viewports) {
         await expect(page.locator("#shareSheet .sc-preview img")).toBeVisible({ timeout: 10_000 });
         await page.locator("#shareSheet .sc-preview img").evaluate((i: HTMLImageElement) => i.decode());
         await wall.quiet();
-        await expect(page).toHaveScreenshot(approvedShot("share"), unstable(page));
+        await expect(page).toHaveScreenshot(approvedShot("share"));
       });
 
       for (const saves of [0, 3, 13]) {
@@ -133,7 +126,7 @@ for (const viewport of viewports) {
           await wall.save(saves);
           const card = await wall.showCard();
           await wall.quiet();
-          await expect(card).toHaveScreenshot(shot(`card-${saves}-saves`), unstable(page));
+          await expect(card).toHaveScreenshot(shot(`card-${saves}-saves`));
         });
       }
 
@@ -143,7 +136,7 @@ for (const viewport of viewports) {
         await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
         await expect(page.locator(".site-foot")).toBeInViewport();
         await wall.quiet();
-        await expect(page).toHaveScreenshot(approvedShot("footer"), unstable(page));
+        await expect(page).toHaveScreenshot(approvedShot("footer"));
       });
     });
   }

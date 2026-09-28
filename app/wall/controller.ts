@@ -14,9 +14,10 @@ import { buildLiveWall, mediaURL, mergeFeed, openNumbers, type Feed } from "../.
 import { LANE, LIFE, numOf, pad, seenKey, type FilledSpot, type LaneId, type NavId, type Spot } from "../../lib/wall/model";
 import { buildRack } from "../../lib/wall/rack";
 import { savesOrder as savesOrderOf, skey, type SaveEntry } from "../../lib/wall/saves";
+import { SCOUT as SCOUT_CFG, type ScoutMe } from "../../lib/wall/scout";
 import { bigSpots as bigSpotsFor, sinceLastVisit, type VisitMemory } from "../../lib/wall/hot";
 import type { MakerNumbers } from "../../lib/site/reminderEmail";
-import { CALLS_PER_DAY, callsToday, inHoldout, ordinal, personalItem, readCalls, type Calls, type Finds } from "../../lib/wall/retention";
+import { inHoldout, ordinal, personalItem, readCalls, type Calls, type Finds } from "../../lib/wall/retention";
 import { left, short, styleFor } from "../../lib/wall/time";
 import { startPlay, stopAudio, togglePlay } from "./audio";
 import { startFeel } from "./feel";
@@ -101,7 +102,10 @@ export function startWall(bridge: Bridge, live?: Live) {
   /** Counts an open, save, share… on the live wall. */
   const ev = (id: string | undefined, kind: liveApi.EventKind) => {
     if (!live || !id) return;
-    liveApi.sendEvent(id, kind);
+    /* Scout: a signed-in Timeheart is a call made by the account (the server checks the token) */
+    if (ACCOUNT && (kind === "save" || kind === "unsave")) liveApi.authToken().then((t) => liveApi.sendEvent(id, kind, t));
+    else liveApi.sendEvent(id, kind);
+    if (ACCOUNT && kind === "save") setTimeout(loadScout, 2500);
     /* a logged-in visitor's saves follow them to every device */
     if (ACCOUNT && kind === "save") setTimeout(syncAccount, 1500);
     if (ACCOUNT && kind === "unsave") liveApi.unsaveForAccount(id).catch(() => {});
@@ -294,7 +298,6 @@ export function startWall(bridge: Bridge, live?: Live) {
     FINDS = JSON.parse(localStorage.getItem("fh-finds") || "{}");
     CALLS = readCalls(JSON.parse(localStorage.getItem("fh-calls") || "{}"));
   } catch {}
-  bridge.setCalls(CALLS);
   const isSaved = (s: FilledSpot) => SAVES.some((x) => x.k === skey(s));
   function persistSaves() {
     try {
@@ -308,6 +311,58 @@ export function startWall(bridge: Bridge, live?: Live) {
     try {
       ACCOUNT = JSON.parse(localStorage.getItem("fh-account") || "null");
     } catch {}
+
+  /* ---------- Scout (docs/scout.md): the signed-in visitor's card and calls ---------- */
+  /** the Timeheart that led to signing in, so it can still count (30 minutes, checked again by the server) */
+  const PENDING_KEY = "fh-scout-pending";
+  const NUDGE_KEY = "fh-scout-nudge";
+  let SCOUT: ScoutMe | null = null;
+  /** The demo wall has no accounts: a demo Scout is this browser's Timehearts, building (or a seeded card, fh-scout). */
+  function demoScout(): ScoutMe | null {
+    if (!ACCOUNT) return null;
+    try {
+      const seeded = JSON.parse(localStorage.getItem("fh-scout") || "null");
+      if (seeded) return seeded;
+    } catch {}
+    return { name: null, since: new Date().toISOString(), share: null, status: "building", percentile: null, calls: SAVES.length, early: 0, hotspots: 0, settled: 0, minSettled: SCOUT_CFG.minSettled, best: null, moves: [], list: [] };
+  }
+  let scoutT = 0;
+  async function loadScout() {
+    clearTimeout(scoutT);
+    if (!ACCOUNT) return;
+    if (!live) {
+      SCOUT = demoScout();
+      renderCard();
+      return;
+    }
+    const me = await liveApi.scoutMe();
+    if (me) {
+      /* the desktop rail shows the card on every visit: counted once a visit */
+      if (!SCOUT && !mobileCard()) surface("scout_card_view");
+      SCOUT = me;
+      renderCard();
+      /* something you Scouted broke out while you were away */
+      refreshSince(false);
+    }
+  }
+  /** After a Timeheart without an account: the line that says what signing in is for, once a day. */
+  function scoutNudge(s: FilledSpot) {
+    if (ACCOUNT) {
+      if (!live) {
+        SCOUT = demoScout();
+        renderCard();
+      }
+      return;
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    try {
+      if (localStorage.getItem(NUDGE_KEY) === today) return;
+      localStorage.setItem(NUDGE_KEY, today);
+    } catch {}
+    bridge.setScoutNudge(skey(s));
+    surface("scout_prompt_shown", s.id);
+  }
+  const scoutURL = (slug: string) => `${location.origin}/scout/${slug}`;
   let savesShown = 12;
   const OPENED = new Set<string | number>();
   const TODAY = new Date().toISOString().slice(0, 10);
@@ -349,6 +404,7 @@ export function startWall(bridge: Bridge, live?: Live) {
       history: FINDS,
       reminders: REMINDERS,
       makers: MAKERS,
+      scout: ACCOUNT ? SCOUT : null,
     });
   }
 
@@ -409,7 +465,8 @@ export function startWall(bridge: Bridge, live?: Live) {
         bumpTab();
       } else flyToCard(li, s, from);
       heartbeat(btn, li);
-      toast(called ? `Called${callRank ? `, the ${ordinal(callRank)} to call it` : ""}. It's in your Finds, kept; see how it goes.` : layered() ? "Kept in your Finds." : "Kept on your Fivehundrd card.");
+      scoutNudge(s);
+      toast(called ? `Called${callRank ? `, the ${ordinal(callRank)} to call it` : ""}. It's in your Scouts, kept; see how it goes.` : "Kept in your Scouts.");
       try {
         localStorage.setItem("fh-intro", "1");
       } catch {}
@@ -719,6 +776,7 @@ export function startWall(bridge: Bridge, live?: Live) {
   }
   function setCard(on: boolean, fromPop = false) {
     if (on && !cardOpen && layered()) pushEntry("card");
+    if (on && !cardOpen && ACCOUNT) surface("scout_card_view");
     if (!on && cardOpen && !fromPop) releaseEntries(["card"]);
     cardOpen = on;
     $("#card").classList.toggle("on", on);
@@ -778,6 +836,10 @@ export function startWall(bridge: Bridge, live?: Live) {
       return;
     }
     if (t.closest("[data-keep]")) openKeep();
+    if (t.closest("[data-scout-share]")) openScoutShare();
+    if (t.closest("[data-scout-unshare]")) void bridge.actions.scoutShare(false);
+    const sc = t.closest<HTMLElement>("[data-share-call]");
+    if (sc) openScoutShare(sc.dataset.shareCall);
   });
   document.addEventListener("click", (e) => {
     const g = (e.target as Element).closest<HTMLElement>("#card [data-go]");
@@ -1114,6 +1176,15 @@ export function startWall(bridge: Bridge, live?: Live) {
     if (!navigator.canShare) return;
     warmT = setTimeout(() => void shareCardBlob(s, spotURL(s), "story").catch(() => {}), 700);
   }
+  /** The Scout Card's share sheet; with `story`, one Early Call from it. */
+  function openScoutShare(story?: string) {
+    if (!SCOUT) return;
+    if (cardOpen) setCard(false);
+    const call = story ? SCOUT.list.find((c) => c.id === story) ?? (SCOUT.best?.id === story ? SCOUT.best : undefined) : undefined;
+    surface(story ? "scout_call_share" : "scout_card_share", story);
+    bridge.openShare({ kind: "scout", me: SCOUT, call, base: `${location.origin}/scout/` });
+    showVeil("shareVeil");
+  }
   function openKeep() {
     /* approved change: on phones the card is a sheet above the veil, so the
        login sheet opened behind it; close the card first, as Create does */
@@ -1252,6 +1323,16 @@ export function startWall(bridge: Bridge, live?: Live) {
     SAVES.sort((x, y) => y.savedAt - x.savedAt);
     persistSaves();
     renderCard();
+    /* Scout: this browser's history joins the account; the Timeheart that led here can still count */
+    let pending: { id: string; at: number } | null = null;
+    try {
+      pending = JSON.parse(localStorage.getItem(PENDING_KEY) || "null");
+      localStorage.removeItem(PENDING_KEY);
+    } catch {}
+    const story = pending && Date.now() - pending.at < 30 * 60e3 ? pending.id : undefined;
+    const r = await liveApi.scoutAttach(story);
+    if (r && (story || liveApi.justSignedIn())) surface("scout_signed_in", story, { from: story ? "timeheart" : "card", counted: r.counted, migrated: r.migrated });
+    await loadScout();
   }
 
   Object.assign(bridge.actions, {
@@ -1277,8 +1358,9 @@ export function startWall(bridge: Bridge, live?: Live) {
         localStorage.setItem("fh-account", JSON.stringify(ACCOUNT));
       } catch {}
       closeVeils();
+      SCOUT = demoScout();
       renderCard();
-      toast(byEmail ? "Check your inbox for the link. Your card is kept." : "Card kept.");
+      toast(byEmail ? "Check your inbox for the link. You're a Scout." : "You're a Scout. Your Timehearts are calls from now on.");
     },
     randomVacant,
     numberFor,
@@ -1315,47 +1397,46 @@ export function startWall(bridge: Bridge, live?: Live) {
       if (mobileCard()) setCard(true);
       else window.scrollTo({ top: 0, behavior: reduce ? "auto" : "smooth" });
     },
-    /** Call it: a private prediction; it also keeps the story. */
-    async call(no: number, el: HTMLElement) {
-      const s = WALL[no - 1];
-      if (!s || s.vacant) return "unavailable";
-      const k = skey(s);
-      if (CALLS[k]) return "called";
-      if (callsToday(CALLS, Date.now()) >= CALLS_PER_DAY) return "limit";
-      /* found before the store update re-renders the button away */
-      const btn = el.closest(".acts")?.querySelector<HTMLElement>("[data-save]"),
-        li = spotEl(no);
-      let at = Date.now(),
-        rank: number | undefined;
-      if (live) {
-        if (!s.id) return "unavailable";
-        const r = await liveApi.callStory(s.id);
-        if (!r) return "error";
-        if (r.status !== "called") return r.status;
-        at = Date.parse(r.calledAt ?? "") || at;
-        rank = r.rank;
-      }
-      CALLS = { ...CALLS, [k]: { at, ...(rank && { rank }) } };
+    scoutSignIn(story?: string) {
       try {
-        localStorage.setItem("fh-calls", JSON.stringify(CALLS));
+        if (story) localStorage.setItem(PENDING_KEY, JSON.stringify({ id: story, at: Date.now() }));
       } catch {}
-      bridge.setCalls(CALLS);
-      if (!isSaved(s) && btn && li) toggleSave(li, s, btn, true, rank);
-      else toast(rank ? `Called. You're the ${ordinal(rank)} to call it; see how it goes.` : "Called. See how it goes.");
-      return "called";
+      bridge.setScoutNudge(null);
+      surface("scout_prompt_tap", story);
+      openKeep();
+    },
+    scoutNudgeClosed() {
+      bridge.setScoutNudge(null);
+    },
+    scoutMoveSeen() {
+      surface("scout_move_seen");
+    },
+    async scoutShare(on: boolean, name?: string, fresh?: boolean) {
+      if (!live) return { error: "Sharing your Scout Card works on the live wall." };
+      const r = await liveApi.scoutShare(on, name, fresh);
+      if (!r) return { error: "That didn't work. Try again." };
+      if (SCOUT) SCOUT = { ...SCOUT, share: r.slug, ...(name && { name }) };
+      renderCard();
+      if (!on) toast("Your Scout Card is private again.");
+      return { url: r.slug ? scoutURL(r.slug) : null };
     },
   } satisfies Bridge["actions"]);
 
   /* ---------- since your last visit: one thing that changed for you ---------- */
   let SINCE_AT: number | null = null,
-    sinceSent = false;
+    sinceSent = false,
+    breakoutSent = false;
   /** `final`: the Finds' history is in (or won't come); measured once a visit. */
   function refreshSince(final: boolean) {
     if (SINCE_AT == null) return;
-    const item = personalItem({ saves: savesOrder(), prior: PRIOR, finds: FINDS, since: SINCE_AT, wall: WALL });
+    const item = personalItem({ saves: savesOrder(), prior: PRIOR, finds: FINDS, since: SINCE_AT, wall: WALL, scout: ACCOUNT ? SCOUT?.list : undefined });
     /* the live wall keeps 10% without it, to measure what it changes */
     const holdout = !!live && inHoldout(visitorId());
     bridge.setSinceItem(holdout ? null : item);
+    if (live && !holdout && item?.kind === "breakout" && !breakoutSent) {
+      breakoutSent = true;
+      surface("scout_breakout_seen", item.story);
+    }
     if (final && live && !sinceSent) {
       sinceSent = true;
       surface("since_shown", item?.story, { item: item?.kind ?? "none", holdout });
@@ -1384,12 +1465,10 @@ export function startWall(bridge: Bridge, live?: Live) {
           CALLS = { ...CALLS, [f.id]: { ...CALLS[f.id], rank: f.call.rank } };
           ranked = true;
         }
-      if (ranked) {
+      if (ranked)
         try {
           localStorage.setItem("fh-calls", JSON.stringify(CALLS));
         } catch {}
-        bridge.setCalls(CALLS);
-      }
       try {
         localStorage.setItem("fh-finds", JSON.stringify(FINDS));
       } catch {}
@@ -1441,6 +1520,7 @@ export function startWall(bridge: Bridge, live?: Live) {
     setInterval(() => document.hidden || loadMakerStats(), 5 * 60e3);
     return;
   }
+  if (ACCOUNT) void loadScout();
   const h = location.hash.replace("#", "");
   const start = (h && /^\d{1,3}$/.test(h) && spotEl(+h)) || rack.querySelector<HTMLElement>(".spot:not(.vacant):not(.filler)")!;
   requestAnimationFrame(() => {

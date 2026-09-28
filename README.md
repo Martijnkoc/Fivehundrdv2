@@ -73,7 +73,20 @@ which were signed off:
     - **Rhythm.** Hotspots with real activity behind them are big (2×2). Big spots are rare: at most `BIG_MAX` (6), and only with at least `BIG_MIN_OPENS` (25) opens and `BIG_MIN_KEPT` (5) Timehearts in the Hotspot window, so a few early visits on a quiet wall never make one (`lib/wall/hot.ts`, `bigSpots`). They read like a feature: a Hotspot kicker, a bigger name, and their line in Fraunces. They keep the circle's order and stay at least three lines apart (`lib/wall/rack.ts`). Open spots side by side are one quiet slot ("No. 139–140"), and the price only speaks up on hover. Phones show two columns (below a 453px screen), with names on up to two lines and every tile the same height, checked at 320, 375, 390 and 430px.
     - **Finds are your history.** They read leaving first or as you found them (remembered per device), three to a row, with their line of history as the caption. An ended find is stamped.
     - **Phones and Create.** Create is a lime disc in the tab bar. The Create sheet says "Put it on the wall." and "Place it · $9.95 for 72 hours".
-    - **Screenshots.** Every state, desktop included, compares at zero tolerance against the approved baselines, which are frozen regression baselines. `pnpm test:approve` refuses to rewrite them unless run as `APPROVE=yes pnpm test:approve`, after a signed-off visual change. The empty Finds line on the card renders one of two ways from run to run in headless Chromium, so it is masked in the screenshots and its words and layout are checked in `tests/craft.spec.ts`. `tests/craft.spec.ts` covers phases, pointer, flight, Timeheart, reduced motion and keyboard. With reduced motion nothing moves; only the state changes.
+    - **Screenshots.** Every state, desktop included, compares at zero tolerance against the approved baselines, which are frozen regression baselines. `pnpm test:approve` refuses to rewrite them unless run as `APPROVE=yes pnpm test:approve`, after a signed-off visual change. Multi-line text in the desktop card used to render one of two ways from run to run (the card is its own scroll container, and Chromium didn't always give it a layer); the card now always has one (`will-change`), and the text is compared like everything else. `tests/craft.spec.ts` covers phases, pointer, flight, Timeheart, reduced motion and keyboard. With reduced motion nothing moves; only the state changes.
+15. Scout (docs/scout.md), approved 2026-09-28:
+    - The Fivehundrd card is the **Scout Card** and Finds are **Scouts**.
+    - **Signed out**, the card says what signing in is for. After a Timeheart, one quiet line says it too, at most once a day: "Fivehundrd remembers what you found early. Sign in to Scout this."
+    - **Signed in**, the card shows:
+      - where you stand: "Building your Scout history", "Scout", or "Top 8% · Silver Scout" once tiers are active;
+      - your Scouts, Early Calls and Hotspots;
+      - your strongest call;
+      - "Share Scout Card".
+    - The outline is the tier's ink: warm gold, steel or copper, never shiny. A tier move is said once, on the next visit.
+    - **Call it is gone:** the Timeheart is the call.
+    - **Data:** `supabase/migrations/20260928090000_scout.sql`, API under `app/api/scout/*`, and a nightly recalculation (`/api/cron/scout`).
+    - **Public pages:** shared cards at `/scout/[slug]` and single Early Calls at `/scout/[slug]/[story]`, each with its own link image. They are not indexed.
+    - **Tests:** `db/scout.test.mjs`, `lib/wall/scout.test.mjs` and `tests/scout.spec.ts`.
 
 CSS for these lives in `app/wall/overrides.css`. The visual suite applies it
 to the reference too, so the baselines are "the reference plus the approved

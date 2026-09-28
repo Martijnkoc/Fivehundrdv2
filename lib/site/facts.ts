@@ -44,7 +44,7 @@ export const PAGES = {
   "how-it-works": { title: "How it works", description: "How Fivehundrd works for visitors and for makers: 500 numbered spots per lane, 72 hours each, no feed and no algorithm." },
   pricing: { title: "Pricing", description: "One price: $9.95 for a spot on the wall for 72 hours. No subscription, no ads, no bidding. Browsing and keeping are free." },
   rules: { title: "Wall rules", description: "What can go on Fivehundrd, what can't, how stories are checked before they go live, and how reporting works." },
-  faq: { title: "Questions", description: "Answers about Fivehundrd: what it is, how spots work, what it costs, Finds, accounts, refunds and safety." },
+  faq: { title: "Questions", description: "Answers about Fivehundrd: what it is, how spots work, what it costs, Scouts, accounts, refunds and safety." },
   about: { title: "About", description: "Why Fivehundrd exists: a fair place for independent makers to be discovered, without a feed or an algorithm." },
   contact: { title: "Contact", description: "How to reach Fivehundrd: questions, press, reports and refunds." },
   terms: { title: "Terms", description: "The terms for using Fivehundrd and for buying a spot on the wall." },
@@ -67,11 +67,11 @@ export const FAQ: { q: string; a: string }[] = [
   { q: "Which lanes are there?", a: "Music, Books, Games, Creators, Podcasts and Newsletters: 500 spots each, 3,000 in total." },
   {
     q: "Do I need an account?",
-    a: "No. Browsing and giving Timehearts never need an account; your Finds are kept in your browser. Keep my card is optional: sign in to keep your Finds on every device.",
+    a: "No. Browsing and giving Timehearts never need an account; your Scouts are kept in your browser. Signing in is optional: it makes your Timehearts Scout calls and keeps your Scouts on every device.",
   },
   {
     q: "What happens after 72 hours?",
-    a: "The spot leaves the wall and its number opens up for the next maker. The story's lasting link keeps working, so shared links and Finds still show who it was and where to find them.",
+    a: "The spot leaves the wall and its number opens up for the next maker. The story's lasting link keeps working, so shared links and Scouts still show who it was and where to find them.",
   },
   {
     q: "Can I get a refund?",
@@ -113,7 +113,8 @@ export const orgJsonLd = () => ({
         { "@type": "DefinedTerm", name: "The Wall", description: "Fivehundrd's public wall: six lanes of 500 numbered spots, the same for every visitor, with no feed and no algorithm." },
         { "@type": "DefinedTerm", name: "Spot", description: "One numbered place on The Wall, held by one maker for a 72-hour placement." },
         { "@type": "DefinedTerm", name: "Discovery", description: "A maker's work in a spot: name, artwork, pitch, preview and links, with a lasting link that keeps working after the 72 hours." },
-        { "@type": "DefinedTerm", name: "Finds", description: "The discoveries a visitor kept with a Timeheart; they stay after the spot ends." },
+        { "@type": "DefinedTerm", name: "Scouts", description: "The discoveries a visitor kept with a Timeheart; they stay after the spot ends." },
+        { "@type": "DefinedTerm", name: "Early Call", description: "A signed-in visitor's Timeheart among the first 20% of a discovery's keepers, before it broke out (became a Hotspot, or grew to 25 keepers and three times that place)." },
         { "@type": "DefinedTerm", name: "Create", description: "Where a maker claims a spot and builds their tile." },
       ],
     },

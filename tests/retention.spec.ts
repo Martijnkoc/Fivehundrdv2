@@ -2,7 +2,8 @@ import { expect, test, viewports } from "./wall";
 
 /*
  * Retention (docs/retention.md): the one line of history under each Find,
- * the one personal thing "since your last visit" says, and Call it. The
+ * the one personal thing "since your last visit" says. (Call it became the
+ * Scout Timeheart, docs/scout.md; its old calls still show in the history.) The
  * history normally comes from the database (/api/finds); on the fixture wall
  * it is seeded into the browser's copy (fh-finds).
  */
@@ -69,70 +70,14 @@ test.describe("behaviour", () => {
     await expect(wall.openView).toBeVisible();
     await expect(wall.openView).toHaveAttribute("data-no", no!);
   });
-
-  test("Call it: a small question, then back to the spot; it keeps it; three a day", async ({ wall, page }) => {
-    await wall.goto("", { call: true });
-    for (let i = 0; i < 3; i++) {
-      await wall.openTile(i);
-      const view = wall.openView;
-      await view.getByRole("button", { name: "Call it" }).click();
-      await expect(view.locator(".call-q")).toContainText("Think this one will move?");
-      await view.locator(".call-q").getByRole("button", { name: "Call it" }).click();
-      await expect(view.locator(".act.call.done")).toHaveText("Called · Sep 24");
-      await expect(view.locator("[data-save]")).toHaveAttribute("aria-pressed", "true");
-    }
-    await wall.openTile(3);
-    await wall.openView.getByRole("button", { name: "Call it" }).click();
-    await wall.openView.locator(".call-q").getByRole("button", { name: "Call it" }).click();
-    await expect(wall.openView.locator(".call-note")).toHaveText("That's today's three calls. More tomorrow.");
-    /* cancel leaves nothing behind */
-    await wall.openTile(4);
-    await wall.openView.getByRole("button", { name: "Call it" }).click();
-    await wall.openView.getByRole("button", { name: "Cancel" }).click();
-    await expect(wall.openView.locator(".call-q")).toHaveCount(0);
-    expect(Object.keys(await page.evaluate(() => JSON.parse(localStorage.getItem("fh-calls")!)))).toHaveLength(3);
-  });
-
-  test("Call it: which caller you were, when the database knows", async ({ wall, page }) => {
-    await wall.goto("", { call: true });
-    await wall.openTile(1);
-    await wall.openView.getByRole("button", { name: "Call it" }).click();
-    await wall.openView.locator(".call-q").getByRole("button", { name: "Call it" }).click();
-    const no = await wall.openView.getAttribute("data-no");
-    /* the live wall stores the rank the server answered with */
-    await page.evaluate(() => {
-      const calls = JSON.parse(localStorage.getItem("fh-calls")!);
-      for (const k of Object.keys(calls)) calls[k].rank = 2;
-      localStorage.setItem("fh-calls", JSON.stringify(calls));
-    });
-    await wall.goto("", { call: true });
-    await wall.openTile(1);
-    expect(await wall.openView.getAttribute("data-no")).toBe(no);
-    await expect(wall.openView.locator(".act.call.done")).toHaveText("Called 2nd · Sep 24");
-    await expect(wall.openView.locator(".act.call.done")).toHaveAttribute("title", /the 2nd to call it/);
-  });
 });
-
-for (const viewport of [viewports[0], viewports[2]])
-  test.describe(`${viewport.name} light`, () => {
-    test.use({ viewport: { width: viewport.width, height: viewport.height }, viewportSpec: viewport, hasTouch: viewport.width < 700 });
-    test("Call it's question (approved)", async ({ wall }) => {
-      await wall.goto("", { call: true });
-      await wall.openTile(0);
-      const acts = wall.openView.locator(".acts");
-      await expect(acts).toHaveScreenshot(["approved", `${viewport.name}-call.png`]);
-      await acts.getByRole("button", { name: "Call it" }).click();
-      await wall.quiet();
-      await expect(acts).toHaveScreenshot(["approved", `${viewport.name}-call-ask.png`]);
-    });
-  });
 
 /* The maker's journey, start to finish: Create, pay, see it, share it, come back. */
 for (const viewport of [viewports[2], viewports[0]])
   test.describe(`maker journey, ${viewport.name}`, () => {
     test.use({ viewport: { width: viewport.width, height: viewport.height }, viewportSpec: viewport, hasTouch: viewport.width < 700 });
     test("from Create to their own spot on the wall, and first in Newest on the next visit", async ({ wall, page }) => {
-      await wall.goto("", { spotlight: true, call: true });
+      await wall.goto("", { spotlight: true });
       await wall.openCreate();
       if (wall.createsInSteps) {
         await page.locator(".st-lane", { hasText: "Music" }).click();
@@ -155,7 +100,7 @@ for (const viewport of [viewports[2], viewports[0]])
       await expect(wall.openView.locator(".act.call")).toHaveCount(0);
       /* "Your story" on the card: the maker's own numbers */
       await expect(page.locator("#card .mine .mine-nums")).toHaveText(/^(\d[\d,]* (saw it|opened|kept|to your links|shared)( · )?)+$|^Live now\./);
-      await wall.goto("", { spotlight: true, call: true });
+      await wall.goto("", { spotlight: true });
       await page.locator(".sl-tabs").getByRole("tab", { name: "Newest" }).click();
       await expect(page.locator(".sl-item").first()).toHaveAttribute("aria-label", /^Lowtide Club, No\. \d{3}: joined/);
     });

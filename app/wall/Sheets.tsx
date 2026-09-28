@@ -4,12 +4,18 @@ import { Fragment, useEffect, useRef, useState, useSyncExternalStore } from "rea
 import type { FilledSpot } from "../../lib/wall/model";
 import { FORMATS, cardFileName, shareCardBlob, type ShareFormat } from "./shareCard";
 import { bridge, wallStore } from "./store";
+import { statusLine, TIER_NAME, type ScoutCall, type ScoutMe } from "../../lib/wall/scout";
 
 /* Whitespace text nodes as in the reference's templates. */
 const ws = (indent: number) => "\n" + " ".repeat(indent);
 
 export type ShareData = { title: string; text: string; url: string };
-export type ShareView = { kind: "share"; data: ShareData; spot: FilledSpot } | { kind: "keep" } | { kind: "report"; id: string; name: string };
+export type ShareView =
+  | { kind: "share"; data: ShareData; spot: FilledSpot }
+  | { kind: "keep" }
+  | { kind: "report"; id: string; name: string }
+  /* Scout (docs/scout.md): the card, or one Early Call from it */
+  | { kind: "scout"; me: ScoutMe; call?: ScoutCall; base: string };
 
 /** §15: share a spot. The card is the spot itself (the wall's tile), ready to post, with its lasting link. */
 function Share({ d, spot }: { d: ShareData; spot: FilledSpot }) {
@@ -239,7 +245,104 @@ function Report({ id, name }: { id: string; name: string }) {
   );
 }
 
-/** §12: Keep my card. Browsing and saving never need this. */
+/**
+ * Scout (docs/scout.md): the Scout Card is private until its Scout shares
+ * it, under a name they choose (never their email), by a link they can
+ * replace or switch off. One Early Call can be shared on its own, with it.
+ */
+function ScoutShare({ me, call, base }: { me: ScoutMe; call?: ScoutCall; base: string }) {
+  const [name, setName] = useState(me.name ?? "");
+  const [slug, setSlug] = useState(me.share);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const status = statusLine(me);
+  const one = call && call.early ? call : null;
+  const url = slug ? `${base}${slug}${one ? "/" + one.slug : ""}` : null;
+  const go = async (on: boolean, fresh = false) => {
+    setBusy(true);
+    setErr("");
+    const r = await bridge.actions.scoutShare(on, name.trim() || undefined, fresh);
+    setBusy(false);
+    if ("error" in r) return setErr(r.error);
+    const next = r.url ? r.url.slice(base.length) : null;
+    setSlug(next);
+    if (!on) closeSheet();
+  };
+  const shareLink = async () => {
+    if (!url) return;
+    const text = one ? `I called ${one.name} early on Fivehundrd.` : "My Scout Card on Fivehundrd.";
+    try {
+      if (navigator.share) return await navigator.share({ title: "Fivehundrd Scout", text, url });
+    } catch (e) {
+      if ((e as Error).name === "AbortError") return;
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      bridge.toast("Link copied");
+    } catch {
+      bridge.toast(url);
+    }
+  };
+  const tier = ["gold", "silver", "bronze"].includes(me.status) ? me.status : null;
+  return (
+    <>
+      <button className="x" aria-label="Close" data-close="">
+        &times;
+      </button>
+      <h2 id="shareH">{one ? "Share this call" : "Share your Scout Card"}</h2>
+      {call && !one ? (
+        <p className="sub">Only an Early Call can be shared on its own.</p>
+      ) : (
+        <>
+          {/* exactly what the link shows */}
+          <div className={`scs${tier ? " tier-" + tier : ""}`} aria-label="What people see">
+            <span className="scs-brand">Fivehundrd Scout</span>
+            {one && <span className="scs-kick">I called this early.</span>}
+            {one && <b className="scs-story">{one.name}</b>}
+            {one && <span className="scs-line">{`Found #${one.position} · ${one.breakout === "hotspot" ? "now a Hotspot" : `${(one.finalKeepers ?? one.keepersNow).toLocaleString("en-US")} kept it`}`}</span>}
+            <b className="scs-name">{name.trim() || "A Fivehundrd Scout"}</b>
+            <span className="scs-status">{tier ? `Top ${me.percentile}% · ${TIER_NAME[tier as keyof typeof TIER_NAME]}` : status.head === "Scout" ? "Scout" : "Fivehundrd Scout"}</span>
+            {!one && (me.early > 0 || me.hotspots > 0) && (
+              <span className="scs-line">{[me.early > 0 && `${me.early} Early ${me.early === 1 ? "Call" : "Calls"}`, me.hotspots > 0 && `${me.hotspots} ${me.hotspots === 1 ? "Hotspot" : "Hotspots"}`].filter(Boolean).join(" · ")}</span>
+            )}
+          </div>
+          {!slug && (
+            <div className="f">
+              <label htmlFor="scName">The name on your card</label>
+              <input id="scName" type="text" maxLength={40} autoComplete="nickname" placeholder="A Fivehundrd Scout" value={name} onChange={(e) => setName(e.target.value)} />
+            </div>
+          )}
+          <p className="fine">Anyone with the link sees this card: this name, your standing and your Early Calls. Never your email. You can stop sharing any time.</p>
+          <p className="err" role="alert">
+            {err}
+          </p>
+          {slug ? (
+            <div className="sc-actions">
+              <button className="pay" onClick={shareLink}>
+                {typeof navigator !== "undefined" && "share" in navigator ? "Share link" : "Copy link"}
+              </button>
+              <div className="sc-row">
+                <button className="act" disabled={busy} onClick={() => go(true, true)}>
+                  New link
+                </button>
+                <button className="act" disabled={busy} onClick={() => go(false)}>
+                  Stop sharing
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button className="pay" disabled={busy} onClick={() => go(true)}>
+              {busy ? "Making the link…" : "Make the link"}
+            </button>
+          )}
+        </>
+      )}
+    </>
+  );
+}
+const closeSheet = () => (document.querySelector("#shareSheet [data-close]") as HTMLElement | null)?.click();
+
+/** §12, now Scout: signing in. Browsing and Timehearts never need it. */
 function Keep() {
   const st = useSyncExternalStore(wallStore.subscribe, wallStore.get, wallStore.getServer);
   const email = useRef<HTMLInputElement>(null);
@@ -261,9 +364,9 @@ function Keep() {
         &times;
       </button>
       {ws(2)}
-      <h2 id="shareH">Keep your card</h2>
+      <h2 id="shareH">Sign in to Scout</h2>
       {ws(2)}
-      <p className="sub">Log in to keep your Finds on every device. Browsing the wall never needs an account.</p>
+      <p className="sub">Fivehundrd remembers what you found early. Your Timehearts become calls, on every device. Browsing never needs an account.</p>
       {ws(2)}
       <div className="sharelist">
         {ws(4)}
@@ -292,7 +395,7 @@ function Keep() {
       {st.reminders && (
         <label className="remind">
           <input ref={remind} type="checkbox" id="kRemind" defaultChecked />
-          {" Remind me an hour before a Find leaves the wall"}
+          {" Remind me an hour before a Scout leaves the wall"}
         </label>
       )}
       {ws(2)}
@@ -314,7 +417,15 @@ export function ShareContent() {
   const v = st.share;
   return (
     <Fragment key={st.shareVersion}>
-      {v.kind === "keep" ? <Keep /> : v.kind === "report" ? <Report id={v.id} name={v.name} /> : <Share d={v.data} spot={v.spot} />}
+      {v.kind === "keep" ? (
+        <Keep />
+      ) : v.kind === "report" ? (
+        <Report id={v.id} name={v.name} />
+      ) : v.kind === "scout" ? (
+        <ScoutShare me={v.me} call={v.call} base={v.base} />
+      ) : (
+        <Share d={v.data} spot={v.spot} />
+      )}
     </Fragment>
   );
 }

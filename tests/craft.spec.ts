@@ -116,10 +116,10 @@ test.describe("desktop", () => {
     await expect(page.locator("#card .msp .sq-n")).toHaveText([...names].reverse());
   });
 
-  test("the empty Finds line (masked in the screenshots): its words, and it sits inside the card", async ({ wall, page }) => {
+  test("the empty Scouts line: its words, and it sits inside the card", async ({ wall, page }) => {
     await wall.goto();
     const line = page.locator("#card .sv-empty");
-    await expect(line).toHaveText("Nothing found yet. Give anything you like a Timeheart and it lands here, even after it leaves the wall.");
+    await expect(line).toHaveText("The things you called early. Give anything a Timeheart and it lands here, even after it leaves the wall.");
     const [l, c] = await Promise.all([line.boundingBox(), page.locator("#card .lc").boundingBox()]);
     expect(l!.x).toBeGreaterThanOrEqual(c!.x);
     expect(l!.x + l!.width).toBeLessThanOrEqual(c!.x + c!.width);
@@ -151,6 +151,6 @@ test.describe("phone", () => {
     await heart.click();
     await expect(heart).toHaveText("Kept");
     await expect(page.locator("#tbN")).toHaveText("1");
-    await expect(page.locator("#toast")).toHaveText("Kept in your Finds.");
+    await expect(page.locator("#toast")).toHaveText("Kept in your Scouts.");
   });
 });

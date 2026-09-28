@@ -31,8 +31,23 @@ type Beacon =
   | { t: "imp"; stories: string[] }
   | { t: "create"; step?: number }
   | { t: "error"; message: string }
-  | { t: "surface"; kind: Surface; story?: string; props?: { item: string; holdout: boolean } };
-type Surface = "since_shown" | "since_tap" | "hot_tap" | "new_tap";
+  | { t: "surface"; kind: Surface; story?: string; props?: SurfaceProps };
+type Surface =
+  | "since_shown"
+  | "since_tap"
+  | "hot_tap"
+  | "new_tap"
+  /* Scout (docs/scout.md, Metrics) */
+  | "scout_prompt_shown"
+  | "scout_prompt_tap"
+  | "scout_signed_in"
+  | "scout_card_view"
+  | "scout_card_share"
+  | "scout_call_share"
+  | "scout_move_seen"
+  | "scout_breakout_seen";
+/** a few plain values about the moment, never about the person */
+type SurfaceProps = Record<string, string | number | boolean>;
 
 function send(items: Beacon[]) {
   if (!items.length) return;
@@ -150,8 +165,8 @@ export function watchTiles(root: ParentNode, selector: string, idOf: (el: Elemen
 
 /* ---------- the band above the wall ---------- */
 
-/** What "since your last visit" showed, and taps on Hotspots, Newest and it (docs/retention.md). */
-export function surface(kind: Surface, story?: string, props?: { item: string; holdout: boolean }) {
+/** What "since your last visit" showed, taps on Hotspots, Newest and it (docs/retention.md), and the Scout loop (docs/scout.md). */
+export function surface(kind: Surface, story?: string, props?: SurfaceProps) {
   if (!started) return;
   send([{ t: "surface", kind, ...(story && { story }), ...(props && { props }) }]);
 }

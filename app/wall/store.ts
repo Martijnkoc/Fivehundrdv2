@@ -1,7 +1,7 @@
 import { flushSync } from "react-dom";
 import type { FilledSpot, LaneId, NavId, Spot } from "../../lib/wall/model";
 import type { HotEntry } from "../../lib/wall/hot";
-import type { Calls, SinceItem } from "../../lib/wall/retention";
+import type { SinceItem } from "../../lib/wall/retention";
 import type { Rack } from "../../lib/wall/rack";
 import type { CardData } from "./Card";
 import type { ClaimStart, ClaimView, Draft } from "./Claim";
@@ -52,9 +52,10 @@ export type WallState = {
   /** Above the wall: what has traction right now (live wall; null on the demo wall), and what changed since the last visit. */
   hot: HotEntry[] | null;
   since: { at: number; fresh: number; gone: number } | null;
-  /** The one thing that changed for this visitor (lib/wall/retention.ts), and this browser's calls. */
+  /** The one thing that changed for this visitor (lib/wall/retention.ts). */
   sinceItem: SinceItem | null;
-  calls: Calls;
+  /** Scout: after a signed-out Timeheart, the sign-in line shows under that story's actions (its key). */
+  scoutNudge: string | null;
 };
 
 const initial: WallState = {
@@ -83,7 +84,7 @@ const initial: WallState = {
   hot: null,
   since: null,
   sinceItem: null,
-  calls: {},
+  scoutNudge: null,
 };
 let state = initial;
 const listeners = new Set<() => void>();
@@ -144,8 +145,8 @@ export const bridge = {
   setSinceItem(sinceItem: SinceItem | null) {
     set({ sinceItem });
   },
-  setCalls(calls: Calls) {
-    set({ calls });
+  setScoutNudge(scoutNudge: string | null) {
+    set({ scoutNudge });
   },
   setSince(since: WallState["since"]) {
     set({ since });
@@ -195,8 +196,13 @@ export const bridge = {
     /** Opens a spot from Hotspots or Newest, on the whole wall if the current lane or search hides it. */
     openHot: (no: number, from?: "hot" | "new" | "since") => void;
     openFinds: () => void;
-    /** Call it; the outcome ("called", or why not). `el`: the button, to find the spot's Save. */
-    call: (no: number, el: HTMLElement) => Promise<string>;
+    /** Scout (docs/scout.md): a tier move was shown on the card. */
+    scoutMoveSeen?: (id: number) => void;
+    /** Shares (or stops sharing) the Scout Card under a chosen name; the card's link, or an error message. */
+    scoutShare: (on: boolean, name?: string, fresh?: boolean) => Promise<{ url: string | null } | { error: string }>;
+    /** The sign-in sheet, from a Timeheart: back to this story afterwards. */
+    scoutSignIn: (story?: string) => void;
+    scoutNudgeClosed: () => void;
     spotURL: (spot: FilledSpot) => string;
   },
 };

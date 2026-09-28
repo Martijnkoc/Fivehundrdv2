@@ -110,7 +110,7 @@ export function TabBar() {
           </svg>
           <TabBadge />
         </span>
-        Finds
+        Scouts
       </button>
       <button type="button" data-tab="create" className="tb-create">
         {/* craft pass: put something on the wall, a lime disc rather than a lime block */}

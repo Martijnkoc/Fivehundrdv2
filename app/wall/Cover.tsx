@@ -3,7 +3,7 @@
 import { memo, useEffect, useState, useSyncExternalStore } from "react";
 import { HANDS, HEART, ICON } from "../../lib/wall/icons";
 import { LANE, LIFE, numOf, pad, rng, type FilledSpot } from "../../lib/wall/model";
-import { CALLS_PER_DAY, callKey, callable, calledLabel, ordinal } from "../../lib/wall/retention";
+import { skey } from "../../lib/wall/saves";
 import { left, long } from "../../lib/wall/time";
 import { bridge, wallStore } from "./store";
 import { GenArt, LaneIcon } from "./Tile";
@@ -109,69 +109,27 @@ function Trailer({ s }: { s: FilledSpot }) {
  * content inline on desktop and in the phone sheet; `preview` is the Create
  * form's live preview, without the actions.
  */
-const NOT_CALLED: Record<string, string> = {
-  limit: `That's today's ${CALLS_PER_DAY === 3 ? "three" : CALLS_PER_DAY} calls. More tomorrow.`,
-  hot: "Already a Hotspot.",
-  own: "That's your own spot.",
-  unavailable: "This spot has just ended.",
-  error: "That didn't go through. Try again.",
-};
 
 /**
- * Call it (docs/retention.md): a private prediction that this discovery will
- * move. One small step to confirm, then back to the spot; no counter, no
- * score. Not on Hotspots, your own spot, or once its time is up.
+ * Scout (docs/scout.md): after a Timeheart without an account, one quiet line
+ * says what signing in is for. Never a wall: the Timeheart already counts
+ * and is kept on this device.
  */
-function CallIt({ s }: { s: FilledSpot }) {
+function ScoutNudge({ s }: { s: FilledSpot }) {
   const st = useSyncExternalStore(wallStore.subscribe, wallStore.get, wallStore.getServer);
-  const [step, setStep] = useState<"idle" | "ask" | "busy">("idle");
-  const [note, setNote] = useState("");
-  useEffect(() => {
-    if (!note) return;
-    const t = setTimeout(() => setNote(""), 4000);
-    return () => clearTimeout(t);
-  }, [note]);
-  const c = st.calls[callKey(s)];
-  if (c)
-    return (
-      <span className="act call done" title={`You called this${c.rank ? `, the ${ordinal(c.rank)} to call it` : ""}. Your Finds will show how it goes.`}>
-        {calledLabel(c)}
-      </span>
-    );
-  const hot = new Set((st.hot ?? []).filter((h) => h.rank <= 5).map((h) => h.id));
-  if (!callable(s, hot)) return null;
-  if (note)
-    return (
-      <span className="call-note" role="status">
-        {note}
-      </span>
-    );
-  if (step === "idle")
-    return (
-      <button type="button" className="act call" onClick={() => setStep("ask")} title="Think this one will move? Call it, and see later if you were right.">
-        Call it
-      </button>
-    );
+  if (st.scoutNudge !== skey(s)) return null;
   return (
-    <span className="call-q" role="group" aria-label="Call it">
-      <span>Think this one will move?</span>
-      <button
-        type="button"
-        className="act solid call"
-        disabled={step === "busy"}
-        onClick={async (e) => {
-          setStep("busy");
-          const r = await bridge.actions.call(s.no, e.currentTarget);
-          setStep("idle");
-          if (r !== "called") setNote(NOT_CALLED[r] ?? NOT_CALLED.error);
-        }}
-      >
-        Call it
+    <p className="scout-nudge" role="status">
+      <span>
+        <b>Fivehundrd remembers what you found early.</b> Sign in and this Timeheart becomes a Scout call.
+      </span>
+      <button type="button" className="scout-in" onClick={() => bridge.actions.scoutSignIn(s.id)}>
+        Sign in to Scout this
       </button>
-      <button type="button" className="call-x" onClick={() => setStep("idle")}>
-        Cancel
+      <button type="button" className="scout-x" aria-label="Not now" onClick={() => bridge.actions.scoutNudgeClosed()}>
+        &times;
       </button>
-    </span>
+    </p>
   );
 }
 
@@ -217,7 +175,7 @@ export const Cover = memo(function Cover({ s, saved, preview }: { s: FilledSpot;
               Share
             </button>
             {/* craft pass: Save is the Timeheart; keeping a find is its own small moment */}
-            <button className="act th" data-save="" aria-pressed={saved} title={saved ? "In your Finds. Tap to let it go." : "Keep it: it goes in your Finds, even after it leaves the wall."}>
+            <button className="act th" data-save="" aria-pressed={saved} title={saved ? "In your Scouts. Tap to let it go." : "Keep it: it goes in your Scouts, even after it leaves the wall."}>
               <svg className="th-ic" viewBox="0 0 24 24" aria-hidden="true">
                 <g className="th-fill" dangerouslySetInnerHTML={{ __html: HEART }} />
                 <g className="th-line" dangerouslySetInnerHTML={{ __html: HEART }} />
@@ -228,7 +186,6 @@ export const Cover = memo(function Cover({ s, saved, preview }: { s: FilledSpot;
             <button className="act" data-next="">
               Next spot
             </button>
-            <CallIt s={s} />
             {/* live stories only: anyone can flag one for a person to look at */}
             {s.id && (
               <button className="act report" data-report="" aria-label={`Report ${s.name}`}>
@@ -237,6 +194,7 @@ export const Cover = memo(function Cover({ s, saved, preview }: { s: FilledSpot;
             )}
           </div>
         )}
+        {!preview && <ScoutNudge s={s} />}
         {ws(4)}
       </div>
     </div>
