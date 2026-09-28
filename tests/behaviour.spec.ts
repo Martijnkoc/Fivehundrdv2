@@ -428,7 +428,7 @@ test.describe("desktop: sharing and Keep my card (§12, §15)", () => {
     await page.locator("#card [data-keep]").click();
     await page.locator("#kRemind").uncheck();
     await page.locator('#shareSheet [data-login="Google"]').click();
-    await expect(page.locator("#toast")).toHaveText("You're a Scout. Your Timehearts are calls from now on.");
+    await expect(page.locator("#toast")).toHaveText("You're a Scout. From now on, Fivehundrd remembers when you found things.");
     await expect(page.locator("#card .kept")).toHaveText("Signed in with Google.");
   });
 });
@@ -669,7 +669,7 @@ test.describe("approved changes on top of the reference", () => {
       await expect(page.locator("#card")).not.toHaveClass(/\bon\b/);
       await expect(page.locator('#shareSheet [data-login="Google"]')).toBeInViewport();
       await page.locator('#shareSheet [data-login="Google"]').click();
-      await expect(page.locator("#toast")).toHaveText("You're a Scout. Your Timehearts are calls from now on.");
+      await expect(page.locator("#toast")).toHaveText("You're a Scout. From now on, Fivehundrd remembers when you found things.");
     });
   });
 
