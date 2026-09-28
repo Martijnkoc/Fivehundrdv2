@@ -489,7 +489,9 @@ test.describe("desktop: Create your story (§13)", () => {
     await page.locator("#reroll").click();
     await expect(page.locator("#claimNo")).not.toHaveText(first!);
     const no = Number(await page.locator("#claimNo").textContent());
-    await expect(page.locator(`#s-${String(no).padStart(3, "0")}`)).toHaveClass(/\bvacant\b/);
+    /* the app shows open spots side by side as one slot (craft pass) */
+    const slot = wall.isReference ? page.locator(`#s-${String(no).padStart(3, "0")}`) : page.locator(`#rack .spot[data-no="${no}"], #rack .spot[data-nos~="${no}"]`);
+    await expect(slot).toHaveClass(/\bvacant\b/);
   });
 
   test("an open spot on the wall opens Create for that number", async ({ wall, page }) => {

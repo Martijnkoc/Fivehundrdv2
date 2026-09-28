@@ -14,7 +14,7 @@ import { buildLiveWall, mediaURL, mergeFeed, openNumbers, type Feed } from "../.
 import { LANE, LIFE, numOf, pad, seenKey, type FilledSpot, type LaneId, type NavId, type Spot } from "../../lib/wall/model";
 import { buildRack } from "../../lib/wall/rack";
 import { savesOrder as savesOrderOf, skey, type SaveEntry } from "../../lib/wall/saves";
-import { sinceLastVisit, type VisitMemory } from "../../lib/wall/hot";
+import { hotspots, sinceLastVisit, type VisitMemory } from "../../lib/wall/hot";
 import type { MakerNumbers } from "../../lib/site/reminderEmail";
 import { CALLS_PER_DAY, callsToday, inHoldout, ordinal, personalItem, readCalls, type Calls, type Finds } from "../../lib/wall/retention";
 import { left, short, styleFor } from "../../lib/wall/time";
@@ -212,7 +212,8 @@ export function startWall(bridge: Bridge, live?: Live) {
   let COLS = 5;
   const colsNow = () => {
     const w = rack.clientWidth || rack.parentElement!.clientWidth;
-    return w < 430 ? 3 : w < 640 ? 4 : 5;
+    /* craft pass: phones get two columns, so tiles read as covers */
+    return w < 430 ? 2 : w < 640 ? 3 : 5;
   };
   addEventListener("resize", () => {
     if (colsNow() !== COLS) {
@@ -254,10 +255,21 @@ export function startWall(bridge: Bridge, live?: Live) {
     built = Infinity;
     bridge.setLimit(Infinity);
   }
+  /*
+   * Craft pass: the spots with traction right now are shown big on the wall.
+   * On the live wall that is the database's Hotspot ranking (hot_public(),
+   * up to 30); the demo wall ranks by its own counters, about one in twenty.
+   * Fixed at each build of the wall, so nothing moves under the visitor.
+   */
+  function bigSpots() {
+    const hot = live ? (live.feed.hot ?? []) : null;
+    const filled = WALL.filter((s) => !s.vacant && (lane === "all" || s.lane === lane)).length;
+    return new Set(hotspots(WALL, hot, lane, hot ? 30 : Math.max(3, Math.round(filled / 20))).map((p) => p.s.no));
+  }
   function renderRack() {
     open = null;
     const C = (COLS = colsNow());
-    const r = buildRack({ wall: WALL, lane, query, cols: C, entryR: ENTRY_R });
+    const r = buildRack({ wall: WALL, lane, query, cols: C, entryR: ENTRY_R, big: bigSpots() });
     entryNo = r.entryNo;
     bridge.setCompact(compactNow());
     total = r.items.length;

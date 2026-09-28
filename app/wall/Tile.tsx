@@ -75,7 +75,7 @@ function Front({ s, compact }: { s: FilledSpot; compact?: boolean }) {
 const NL6 = "\n      ";
 const NL4 = "\n    ";
 
-function Filled({ s, open, still, compact, since }: { s: FilledSpot; open: boolean; still?: boolean; compact?: boolean; since?: number }) {
+function Filled({ s, open, still, compact, since, big }: { s: FilledSpot; open: boolean; still?: boolean; compact?: boolean; since?: number; big?: boolean }) {
   const l = left(s),
     recent = LIFE - l < 3 * 3600e3,
     /* approved change: also new to you, since your last visit */
@@ -97,7 +97,10 @@ function Filled({ s, open, still, compact, since }: { s: FilledSpot; open: boole
           </span>
           {NL6}
           <span className="bk-strip">
+            {/* craft pass: a big spot is a Hotspot, and reads like a feature: a kicker, the name, its line */}
+            {big && <em className="bk-kick">Hotspot</em>}
             <b>{s.name}</b>
+            {big && s.snippet && <i className="bk-snip">{s.snippet}</i>}
             <small>
               <LaneIcon lane={s.lane} />
               {LANE[s.lane]}
@@ -130,18 +133,24 @@ function Filled({ s, open, still, compact, since }: { s: FilledSpot; open: boole
   );
 }
 
-function Vacant({ s }: { s: Spot }) {
+function Vacant({ s, run }: { s: Spot; run?: Spot[] }) {
   const lane = s.vacant ? s.lane : undefined;
+  /* craft pass: open spots side by side are one quiet slot; tapping it offers the first */
+  const last = run && run[run.length - 1];
+  const nos = last ? `No. ${pad(numOf(s))}–${pad(numOf(last))}` : `No. ${pad(numOf(s))}`;
   return (
     <>
       <div className="stand">
-        <button className="book vbook" aria-label={`${lane ? LANE[lane] + " spot" : "Spot"} ${numOf(s)} is open. Claim it for ${PRICE}`}>
-          <span>Open spot</span>
+        <button
+          className="book vbook"
+          aria-label={`${lane ? LANE[lane] + " spot" : "Spot"} ${numOf(s)} is open${run ? `, one of ${run.length} in a row` : ""}. Claim it for ${PRICE}`}
+        >
+          <span>{run ? `${run.length} open spots` : "Open spot"}</span>
         </button>
       </div>
       {NL4}
       <div className="cap">
-        <strong className="vno">{`No. ${pad(numOf(s))}`}</strong>
+        <strong className="vno">{nos}</strong>
         {/* the live wall numbers each lane, so an open spot says which lane it is in */}
         <span className="v2">{lane ? `${LANE[lane]} · ${PRICE}` : `Claim for ${PRICE}`}</span>
       </div>
@@ -160,19 +169,24 @@ type TileProps = {
   compact?: boolean;
   /** when the visitor's previous visit was (tiles newer than that get the new dot) */
   since?: number;
+  /** craft pass: shown two by two, as a Hotspot */
+  big?: boolean;
+  /** craft pass: the open spots this one stands for, itself first */
+  run?: Spot[];
 };
 
 /** One spot on the wall (§6): a filled tile or an open spot. */
-export const Tile = memo(function Tile({ s, open, compact, since }: TileProps) {
+export const Tile = memo(function Tile({ s, open, compact, since, big, run }: TileProps) {
   return (
     <div
-      className={`spot${s.vacant ? " vacant" : ""}${open ? " open" : ""}`}
+      className={`spot${s.vacant ? " vacant" : ""}${open ? " open" : ""}${big ? " big" : ""}${run ? " run" : ""}`}
       id={`s-${pad(s.no)}`}
       data-no={s.no}
+      data-nos={run ? run.map((r) => r.no).join(" ") : undefined}
       data-phase={s.vacant ? undefined : phase(s)}
       style={cssVars(spotStyle(s))}
     >
-      {s.vacant ? <Vacant s={s} /> : <Filled s={s} open={open} compact={compact} since={since} />}
+      {s.vacant ? <Vacant s={s} run={run} /> : <Filled s={s} open={open} compact={compact} since={since} big={big} />}
     </div>
   );
 });

@@ -452,3 +452,44 @@
   .th-fill,.act.th .th-hands{transition:none}
   .act.th.beat,.act.th.beat .th-hands,.act.th.beat::after,.issue .live.beat,.spot.beat .book .prog,.spot.beat .cap .meta .m-v{animation:none}
 }
+
+/*
+ * Craft pass, part 2: rhythm. A spot with traction right now takes two by
+ * two places and reads like a feature (a kicker, a bigger name, its one
+ * line); open spots side by side are one quiet slot; the price only speaks
+ * up when you reach for it. Phones show two columns, so tiles read as covers.
+ */
+.spot.big{grid-column:span 2;grid-row:span 2}
+.spot.big .bk-strip{gap:4px;padding:12px 14px 14px;border-top-width:4px}
+.spot.big .bk-strip b{font-size:clamp(19px,2.1vw,27px);letter-spacing:-.045em;line-height:1.02}
+.spot.big .bk-no{right:10px;top:10px;font-size:12px;padding:3px 7px}
+.spot.big .cap-l .t{font-size:13px}
+.spot.big .book .prog{height:4px}
+.bk-kick{display:inline-flex;align-items:center;gap:7px;font-style:normal;font-size:10px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--ink)}
+.bk-kick::before{content:"";width:16px;height:3px;background:#ff7bc3}
+.bk-snip{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal;margin-top:2px;
+  font-family:"Fraunces",Georgia,serif;font-style:italic;font-weight:500;font-size:15px;line-height:1.3;letter-spacing:0;color:var(--ink2)}
+@media (max-width:699px){
+  .shelf-row.feature{contain-intrinsic-size:auto calc(var(--row-est,240px) * 2)}
+  .spot.big .bk-snip{font-size:14px}
+}
+
+/* open spots: quiet until you reach for one */
+.vbook{border-color:color-mix(in oklab,var(--line),var(--ink) 4%)}
+.vacant .vno{font-weight:800;color:var(--ink2)}
+.vacant .v2{background:none;color:var(--ink2);padding:0;border-radius:0;font-weight:700;transition:color .2s}
+.vacant.run .vbook span{font-weight:800}
+@media (hover:hover){
+  .vacant:hover .vbook{border-color:#ff7bc3;color:var(--ink)}
+  .vacant:hover .v2{color:var(--ink);text-decoration:underline;text-decoration-color:#ff7bc3;text-decoration-thickness:2px;text-underline-offset:3px}
+}
+
+/* two columns on phones: a little more room inside each cover */
+@media (max-width:429px){
+  .books{gap:12px}
+  .bk-strip b{font-size:14px}
+  .bk-strip small{font-size:11px}
+  .cap-l .t{font-size:12px}
+}
+/* the wall's column never grows past the screen for a long name */
+@media (max-width:979px){.stage{grid-template-columns:minmax(0,1fr)}.stage>main{min-width:0}}

@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useSyncExternalStore, type CSSProperties } from "react";
-import { pad, type FilledSpot } from "../../lib/wall/model";
+import { pad, type FilledSpot, type Spot } from "../../lib/wall/model";
 import type { RackItem } from "../../lib/wall/rack";
 import { skey } from "../../lib/wall/saves";
 import { styleFor } from "../../lib/wall/time";
@@ -24,7 +24,7 @@ function Panel({ s, saved }: { s: FilledSpot; saved: boolean }) {
   );
 }
 
-function Item({ item, st }: { item: RackItem; st: WallState }) {
+function Item({ item, st, runs }: { item: RackItem; st: WallState; runs: Record<number, Spot[]> }) {
   if (item.kind === "wrap")
     return (
       <li className="ring-wrap">
@@ -38,8 +38,8 @@ function Item({ item, st }: { item: RackItem; st: WallState }) {
       </li>
     );
   return (
-    <li className="shelf-row">
-      <div className="books" style={{ "--cols": String(item.spots.length + item.fillers) } as CSSProperties}>
+    <li className={item.big ? "shelf-row feature" : "shelf-row"}>
+      <div className="books" style={{ "--cols": String(item.cols ?? item.spots.length + item.fillers) } as CSSProperties}>
         {item.spots.map((s) => (
           <Tile
             key={s.no}
@@ -50,6 +50,8 @@ function Item({ item, st }: { item: RackItem; st: WallState }) {
             minute={st.minute}
             compact={st.compact}
             since={st.since?.at}
+            big={s.no === item.big}
+            run={runs[s.no]}
           />
         ))}
         {Array.from({ length: item.fillers }, (_, i) => (
@@ -83,7 +85,7 @@ export function Rack() {
           )}
           {rack.items.slice(0, st.limit).map((item, i) => (
             <Fragment key={i}>
-              <Item item={item} st={st} />
+              <Item item={item} st={st} runs={rack.runs} />
               {open && item.kind === "row" && item.spots.some((s) => s.no === open.no) && (
                 <Panel key={`panel-${open.no}`} s={open} saved={st.saved.has(skey(open))} />
               )}
