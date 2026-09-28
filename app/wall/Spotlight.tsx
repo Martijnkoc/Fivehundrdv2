@@ -8,19 +8,21 @@ import { bridge, wallStore } from "./store";
 import { SpotTile } from "./Tile";
 
 /**
- * Above the wall (approved change): five spots with traction right now, or
- * the five newest, and what changed since your last visit. Taps open the spot
- * on the wall itself. It follows the lane you're on.
+ * Above the wall (approved change): the spots with traction right now, or
+ * the newest, and what changed since your last visit. Taps open the spot on
+ * the wall itself. It follows the lane you're on. Seven on desktop, a row
+ * across the whole page; five below that (the CSS hides the last two).
  */
+const RAIL = 7;
 export function Spotlight() {
   const st = useSyncExternalStore(wallStore.subscribe, wallStore.get, wallStore.getServer);
   const [tab, setTab] = useState<"hot" | "new">("hot");
   if (!st.rack || st.rack.empty) return null;
-  const picks = tab === "hot" ? hotspots(st.wall, st.hot, st.lane) : newest(st.wall, st.lane);
-  const hotCount = tab === "hot" ? picks.length : hotspots(st.wall, st.hot, st.lane).length;
+  const picks = tab === "hot" ? hotspots(st.wall, st.hot, st.lane, RAIL) : newest(st.wall, st.lane, RAIL);
+  const hotCount = tab === "hot" ? picks.length : hotspots(st.wall, st.hot, st.lane, RAIL).length;
   /* nothing has traction yet: show the newest instead of an empty row */
   const view = tab === "hot" && !hotCount ? "new" : tab;
-  const shown = view === tab ? picks : newest(st.wall, st.lane);
+  const shown = view === tab ? picks : newest(st.wall, st.lane, RAIL);
   if (!shown.length) return null;
   const since = st.since && (st.since.fresh || st.since.gone) ? st.since : null;
   const item = st.sinceItem;

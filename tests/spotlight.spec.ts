@@ -15,7 +15,8 @@ for (const viewport of viewports)
       test("hotspots and newest (approved)", async ({ wall, page }) => {
         await wall.goto("", { spotlight: true });
         const sl = page.locator(".spotlight");
-        await expect(sl.locator(".sl-item")).toHaveCount(5);
+        /* seven across on desktop, five below (the rest are hidden) */
+        await expect(sl.locator(".sl-item:visible")).toHaveCount(viewport.width >= 980 ? 7 : 5);
         await wall.quiet();
         await expect(sl).toHaveScreenshot(["approved", `${viewport.name}-${scheme}-hotspots.png`]);
         await sl.getByRole("tab", { name: "Newest" }).click();
@@ -24,6 +25,33 @@ for (const viewport of viewports)
         await expect(sl).toHaveScreenshot(["approved", `${viewport.name}-${scheme}-newest.png`]);
       });
     });
+
+test.describe("the rail on desktop", () => {
+  test.use({ viewport: { width: 1400, height: 900 }, viewportSpec: viewports[2] });
+
+  test("seven spots across the card's and the wall's width; one segmented control that doesn't move", async ({ wall, page }) => {
+    await wall.goto("", { spotlight: true });
+    const row = await page.locator(".sl-row").boundingBox();
+    const card = await page.locator("#card").boundingBox();
+    const rack = await page.locator("#rack").boundingBox();
+    expect(Math.abs(row!.x - card!.x)).toBeLessThanOrEqual(2);
+    expect(Math.abs(row!.x + row!.width - (rack!.x + rack!.width))).toBeLessThanOrEqual(2);
+    const tabs = () =>
+      page.locator(".sl-tabs button").evaluateAll((els) => els.map((e) => { const r = e.getBoundingClientRect(); return [r.top, r.height, r.width]; }));
+    const before = await tabs();
+    expect(before[0]).toEqual(before[1]);
+    await page.locator(".sl-tabs").getByRole("tab", { name: "Newest" }).click();
+    expect(await tabs()).toEqual(before);
+    await expect(page.locator(".sl-item:visible")).toHaveCount(7);
+  });
+
+  test("only the rail's cards are behind glass: wall tiles look as they did", async ({ wall, page }) => {
+    await wall.goto("", { spotlight: true });
+    const glass = (sel: string) => page.locator(sel).first().evaluate((e) => getComputedStyle(e, "::before").content);
+    expect(await glass(".sl-row .book")).not.toBe("none");
+    expect(await glass("#rack .spot:not(.vacant) .book")).toBe("none");
+  });
+});
 
 test.describe("behaviour", () => {
   test.use({ viewport: { width: 1400, height: 900 }, viewportSpec: viewports[2] });
