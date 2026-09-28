@@ -33,25 +33,23 @@ export class Wall {
   }
 
   async goto(hash = "", { spotlight = false, hero = false } = {}) {
-    /* the first screen (approved change, docs/copy.md) has its own screenshots
-       (copy.spec.ts); hidden here before the first paint, so it never shifts the wall */
-    if (!this.isReference && !hero)
-      await this.page.addInitScript(() => {
+    /* approved changes with their own screenshots, hidden before the first paint so they never shift the wall:
+       the first screen (copy.spec.ts) and Hotspots above the wall (spotlight.spec.ts); the rest of the wall
+       is still compared with its baselines pixel for pixel */
+    const hide = [!hero && ".hero", !spotlight && ".spotlight"].filter(Boolean).join(",");
+    if (!this.isReference && hide)
+      await this.page.addInitScript((sel) => {
         const css = document.createElement("style");
-        css.textContent = ".hero{display:none!important}";
+        css.textContent = `${sel}{display:none!important}`;
         new MutationObserver((_, o) => {
           if (!document.head) return;
           document.head.append(css);
           o.disconnect();
         }).observe(document, { childList: true, subtree: true });
-      });
+      }, hide);
     await this.page.goto(`${this.path}?fixture=1${hash}`);
     /* the baselines are the reference plus the approved changes */
     if (this.isReference) await this.page.addStyleTag({ path: "app/wall/overrides.css" });
-    /* Hotspots above the wall (approved change) has its own screenshots
-       (spotlight.spec.ts); hidden here, the rest of the wall is still compared
-       with the reference pixel for pixel */
-    if (!this.isReference && !spotlight) await this.page.addStyleTag({ content: ".spotlight{display:none!important}" });
     await this.page.waitForSelector("#rack .spot");
     /* phones build the wall a few rows at a time */
     if (!this.isReference) await this.page.waitForSelector("#rack[data-complete]");
