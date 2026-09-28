@@ -56,7 +56,7 @@ export function provenance(x: OrderedSave, f: FindStatus | undefined): Provenanc
     return {
       kind: "called",
       text: `Called${nth} at ${n(call.savesThen)} · now ${n(f.saves)}`,
-      title: `You called this when ${n(call.savesThen)} ${call.savesThen === 1 ? "person" : "people"} had saved it.${who} ${n(f.saves)} keep it now.`,
+      title: `You called this when ${n(call.savesThen)} ${call.savesThen === 1 ? "person" : "people"} had kept it.${who} ${n(f.saves)} keep it now.`,
     };
   if (f?.back)
     return { kind: "back", text: "Maker is back", title: `${f.back.name} is back on the wall, at No. ${String(f.back.no).padStart(3, "0")}.` };
@@ -67,15 +67,15 @@ export function provenance(x: OrderedSave, f: FindStatus | undefined): Provenanc
       kind: "early",
       text: `Found at ${n(f.rank)} · now ${n(f.saves)}`,
       title: before
-        ? `You saved this before it became a Hotspot. You were the ${ordinal(f.rank)} to save it; ${n(f.saves)} keep it now.`
-        : `You were the ${ordinal(f.rank)} to save this${share ? `, among the first ${share}% of the people who did` : ""}. ${n(f.saves)} keep it now.`,
+        ? `You kept this before it became a Hotspot. You were the ${ordinal(f.rank)} to give it a Timeheart; ${n(f.saves)} keep it now.`
+        : `You were the ${ordinal(f.rank)} to give this a Timeheart${share ? `, among the first ${share}% of the people who did` : ""}. ${n(f.saves)} keep it now.`,
     };
   }
   if (call && x.liveNow) return { kind: "called", text: `Called${nth} · ${day(call.calledAt)}`, title: `You called this on ${day(call.calledAt)}.${who}` };
   if (!x.liveNow) return { kind: "found", text: `Found ${day(x.savedAt)}`, title: `Gone from the wall. You found it on ${day(x.savedAt)}.` };
   const now = x.cur && !x.cur.vacant && x.cur.saves != null ? Math.max(x.cur.saves, x.rank ?? 0) : x.count;
   if (x.rank != null && now != null)
-    return { kind: "rank", text: `#${x.rank} of ${now}`, title: `You were the ${ordinal(x.rank)} to save this. ${now} ${now === 1 ? "person has" : "people have"} now.` };
+    return { kind: "rank", text: `#${x.rank} of ${now}`, title: `You were the ${ordinal(x.rank)} to give this a Timeheart. ${now} ${now === 1 ? "person has" : "people have"} now.` };
   return null;
 }
 

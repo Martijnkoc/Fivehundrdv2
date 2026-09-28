@@ -113,8 +113,9 @@ export function TabBar() {
         Finds
       </button>
       <button type="button" data-tab="create" className="tb-create">
-        <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-          <path d="M13 2 3 14h7l-1 8 11-13h-7z" />
+        {/* craft pass: put something on the wall, a lime disc rather than a lime block */}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
+          <path d="M12 5v14M5 12h14" />
         </svg>
         Create
       </button>

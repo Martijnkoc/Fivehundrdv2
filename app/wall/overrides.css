@@ -348,3 +348,187 @@
   .sl-row li{scroll-snap-align:start}
 }
 .sq-r{display:block;font-size:10px;font-weight:700;color:var(--ink2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/*
+ * Craft pass (approved change): the wall responds to curiosity, and time is
+ * a material. Only transform and opacity move; everything is still under
+ * prefers-reduced-motion.
+ */
+
+/* the tile says less: art, name, time. Opens stay in the markup for the counters,
+   the Timehearts are quiet ink instead of a pink pill, and inside one lane the
+   lane label is not repeated on every tile */
+.cap .meta .m-o{display:none}
+.cap .meta i.m-v{background:none;color:var(--ink2);padding:1px 0 1px 2px;font-weight:800}
+.cap .meta i.m-v svg{stroke-width:2.4}
+.rack[data-lane]:not([data-lane="all"]) .bk-strip small{display:none}
+.bk-no{background:color-mix(in oklab,#fbf7ee,transparent 10%);font-weight:800;letter-spacing:.03em;font-variant-numeric:tabular-nums;transition:background-color .2s,color .2s}
+
+/* Last chance: the final six hours read to the minute on a printed label
+   and the time bar breathes. The maker's artwork is never altered. No red. */
+.spot[data-phase="last"] .cap-l .t{background:#1c1b18;color:#d8ff45;padding:1px 6px;border-radius:2px;font-variant-numeric:tabular-nums}
+.spot[data-phase="last"] .book .prog{animation:fh-breathe 2.4s ease-in-out infinite}
+@keyframes fh-breathe{50%{opacity:.35}}
+/* narrow tiles: the label and the Timehearts stay on one line */
+@media (max-width:453px){.spot[data-phase="last"] .cap-l .t{padding:1px 4px;font-size:10.5px;letter-spacing:-.01em}.spot[data-phase="last"] .cap-l{flex-wrap:nowrap}}
+/* Rising: its first three hours; the new dot has a soft halo that fades as it settles */
+.spot[data-phase="rising"] .book .new{box-shadow:0 0 0 2px #1c1b18,0 0 0 5px color-mix(in oklab,#ff7bc3,transparent 55%)}
+
+/* touch it and it reacts: a small lift with the tile's own slight lean, the
+   artwork shifting a few pixels against the pointer (app/wall/feel.ts), the
+   number chip inking in and the time bar thickening */
+.book{transition:border-color .2s,box-shadow .35s,transform .5s cubic-bezier(.2,1.5,.4,1)}
+.bk-art img,.bk-art svg{transition:transform .7s cubic-bezier(.2,.8,.2,1),filter .4s}
+.book .prog{transition:height .3s cubic-bezier(.2,.8,.2,1)}
+@media (hover:hover){
+  .spot:not(.open):not(.vacant) .book:hover{border-color:var(--ink);transform:translateY(-3px) rotate(calc(var(--rot,0deg) * .22));box-shadow:0 16px 24px -16px rgba(28,27,24,.5)}
+  .spot:not(.vacant) .book:hover .bk-art img,.spot:not(.vacant) .book:hover .bk-art svg{transform:translate3d(var(--px,0px),var(--py,0px),0) scale(1.06)}
+  .spot:not(.vacant) .book:hover .bk-no{background:#1c1b18;color:#fbf7ee}
+  .spot:not(.vacant) .book:hover .prog{height:5px}
+}
+.spot:not(.open):not(.vacant) .book:focus-visible{transform:translateY(-3px)}
+.spot:not(.vacant) .book:focus-visible .prog{height:5px}
+/* pressed: the paper gives a little, then springs back */
+.spot:not(.vacant) .book:active{transform:translateY(0) scale(.975);transition-duration:.08s}
+.book{-webkit-tap-highlight-color:transparent}
+.vbook{transition:border-color .2s,color .2s,letter-spacing .4s cubic-bezier(.2,.8,.2,1)}
+@media (hover:hover){.vacant .vbook:hover{letter-spacing:.04em}}
+
+@media (prefers-reduced-motion:reduce){
+  .book,.bk-art img,.bk-art svg,.book .prog,.bk-no,.vbook{transition:none}
+  .spot[data-phase="last"] .book .prog{animation:none}
+  .spot:not(.vacant) .book:hover .bk-art img,.spot:not(.vacant) .book:hover .bk-art svg{transform:none}
+  .spot:not(.open):not(.vacant) .book:hover{transform:none}
+}
+
+/* opening a spot (desktop): the tile's artwork flies into the panel
+   (controller.ts, morphOpen), the panel unfolds down from the notch and its
+   text settles in, line by line */
+.morph{position:fixed;z-index:60;overflow:hidden;border-radius:6px;pointer-events:none;background:var(--c1);box-shadow:0 24px 40px -24px rgba(0,0,0,.55)}
+.morph>svg,.morph>img{display:block;width:100%;height:100%;object-fit:cover}
+@media (min-width:700px){
+  .panel .cover{animation:fh-unfold .4s cubic-bezier(.2,.9,.25,1) backwards}
+  .panel .body>*{animation:fh-rise .45s cubic-bezier(.2,.8,.2,1) backwards}
+  .panel .body>:nth-child(1){animation-delay:.08s}
+  .panel .body>:nth-child(2){animation-delay:.12s}
+  .panel .body>:nth-child(3){animation-delay:.16s}
+  .panel .body>:nth-child(4){animation-delay:.2s}
+  .panel .body>:nth-child(5){animation-delay:.24s}
+  .panel .body>:nth-child(n+6){animation-delay:.28s}
+}
+@keyframes fh-unfold{from{clip-path:inset(0 0 100% 0 round 8px)}}
+@keyframes fh-rise{from{opacity:0;transform:translateY(12px)}}
+
+/* the Timeheart: a heart with a clock's hands. Kept, it fills pink; the
+   moment you give one it beats twice, its hands sweep a full turn, one ring
+   goes out in the lane's colour, and the time left answers */
+.act.th{position:relative;display:inline-flex;align-items:center;gap:7px}
+.th-ic{width:17px;height:17px;flex:none;overflow:visible}
+.th-line path{fill:none;stroke:currentColor;stroke-width:2.2;stroke-linejoin:round}
+.th-hands path{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.th-hands{transform-box:view-box;transform-origin:12px 13.2px}
+.th-fill path{fill:#ff7bc3}
+.th-fill{transform-box:fill-box;transform-origin:50% 60%;transform:scale(.2);opacity:0;transition:transform .45s cubic-bezier(.2,1.6,.4,1),opacity .2s}
+.act.th[aria-pressed="true"] .th-fill{transform:none;opacity:1}
+@media (hover:hover){.act.th:not([aria-pressed="true"]):hover .th-hands{transform:rotate(90deg);transition:transform .5s cubic-bezier(.2,1.4,.4,1)}}
+.act.th::after{content:"";position:absolute;inset:-1px;border-radius:inherit;border:2px solid var(--c1,#ff7bc3);opacity:0;pointer-events:none}
+.act.th.beat{animation:fh-beat .56s cubic-bezier(.3,.7,.3,1)}
+.act.th.beat .th-hands{animation:fh-sweep .75s cubic-bezier(.3,.9,.3,1)}
+.act.th.beat::after{animation:fh-ring .65s cubic-bezier(.2,.8,.2,1)}
+.issue .live.beat{animation:fh-tick .8s cubic-bezier(.2,.8,.2,1)}
+.spot.beat .book .prog{animation:fh-glow .9s cubic-bezier(.2,.8,.2,1)}
+.spot.beat .cap .meta .m-v{animation:fh-count .5s cubic-bezier(.2,1.6,.4,1)}
+@keyframes fh-beat{18%{transform:scale(1.09)}34%{transform:scale(.98)}50%{transform:scale(1.05)}}
+@keyframes fh-sweep{from{transform:rotate(-360deg)}}
+@keyframes fh-ring{0%{opacity:.75;transform:none}100%{opacity:0;transform:scale(1.3,1.9)}}
+@keyframes fh-tick{25%{color:#ff7bc3;transform:translateY(-2px)}}
+@keyframes fh-glow{30%{height:6px;opacity:1;box-shadow:0 0 10px var(--c1)}}
+@keyframes fh-count{40%{transform:scale(1.25)}}
+.cap .meta .m-v{transform-origin:left center}
+
+@media (prefers-reduced-motion:reduce){
+  .panel .cover,.panel .body>*{animation:none}
+  .th-fill,.act.th .th-hands{transition:none}
+  .act.th.beat,.act.th.beat .th-hands,.act.th.beat::after,.issue .live.beat,.spot.beat .book .prog,.spot.beat .cap .meta .m-v{animation:none}
+}
+
+/*
+ * Craft pass, part 2: rhythm. A spot with traction right now takes two by
+ * two places and reads like a feature (a kicker, a bigger name, its one
+ * line); open spots side by side are one quiet slot; the price only speaks
+ * up when you reach for it. Phones show two columns, so tiles read as covers.
+ */
+.spot.big{grid-column:span 2;grid-row:span 2}
+.spot.big .bk-strip{gap:4px;padding:12px 14px 14px;border-top-width:4px}
+.spot.big .bk-strip b{font-size:clamp(19px,2.1vw,27px);letter-spacing:-.045em;line-height:1.02}
+.spot.big .bk-no{right:10px;top:10px;font-size:12px;padding:3px 7px}
+.spot.big .cap-l .t{font-size:13px}
+.spot.big .book .prog{height:4px}
+.bk-kick{display:inline-flex;align-items:center;gap:7px;font-style:normal;font-size:10px;font-weight:900;letter-spacing:.14em;text-transform:uppercase;color:var(--ink)}
+.bk-kick::before{content:"";width:16px;height:3px;background:#ff7bc3}
+.bk-snip{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;white-space:normal;margin-top:2px;
+  font-family:"Fraunces",Georgia,serif;font-style:italic;font-weight:500;font-size:15px;line-height:1.3;letter-spacing:0;color:var(--ink2)}
+@media (max-width:699px){
+  .shelf-row.feature{contain-intrinsic-size:auto calc(var(--row-est,240px) * 2)}
+  .spot.big .bk-snip{font-size:14px}
+}
+
+/* open spots: quiet until you reach for one */
+.vbook{border-color:color-mix(in oklab,var(--line),var(--ink) 4%)}
+.vacant .vno{font-weight:800;color:var(--ink2)}
+.vacant .v2{background:none;color:var(--ink2);padding:0;border-radius:0;font-weight:700;transition:color .2s}
+.vacant.run .vbook span{font-weight:800}
+@media (hover:hover){
+  .vacant:hover .vbook{border-color:#ff7bc3;color:var(--ink)}
+  .vacant:hover .v2{color:var(--ink);text-decoration:underline;text-decoration-color:#ff7bc3;text-decoration-thickness:2px;text-underline-offset:3px}
+}
+
+/* two columns on phones (the wall is two columns below a 430px rack, a
+   453px screen): a little more room inside each cover, and names get two
+   lines instead of being cut, every tile the same height */
+@media (max-width:453px){
+  .books{gap:12px}
+  .bk-strip b{font-size:14px;white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
+  .bk-strip{min-height:66px}
+  .spot.big .bk-strip{min-height:0}
+  .bk-strip small{font-size:11px}
+  .cap-l .t{font-size:12px}
+}
+/* the wall's column never grows past the screen for a long name */
+@media (max-width:979px){.stage{grid-template-columns:minmax(0,1fr)}.stage>main{min-width:0}}
+
+/*
+ * Craft pass, part 3: Finds are your discovery history, not bookmarks.
+ * Three to a row so each find has room; its line of history ("Found at 12 ·
+ * now 340", "Called 3rd · 5h early") is the caption, in ink; an ended find is
+ * stamped like a library card. Read them leaving first or as you found them.
+ */
+.sv-list{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 10px}
+.sq-n{font-size:12px;margin-top:5px}
+.sq-r{font-size:11px;font-weight:800;color:rgba(20,18,16,.78);margin-top:2px;letter-spacing:-.01em}
+.sq-r.early,.sq-r.called{color:#141210;text-decoration:underline;text-decoration-color:#ff7bc3;text-decoration-thickness:2px;text-underline-offset:3px}
+.sq-r.back{color:#141210}
+.sq-t.off{left:50%;top:50%;transform:translate(-50%,-50%) rotate(-8deg);background:none;color:#141210;border:1.5px solid #141210;border-radius:3px;padding:2px 6px;
+  font-size:10px;letter-spacing:.12em;text-transform:uppercase;z-index:2;box-shadow:0 0 0 2px rgba(243,233,214,.8)}
+.msp.gone .sq-art{opacity:.62}
+.sv-order{display:flex;gap:14px;margin:0 0 8px}
+.sv-order button{all:unset;cursor:pointer;font-size:11.5px;font-weight:700;color:rgba(20,18,16,.55);padding:4px 0;border-bottom:2px solid transparent}
+.sv-order button[aria-checked="true"]{color:#141210;border-bottom-color:#ff7bc3}
+.sv-order button:focus-visible{outline:2px solid #ff7bc3;outline-offset:2px}
+@media (max-width:979px){.sv-order button{min-height:44px;padding:0;display:inline-flex;align-items:center}}
+
+/*
+ * Craft pass, part 4: phones. Create is a lime disc in the tab bar instead
+ * of the loudest block on the screen; the wall's covers lead.
+ */
+@media (max-width:979px){
+  .tabbar .tb-create{background:none;margin:0;color:var(--ink)}
+  .tabbar .tb-create svg{width:18px;height:18px;padding:6px;box-sizing:content-box;border-radius:50%;background:#d8ff45;color:#1c1b18;
+    transition:transform .35s cubic-bezier(.2,1.5,.4,1)}
+  .tabbar .tb-create:active svg{transform:scale(.9) rotate(90deg);transition-duration:.1s}
+  .tabbar button:active{opacity:.75}
+}
+@media (prefers-reduced-motion:reduce){.tabbar .tb-create svg{transition:none}}
+/* the Hotspots strip on phones: time left on one line, the count left to the wall */
+.cap-l .t{white-space:nowrap}
+@media (max-width:699px){.sl-row .cap .meta{display:none}}

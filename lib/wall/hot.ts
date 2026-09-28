@@ -26,7 +26,7 @@ export function hotspots(wall: Spot[], hot: HotEntry[] | null, lane: NavId, n = 
       .slice(0, n)
       .map(({ h, s }) => ({
         s,
-        why: h.saves ? `${plural(h.saves, "save")} lately` : h.clicks ? `${plural(h.clicks, "visit")} to the maker` : `${plural(h.opens, "open")} lately`,
+        why: h.saves ? `${plural(h.saves, "Timeheart")} lately` : h.clicks ? `${plural(h.clicks, "visit")} to the maker` : `${plural(h.opens, "open")} lately`,
       }));
   }
   /* the demo wall: its own counters, favouring saves, per hour on the wall */
@@ -72,4 +72,39 @@ export function sinceLastVisit(mem: VisitMemory | null, wall: Spot[], now: numbe
   const fresh = spots.filter((s) => !before.has(idOf(s)) && s.start > m.prev!.at - 60e3).length;
   const gone = m.prev.ids.filter((i) => !nowIds.has(i)).length;
   return { mem: m, since: { at: m.prev.at, fresh, gone } };
+}
+
+/*
+ * Craft pass: the Hotspots shown big on the wall. Rare on purpose: at most
+ * BIG_MAX, and only with enough activity behind them in the Hotspot window
+ * (people who opened it, people keeping it) that a handful of early visits on
+ * a quiet wall can't make one. Tunable display thresholds, not a ranking.
+ */
+export const BIG_MAX = 6,
+  BIG_MIN_OPENS = 25,
+  BIG_MIN_KEPT = 5;
+
+export function bigSpots(wall: Spot[], hot: HotEntry[] | null, lane: NavId): Set<number> {
+  const spots = wall.filter(live).filter(inLane(lane));
+  if (hot) {
+    const byId = new Map(spots.filter((s) => s.id).map((s) => [s.id!, s]));
+    return new Set(
+      [...hot]
+        .sort((a, b) => a.rank - b.rank)
+        .filter((h) => h.opens >= BIG_MIN_OPENS && h.saves >= BIG_MIN_KEPT)
+        .map((h) => byId.get(h.id))
+        .filter((s): s is FilledSpot => !!s)
+        .slice(0, BIG_MAX)
+        .map((s) => s.no),
+    );
+  }
+  /* the demo wall: its own counters, with the same thresholds */
+  return new Set(
+    hotspots(
+      wall.filter((s) => s.vacant || ((s.opens || 0) >= BIG_MIN_OPENS && (s.saves || 0) >= BIG_MIN_KEPT)),
+      null,
+      lane,
+      BIG_MAX,
+    ).map((p) => p.s.no),
+  );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useEffect, useState, useSyncExternalStore } from "react";
-import { ICON } from "../../lib/wall/icons";
+import { HANDS, HEART, ICON } from "../../lib/wall/icons";
 import { LANE, LIFE, numOf, pad, rng, type FilledSpot } from "../../lib/wall/model";
 import { CALLS_PER_DAY, callKey, callable, calledLabel, ordinal } from "../../lib/wall/retention";
 import { left, long } from "../../lib/wall/time";
@@ -216,8 +216,14 @@ export const Cover = memo(function Cover({ s, saved, preview }: { s: FilledSpot;
             <button className="act solid" data-share="">
               Share
             </button>
-            <button className="act" data-save="" aria-pressed={saved}>
-              {saved ? "Saved" : "Save"}
+            {/* craft pass: Save is the Timeheart; keeping a find is its own small moment */}
+            <button className="act th" data-save="" aria-pressed={saved} title={saved ? "In your Finds. Tap to let it go." : "Keep it: it goes in your Finds, even after it leaves the wall."}>
+              <svg className="th-ic" viewBox="0 0 24 24" aria-hidden="true">
+                <g className="th-fill" dangerouslySetInnerHTML={{ __html: HEART }} />
+                <g className="th-line" dangerouslySetInnerHTML={{ __html: HEART }} />
+                <g className="th-hands" dangerouslySetInnerHTML={{ __html: HANDS }} />
+              </svg>
+              <span>{saved ? "Kept" : "Timeheart"}</span>
             </button>
             <button className="act" data-next="">
               Next spot

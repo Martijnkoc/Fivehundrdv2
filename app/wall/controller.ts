@@ -14,11 +14,12 @@ import { buildLiveWall, mediaURL, mergeFeed, openNumbers, type Feed } from "../.
 import { LANE, LIFE, numOf, pad, seenKey, type FilledSpot, type LaneId, type NavId, type Spot } from "../../lib/wall/model";
 import { buildRack } from "../../lib/wall/rack";
 import { savesOrder as savesOrderOf, skey, type SaveEntry } from "../../lib/wall/saves";
-import { sinceLastVisit, type VisitMemory } from "../../lib/wall/hot";
+import { bigSpots as bigSpotsFor, sinceLastVisit, type VisitMemory } from "../../lib/wall/hot";
 import type { MakerNumbers } from "../../lib/site/reminderEmail";
 import { CALLS_PER_DAY, callsToday, inHoldout, ordinal, personalItem, readCalls, type Calls, type Finds } from "../../lib/wall/retention";
 import { left, short, styleFor } from "../../lib/wall/time";
 import { startPlay, stopAudio, togglePlay } from "./audio";
+import { startFeel } from "./feel";
 import type { Account } from "./Card";
 import type { Draft } from "./Claim";
 import type { ShareData } from "./Sheets";
@@ -181,6 +182,7 @@ export function startWall(bridge: Bridge, live?: Live) {
 
   /* ---------- the rack (§5, §6) ---------- */
   const rack = $("#rack");
+  startFeel(rack);
   /* the Control Room's measurements (live wall only): the visit, and which live tiles were seen */
   if (live) {
     startTracking();
@@ -210,7 +212,8 @@ export function startWall(bridge: Bridge, live?: Live) {
   let COLS = 5;
   const colsNow = () => {
     const w = rack.clientWidth || rack.parentElement!.clientWidth;
-    return w < 430 ? 3 : w < 640 ? 4 : 5;
+    /* craft pass: phones get two columns, so tiles read as covers */
+    return w < 430 ? 2 : w < 640 ? 3 : 5;
   };
   addEventListener("resize", () => {
     if (colsNow() !== COLS) {
@@ -218,7 +221,7 @@ export function startWall(bridge: Bridge, live?: Live) {
       renderRack();
       if (keep) {
         const el = spotEl(keep);
-        if (el) swapTo(el);
+        if (el) swapTo(el, false);
       }
     }
   });
@@ -252,10 +255,19 @@ export function startWall(bridge: Bridge, live?: Live) {
     built = Infinity;
     bridge.setLimit(Infinity);
   }
+  /*
+   * Craft pass: the spots with traction right now are shown big on the wall.
+   * Rare on purpose: lib/wall/hot.ts (bigSpots) caps them and needs real
+   * activity behind each. Fixed at each build of the wall, so nothing moves
+   * under the visitor.
+   */
+  function bigSpots() {
+    return bigSpotsFor(WALL, live ? (live.feed.hot ?? []) : null, lane);
+  }
   function renderRack() {
     open = null;
     const C = (COLS = colsNow());
-    const r = buildRack({ wall: WALL, lane, query, cols: C, entryR: ENTRY_R });
+    const r = buildRack({ wall: WALL, lane, query, cols: C, entryR: ENTRY_R, big: bigSpots() });
     entryNo = r.entryNo;
     bridge.setCompact(compactNow());
     total = r.items.length;
@@ -340,6 +352,26 @@ export function startWall(bridge: Bridge, live?: Live) {
     });
   }
 
+  /**
+   * The Timeheart (craft pass): keeping a find beats once. The heart fills,
+   * its clock hands sweep round, one ring goes out, and the time left on the
+   * open spot and on its tile answers. CSS does the motion (overrides.css);
+   * reduced motion shows only the new state.
+   */
+  let beatT = 0;
+  function heartbeat(btn: HTMLElement, li: HTMLElement) {
+    const heart = btn.closest(".cover")?.querySelector<HTMLElement>("[data-save]") ?? btn;
+    const live = heart.closest(".cover")?.querySelector<HTMLElement>(".live");
+    for (const el of [heart, live, li]) {
+      if (!el) continue;
+      el.classList.remove("beat");
+      void el.offsetWidth;
+      el.classList.add("beat");
+    }
+    clearTimeout(beatT);
+    beatT = window.setTimeout(() => document.querySelectorAll(".beat").forEach((el) => el.classList.remove("beat")), 900);
+  }
+
   /** `called`: saved by Call it, which the server already counted as a save. */
   function toggleSave(li: HTMLElement, s: FilledSpot, btn: HTMLElement, called = false, callRank?: number) {
     const on = !isSaved(s);
@@ -376,7 +408,8 @@ export function startWall(bridge: Bridge, live?: Live) {
         btn.classList.add("pop");
         bumpTab();
       } else flyToCard(li, s, from);
-      toast(called ? `Called${callRank ? `, the ${ordinal(callRank)} to call it` : ""}. It's in your ${layered() ? "Finds" : "saves"}; see how it goes.` : layered() ? "Saved to your Finds." : "Saved to your Fivehundrd card.");
+      heartbeat(btn, li);
+      toast(called ? `Called${callRank ? `, the ${ordinal(callRank)} to call it` : ""}. It's in your Finds, kept; see how it goes.` : layered() ? "Kept in your Finds." : "Kept on your Fivehundrd card.");
       try {
         localStorage.setItem("fh-intro", "1");
       } catch {}
@@ -458,7 +491,43 @@ export function startWall(bridge: Bridge, live?: Live) {
       p = panel.getBoundingClientRect();
     panel.style.setProperty("--nx", b.left + b.width / 2 - p.left + "px");
   }
-  function swapTo(el: HTMLElement) {
+  /**
+   * Craft pass: on desktop the tile's own artwork travels from the wall into
+   * the panel that opens under it, so the spot becomes the full view rather
+   * than a panel appearing (the phone overlay already grows out of its tile).
+   */
+  function morphOpen(el: HTMLElement) {
+    if (reduce) return;
+    const panel = rack.querySelector<HTMLElement>(".panel"),
+      src = el.querySelector<HTMLElement>(".bk-art"),
+      art = panel?.querySelector<HTMLElement>(".cover > .art");
+    if (!panel || !src || !art) return;
+    const a = src.getBoundingClientRect(),
+      b = art.getBoundingClientRect();
+    if (b.top > innerHeight || b.bottom < 0 || !a.width) return;
+    const g = document.createElement("div");
+    g.className = "morph";
+    g.setAttribute("style", el.getAttribute("style") ?? "");
+    g.setAttribute("aria-hidden", "true");
+    g.innerHTML = src.innerHTML;
+    const rect = (r: DOMRect) => ({ left: r.left + "px", top: r.top + "px", width: r.width + "px", height: r.height + "px" });
+    Object.assign(g.style, rect(a));
+    document.body.appendChild(g);
+    art.style.opacity = "0";
+    const flight = g.animate([rect(a), { ...rect(b), borderRadius: "4px 0 0 4px" }], { duration: 380, easing: "cubic-bezier(.2,.9,.25,1)", fill: "forwards" });
+    let landed = false;
+    const land = () => {
+      if (landed) return;
+      landed = true;
+      art.style.opacity = "";
+      g.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 140, fill: "forwards" }).onfinish = () => g.remove();
+    };
+    flight.onfinish = land;
+    flight.oncancel = land;
+    /* scrolling or another click mid-flight: land at once */
+    addEventListener("wheel", land, { once: true, passive: true });
+  }
+  function swapTo(el: HTMLElement, morph = true) {
     const s = filledOf(el);
     if (el === open) return;
     const before = el.getBoundingClientRect().top;
@@ -474,6 +543,7 @@ export function startWall(bridge: Bridge, live?: Live) {
     placeNotch(el, rack.querySelector<HTMLElement>(".panel")!);
     const shift = el.getBoundingClientRect().top - before;
     if (shift) window.scrollTo(0, scrollY + shift);
+    if (morph) morphOpen(el);
     open = el;
     try {
       history.replaceState(null, "", addressOf(s));
@@ -493,7 +563,8 @@ export function startWall(bridge: Bridge, live?: Live) {
       return;
     }
     if (!align) {
-      swapTo(el);
+      /* opened by itself (first load, search): no flight */
+      swapTo(el, !auto);
       return;
     }
     glideTo(alignY(el), () => swapTo(el));
@@ -963,7 +1034,7 @@ export function startWall(bridge: Bridge, live?: Live) {
     if (sheetOn && !phoneSheet()) {
       const el = open;
       hideSheet();
-      if (el) swapTo(el);
+      if (el) swapTo(el, false);
     } else if (!sheetOn && open && phoneSheet()) {
       const el = open;
       bridge.close();

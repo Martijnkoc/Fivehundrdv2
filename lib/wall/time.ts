@@ -18,6 +18,27 @@ export function long(ms: number) {
   return (d ? d + "d " : "") + h + "h " + String(m).padStart(2, "0") + "m " + String(s).padStart(2, "0") + "s";
 }
 
+/**
+ * Where a story is in its 72 hours (craft pass): rising in its first three
+ * hours, last chance in its final six, live in between. The wall shows it
+ * in type, texture and motion rather than as a badge.
+ */
+export type Phase = "rising" | "live" | "last";
+export const RISING = 3 * 3600e3,
+  LAST = 6 * 3600e3;
+export function phase(s: Timed): Phase {
+  const l = left(s);
+  if (l < LAST) return "last";
+  return LIFE - l < RISING ? "rising" : "live";
+}
+
+/** "4h 12m": the final hours, to the minute. */
+export function clock(ms: number) {
+  const h = Math.floor(ms / 3600e3),
+    m = Math.floor((ms % 3600e3) / 60e3);
+  return h ? `${h}h ${String(m).padStart(2, "0")}m` : `${Math.max(1, m)}m`;
+}
+
 export function until(s: Timed) {
   return new Date(s.start + LIFE).toLocaleString("en-GB", {
     weekday: "short",

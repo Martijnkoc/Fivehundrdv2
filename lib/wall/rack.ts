@@ -6,12 +6,17 @@
 import { LANE, numOf, type NavId, type Spot } from "./model";
 
 export type RackItem =
-  | { kind: "row"; spots: Spot[]; fillers: number }
+  /* `big`: the spot shown two by two (craft pass); such a row spans two lines of `cols` */
+  | { kind: "row"; spots: Spot[]; fillers: number; big?: number; cols?: number }
   | { kind: "wrap"; no: number }
   /* `no` and `entryNo` here are the numbers shown, not places on the wall */
   | { kind: "end"; entryNo: number };
 
-export type Rack = { entryNo: number; query: string; empty: boolean; items: RackItem[] };
+/** `runs`: open spots next to each other shown as one, by the first one's `no` (craft pass). */
+export type Rack = { entryNo: number; query: string; empty: boolean; items: RackItem[]; runs: Record<number, Spot[]> };
+
+/* at least this many ordinary lines between two big spots, so they punctuate the wall */
+export const BIG_GAP = 3;
 
 /** The visitor's entry spot: always a filled one, walking forward round the circle. */
 export function entryFor(wall: Spot[], list: Spot[], entryR: number) {
@@ -23,8 +28,9 @@ export function entryFor(wall: Spot[], list: Spot[], entryR: number) {
   return (cands.find((s) => s.no >= base) || cands[0]).no;
 }
 
-export function buildRack(opts: { wall: Spot[]; lane: NavId; query: string; cols: number; entryR: number }): Rack {
+export function buildRack(opts: { wall: Spot[]; lane: NavId; query: string; cols: number; entryR: number; big?: ReadonlySet<number> }): Rack {
   const { wall, lane, query, cols: C, entryR } = opts;
+  const big = query ? new Set<number>() : (opts.big ?? new Set<number>());
   const hit = (s: Spot) =>
     !query || (!s.vacant && (s.name + " " + LANE[s.lane] + " " + (s.snippet || "")).toLowerCase().includes(query));
   const list = wall
@@ -36,11 +42,59 @@ export function buildRack(opts: { wall: Spot[]; lane: NavId; query: string; cols
   if (at < 0) at = 0;
   const ring = list.slice(at).concat(list.slice(0, at));
 
+  /*
+   * Craft pass: open spots next to each other on the whole wall become one
+   * quiet slot, "No. 139–140", when they are in the same lane and their
+   * numbers follow on (on the live wall, neighbours can be Nos. 005 and 300).
+   * The first one stands for the run; the order of the circle is unchanged.
+   */
+  const runs: Record<number, Spot[]> = {};
+  const merge = (seg: Spot[]) => {
+    const out: Spot[] = [];
+    for (const s of seg) {
+      const prev = out[out.length - 1];
+      if (prev && prev.vacant && s.vacant && (prev.lane ?? null) === (s.lane ?? null)) {
+        const run = runs[prev.no];
+        const last = run ? run[run.length - 1] : prev;
+        if (numOf(s) === numOf(last) + 1) {
+          if (run) run.push(s);
+          else runs[prev.no] = [prev, s];
+          continue;
+        }
+      }
+      out.push(s);
+    }
+    return out;
+  };
+
   const items: RackItem[] = [];
-  const rows = (seg: Spot[]) => {
-    for (let k = 0; k < seg.length; k += C) {
+  let quiet = BIG_GAP;
+  const rows = (all: Spot[]) => {
+    const seg = merge(all);
+    for (let k = 0; k < seg.length; ) {
+      /*
+       * A big spot takes two by two places and needs room for them on the
+       * line it starts in; its line and the next make one row of 2C - 3
+       * spots. Without room, or too close to the last one, it stays small.
+       */
+      let j = -1;
+      if (C >= 2 && quiet >= BIG_GAP)
+        for (let i = k; i <= Math.min(k + C - 2, seg.length - 1); i++)
+          if (!seg[i].vacant && big.has(seg[i].no)) {
+            j = i;
+            break;
+          }
+      if (j >= 0) {
+        const part = seg.slice(k, k + 2 * C - 3);
+        items.push({ kind: "row", spots: part, fillers: 2 * C - 3 - part.length, big: seg[j].no, cols: C });
+        k += part.length;
+        quiet = 0;
+        continue;
+      }
       const part = seg.slice(k, k + C);
       items.push({ kind: "row", spots: part, fillers: C - part.length });
+      k += part.length;
+      quiet++;
     }
   };
   const w = query ? -1 : ring.findIndex((s, i) => i > 0 && s.no < ring[i - 1].no);
@@ -51,5 +105,5 @@ export function buildRack(opts: { wall: Spot[]; lane: NavId; query: string; cols
   } else rows(ring);
   if (ring.length && !query) items.push({ kind: "end", entryNo: numOf(ring[0]) });
 
-  return { entryNo, query, empty: !list.length, items };
+  return { entryNo, query, empty: !list.length, items, runs };
 }

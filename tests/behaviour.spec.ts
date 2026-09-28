@@ -104,7 +104,7 @@ test.describe("phone: the tile comes forward as a sheet (§7)", () => {
     const save = page.locator("#dsheet [data-save]");
     await save.click();
     await expect(save).toHaveAttribute("aria-pressed", "true");
-    await expect(save).toHaveText("Saved");
+    await expect(save).toHaveText(wall.isReference ? "Saved" : "Kept");
     await expect(save).toHaveClass(/\bpop\b/);
     await expect(page.locator("#tbN")).toBeVisible();
     await expect(page.locator("#tbN")).toHaveText("1");
@@ -254,12 +254,12 @@ test.describe("desktop: a tile opens inline under its row (§6)", () => {
     const save = page.locator("#rack .panel [data-save]");
     await save.click();
     await expect(save).toHaveAttribute("aria-pressed", "true");
-    await expect(save).toHaveText("Saved");
+    await expect(save).toHaveText(wall.isReference ? "Saved" : "Kept");
     await expect(page.locator("#card .msp")).toHaveCount(1);
     await expect(page.locator("#card .msp")).toHaveClass(/\blanded\b/);
     await expect(saves).toHaveText(String(before + 1));
     await save.click();
-    await expect(save).toHaveText("Save");
+    await expect(save).toHaveText(wall.isReference ? "Save" : "Timeheart");
     await expect(saves).toHaveText(String(before));
   });
 });
@@ -489,7 +489,9 @@ test.describe("desktop: Create your story (§13)", () => {
     await page.locator("#reroll").click();
     await expect(page.locator("#claimNo")).not.toHaveText(first!);
     const no = Number(await page.locator("#claimNo").textContent());
-    await expect(page.locator(`#s-${String(no).padStart(3, "0")}`)).toHaveClass(/\bvacant\b/);
+    /* the app shows open spots side by side as one slot (craft pass) */
+    const slot = wall.isReference ? page.locator(`#s-${String(no).padStart(3, "0")}`) : page.locator(`#rack .spot[data-no="${no}"], #rack .spot[data-nos~="${no}"]`);
+    await expect(slot).toHaveClass(/\bvacant\b/);
   });
 
   test("an open spot on the wall opens Create for that number", async ({ wall, page }) => {
