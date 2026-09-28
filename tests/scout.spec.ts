@@ -151,6 +151,13 @@ test.describe("desktop", () => {
 test.describe("phone", () => {
   test.use({ viewport: { width: phone.width, height: phone.height }, viewportSpec: phone, hasTouch: true });
 
+  test("after a Timeheart the sign-in prompt comes into view in the sheet", async ({ wall, page }) => {
+    await wall.goto();
+    await wall.openTile(3);
+    await wall.openView.locator("[data-save]").click();
+    await expect(page.locator(".dsheet .scout-nudge")).toBeInViewport({ ratio: 0.9 });
+  });
+
   test("the tab is Scouts, and it opens the Scout Card", async ({ wall, page }) => {
     await signedIn(page, scout({ moves: [] }));
     await wall.goto();

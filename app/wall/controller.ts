@@ -365,6 +365,11 @@ export function startWall(bridge: Bridge, live?: Live) {
     } catch {}
     bridge.setScoutNudge(skey(s));
     surface("scout_prompt_shown", s.id);
+    /* phones: the prompt sits under the buttons, often below the sheet's fold; bring it into view */
+    setTimeout(() => {
+      const n = document.querySelector<HTMLElement>(".dsheet .scout-nudge");
+      if (n && n.offsetParent) n.scrollIntoView({ block: "nearest", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    }, 450);
   }
   const scoutURL = (slug: string) => `${location.origin}/scout/${slug}`;
   let savesShown = 12;
