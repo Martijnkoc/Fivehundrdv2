@@ -1,8 +1,8 @@
 import { createElement, memo, type CSSProperties } from "react";
 import { artShapes, genArt } from "../../lib/wall/art";
-import { BOOKMARK, EYE, LANE_ICON_PATHS } from "../../lib/wall/icons";
+import { EYE, HANDS, HEART, LANE_ICON_PATHS } from "../../lib/wall/icons";
 import { LANE, LIFE, PRICE, fmt, numOf, pad, type FilledSpot, type LaneId, type Palette, type Spot } from "../../lib/wall/model";
-import { left, short, spotStyle } from "../../lib/wall/time";
+import { LAST, clock, left, phase, short, spotStyle } from "../../lib/wall/time";
 
 /** "--a:1;--b:2" → { "--a": "1", "--b": "2" } */
 export function cssVars(style: string) {
@@ -112,14 +112,15 @@ function Filled({ s, open, still, compact, since }: { s: FilledSpot; open: boole
       {NL4}
       <div className="cap">
         <span className="cap-l">
-          <span className="t">{`${short(l)} left`}</span>
+          {/* craft pass: the final hours read to the minute */}
+          <span className="t">{`${l < LAST ? clock(l) : short(l)} left`}</span>
           <span className="meta">
-            <i title="Opened by others">
+            <i className="m-o" title="Opened by others">
               <PillIcon paths={EYE} />
               <b data-o="">{fmt(s.opens)}</b>
             </i>
-            <i title="Saved by others">
-              <PillIcon paths={BOOKMARK} />
+            <i className="m-v" title="Timehearts: people keeping it">
+              <PillIcon paths={HEART + HANDS} />
               <b data-v="">{fmt(s.saves)}</b>
             </i>
           </span>
@@ -164,7 +165,13 @@ type TileProps = {
 /** One spot on the wall (§6): a filled tile or an open spot. */
 export const Tile = memo(function Tile({ s, open, compact, since }: TileProps) {
   return (
-    <div className={`spot${s.vacant ? " vacant" : ""}${open ? " open" : ""}`} id={`s-${pad(s.no)}`} data-no={s.no} style={cssVars(spotStyle(s))}>
+    <div
+      className={`spot${s.vacant ? " vacant" : ""}${open ? " open" : ""}`}
+      id={`s-${pad(s.no)}`}
+      data-no={s.no}
+      data-phase={s.vacant ? undefined : phase(s)}
+      style={cssVars(spotStyle(s))}
+    >
       {s.vacant ? <Vacant s={s} /> : <Filled s={s} open={open} compact={compact} since={since} />}
     </div>
   );
@@ -178,7 +185,7 @@ export const Tile = memo(function Tile({ s, open, compact, since }: TileProps) {
  */
 export function SpotTile({ s, width }: { s: FilledSpot; width?: number }) {
   return (
-    <div className="spot still" role="img" style={{ ...cssVars(spotStyle(s)), ...(width ? { width } : {}) }} aria-label={`${s.name}, ${LANE[s.lane]}, spot ${numOf(s)}`}>
+    <div className="spot still" role="img" data-phase={phase(s)} style={{ ...cssVars(spotStyle(s)), ...(width ? { width } : {}) }} aria-label={`${s.name}, ${LANE[s.lane]}, spot ${numOf(s)}`}>
       <Filled s={s} open={false} still />
     </div>
   );

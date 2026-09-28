@@ -104,7 +104,7 @@ test.describe("phone: the tile comes forward as a sheet (§7)", () => {
     const save = page.locator("#dsheet [data-save]");
     await save.click();
     await expect(save).toHaveAttribute("aria-pressed", "true");
-    await expect(save).toHaveText("Saved");
+    await expect(save).toHaveText(wall.isReference ? "Saved" : "Kept");
     await expect(save).toHaveClass(/\bpop\b/);
     await expect(page.locator("#tbN")).toBeVisible();
     await expect(page.locator("#tbN")).toHaveText("1");
@@ -254,12 +254,12 @@ test.describe("desktop: a tile opens inline under its row (§6)", () => {
     const save = page.locator("#rack .panel [data-save]");
     await save.click();
     await expect(save).toHaveAttribute("aria-pressed", "true");
-    await expect(save).toHaveText("Saved");
+    await expect(save).toHaveText(wall.isReference ? "Saved" : "Kept");
     await expect(page.locator("#card .msp")).toHaveCount(1);
     await expect(page.locator("#card .msp")).toHaveClass(/\blanded\b/);
     await expect(saves).toHaveText(String(before + 1));
     await save.click();
-    await expect(save).toHaveText("Save");
+    await expect(save).toHaveText(wall.isReference ? "Save" : "Timeheart");
     await expect(saves).toHaveText(String(before));
   });
 });

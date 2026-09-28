@@ -67,7 +67,7 @@ export function Rack() {
   const open = st.view === "panel" && st.openNo ? (st.wall[st.openNo - 1] as FilledSpot) : null;
   const complete = !!rack && st.limit >= rack.items.length;
   return (
-    <ol className="rack" id="rack" data-complete={complete ? "" : undefined}>
+    <ol className="rack" id="rack" data-complete={complete ? "" : undefined} data-lane={st.lane}>
       {rack && (
         /* A new key per render: the wall is rebuilt, as it was with innerHTML. */
         <Fragment key={version}>

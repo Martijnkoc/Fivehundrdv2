@@ -20,7 +20,7 @@ export function Intro() {
   return (
     <div className="intro" role="note">
       <p>
-        <b>500 spots. 72 hours each.</b> Scroll, open what catches your eye, and save what you want to keep.
+        <b>500 spots. 72 hours each.</b> Scroll, open what catches your eye, and give what you want to keep a Timeheart.
       </p>
       <button
         type="button"

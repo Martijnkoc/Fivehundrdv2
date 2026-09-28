@@ -61,6 +61,16 @@ which were signed off:
 11. Screens redesigned by these changes (Create, the Done screen, the share sheet) are compared against approved baselines of the app itself (`tests/__baselines__/…/approved/`, committed; `pnpm test:approve` rewrites them after a signed-off change), still at zero tolerance.
 12. Mobile audit (phones and tablets): Back closes whatever is open (a spot, Finds, Create, Share, Report, Keep my card), top one first; sheets open above the tab bar and above an open spot; the tab bar reads **Wall / Finds / Create**; a compact phone header (brand and a search button, lanes with 44px tabs); every control at least 44px; a one-line introduction on a first visit; Create in six steps (lane, artwork, name, description, links, preview and pay) with the wall's own tile filling in beside each question.
 13. Phone performance: rows out of view skip layout and paint (`content-visibility`), tile patterns are images instead of inline SVG (25k → 11k elements), the wall is built a few rows at a time, the spot overlay animates with transform and opacity only, and phones use tints instead of blur and blend modes. All phone and tablet screenshots are approved baselines; desktop still matches the reference pixel for pixel.
+14. Craft pass, part 1 (tile, time, interaction, opening, Timeheart):
+    - **The tile says less.** Art, name and time left. The opens pill is gone from the tile (it stays in the markup for the counters), the saves count is quiet ink with a heart, and inside one lane the lane label is not repeated.
+    - **Time is a material.** Each spot has a phase (`lib/wall/time.ts`, `phase()`), carried as `data-phase` on the tile:
+      - *rising*, its first 3 hours: the new dot gets a soft halo;
+      - *live*;
+      - *last*, its final 6 hours: time to the minute on a printed ink/lime label, a breathing time bar, and slightly faded artwork. No red.
+    - **The wall answers the pointer.** A small lift with the tile's own slight lean, the artwork shifting a few pixels against the pointer (`app/wall/feel.ts`), the number chip inking in, the time bar thickening, and a press that gives and springs back.
+    - **Opening on desktop.** The tile's artwork flies into the panel (`morphOpen` in the controller, 380ms), the panel unfolds down from its notch and the text settles in line by line. Automatic opens and resizes don't fly.
+    - **Save is the Timeheart.** A heart with a clock's hands, labelled Timeheart / Kept. Giving one beats twice, sweeps the hands a full turn, sends one ring out in the lane colour, and makes the time left, the tile's time bar and its count answer. It is the same save underneath: Finds, the counters and the Keep my card flow are unchanged.
+    - **Screenshots.** Every state, desktop included, now compares against approved baselines (`pnpm test:approve`). `tests/craft.spec.ts` covers phases, pointer, flight, Timeheart, reduced motion and keyboard. With reduced motion nothing moves; only the state changes.
 
 CSS for these lives in `app/wall/overrides.css`. The visual suite applies it
 to the reference too, so the baselines are "the reference plus the approved

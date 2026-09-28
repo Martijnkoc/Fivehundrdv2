@@ -136,7 +136,7 @@ function Saves({ card, wall }: { card: CardData; wall: Spot[] }) {
       </div>
       {!all.length ? (
         <p className="sv-empty">
-          {card.finds ? "Nothing found yet. Tap Save on anything you like and it lands here, even after it leaves the wall." : "Nothing saved yet. Tap Save on a tile and it lands here."}
+          {card.finds ? "Nothing found yet. Give anything you like a Timeheart and it lands here, even after it leaves the wall." : "Nothing kept yet. Give a spot a Timeheart and it lands here."}
         </p>
       ) : (
         <>

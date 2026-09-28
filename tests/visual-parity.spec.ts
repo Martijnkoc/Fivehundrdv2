@@ -24,12 +24,13 @@ for (const viewport of viewports) {
         colorScheme,
         hasTouch: viewport.name === "phone",
       });
-      /* phones and tablets follow the mobile audit (approved change); desktop stays the reference */
+      /* phones and tablets follow the mobile audit, and every screen the craft
+         pass (approved changes): each state is compared with its approved shot */
       const mobile = viewport.name !== "desktop";
-      if (mobile) test.beforeEach(() => approved("phones and tablets follow the mobile audit"));
+      test.beforeEach(() => approved(mobile ? "phones and tablets follow the mobile audit" : "the craft pass"));
       const name = (state: string) => `${viewport.name}-${colorScheme}-${state}.png`;
       const approvedShot = (state: string) => ["approved", name(state)];
-      const shot = (state: string) => (mobile ? approvedShot(state) : name(state));
+      const shot = approvedShot;
 
       test("wall as it loads", async ({ wall, page }) => {
         await wall.goto();
