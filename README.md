@@ -70,6 +70,9 @@ which were signed off:
     - **The wall answers the pointer.** A small lift with the tile's own slight lean, the artwork shifting a few pixels against the pointer (`app/wall/feel.ts`), the number chip inking in, the time bar thickening, and a press that gives and springs back.
     - **Opening on desktop.** The tile's artwork flies into the panel (`morphOpen` in the controller, 380ms), the panel unfolds down from its notch and the text settles in line by line. Automatic opens and resizes don't fly.
     - **Save is the Timeheart.** A heart with a clock's hands, labelled Timeheart / Kept. Giving one beats twice, sweeps the hands a full turn, sends one ring out in the lane colour, and makes the time left, the tile's time bar and its count answer. It is the same save underneath: Finds, the counters and the Keep my card flow are unchanged.
+    - **Rhythm.** Spots with traction right now are big (2×2) and read like a feature: a Hotspot kicker, a bigger name, and their line in Fraunces. On the live wall they follow the database's Hotspot ranking. Big spots keep the circle's order and stay at least three lines apart (`lib/wall/rack.ts`). Open spots side by side are one quiet slot ("No. 139–140"), and the price only speaks up on hover. Phones show two columns.
+    - **Finds are your history.** They read leaving first or as you found them (remembered per device), three to a row, with their line of history as the caption. An ended find is stamped.
+    - **Phones and Create.** Create is a lime disc in the tab bar. The Create sheet says "Put it on the wall." and "Place it · $9.95 for 72 hours".
     - **Screenshots.** Every state, desktop included, now compares against approved baselines (`pnpm test:approve`). `tests/craft.spec.ts` covers phases, pointer, flight, Timeheart, reduced motion and keyboard. With reduced motion nothing moves; only the state changes.
 
 CSS for these lives in `app/wall/overrides.css`. The visual suite applies it
