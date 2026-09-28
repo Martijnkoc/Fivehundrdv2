@@ -16,9 +16,10 @@ they aren't shown.
 
 ## The first screen (`app/wall/Hero.tsx`)
 
-This is the one-line promise, then two ways in ("Explore the Wall" and "Put
-your work on the Wall"). Under them sit "No follower count required.",
-today's numbers, and the loop in three steps: Discover, Scout, Come back.
+This is the one-line promise and what's on the Wall, today's numbers (with
+"Claim a spot" for makers), and the loop in three steps: Discover, Scout,
+Come back. There are no separate buttons under the promise, so the first
+screen stays short and the Wall shows sooner. The Wall itself is the way in.
 
 The first screen is only shown on a first visit. Once a visitor has given a
 Timeheart (`fh-intro`) or signed in (`fh-account`), an inline script adds
@@ -75,10 +76,10 @@ and the phone tab says "Claim".
 
 ## Measured calls to action
 
-The track kinds are defined in `supabase/migrations/…_copy.sql`:
+The track kinds are defined in `supabase/migrations/…_copy.sql`. The kinds
+`hero_explore_wall_clicked` and `hero_creator_cta_clicked` are still allowed
+there, but nothing sends them now that the hero buttons are gone.
 
-- `hero_explore_wall_clicked`
-- `hero_creator_cta_clicked`
 - `live_proof_creator_cta_clicked`
 - `scout_explainer_cta_clicked`
 - `open_spot_clicked`

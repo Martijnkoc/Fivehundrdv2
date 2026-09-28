@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BRAND, HERO, PROOF, STEPS } from "../../lib/site/copy";
+import { BRAND, PROOF, STEPS } from "../../lib/site/copy";
 import { bridge } from "./store";
 
 type Today = { available: false } | { available: true; visitors: number; opened: number };
@@ -53,7 +53,7 @@ function Proof() {
 
 /**
  * The first screen (docs/copy.md): what this is in one line, what's here,
- * two ways in, today's real numbers, and the loop in three steps. Only for
+ * today's real numbers, and the loop in three steps. Only for
  * a first visit: once a visitor has given a Timeheart or signed in, the
  * wall starts right under the header. Whether to show it is decided before the
  * first paint (the script in WallPage), so nothing jumps.
@@ -67,15 +67,6 @@ export function Hero() {
             {BRAND.line}
           </h2>
           <p className="hero-sub">{BRAND.support}</p>
-          <div className="hero-ctas">
-            <button type="button" className="hero-go" onClick={() => bridge.actions.heroCta("explore")}>
-              {HERO.explore}
-            </button>
-            <button type="button" className="hero-make" onClick={() => bridge.actions.heroCta("create")}>
-              {HERO.create}
-            </button>
-          </div>
-          <p className="hero-micro">{HERO.micro}</p>
         </div>
         <Proof />
         <div className="steps3">

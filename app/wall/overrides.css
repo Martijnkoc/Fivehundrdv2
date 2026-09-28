@@ -609,15 +609,9 @@
 .hero-in{max-width:1480px;margin:0 auto;padding:26px clamp(16px,2.6vw,36px) 24px;display:grid;
   grid-template-columns:minmax(0,1.35fr) minmax(0,.8fr) minmax(0,1.1fr);gap:22px 40px;align-items:start}
 .hero-h{font-family:"Fraunces",Georgia,serif;font-weight:800;font-size:clamp(30px,3.3vw,46px);line-height:1.02;letter-spacing:-.025em;margin:0 0 10px;text-wrap:balance}
-.hero-sub{margin:0 0 16px;font-size:15px;line-height:1.45;color:var(--ink2);max-width:46ch}
-.hero-ctas{display:flex;flex-wrap:wrap;gap:10px}
-.hero-go,.hero-make,.proof-cta{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;min-height:44px;padding:0 20px;border-radius:999px;font-size:14px;font-weight:800;white-space:nowrap}
-.hero-go{background:var(--ink);color:var(--paper)}
-.hero-go:hover{background:var(--pink);color:#0d0d0d}
-.hero-make{border:1.5px solid var(--ink);color:var(--ink)}
-.hero-make:hover{border-color:var(--pink);background:color-mix(in oklab,var(--pink),transparent 82%)}
-.hero-go:focus-visible,.hero-make:focus-visible,.proof-cta:focus-visible{outline:2px solid var(--pink);outline-offset:2px}
-.hero-micro{margin:10px 0 0;font-family:"Fraunces",Georgia,serif;font-style:italic;font-weight:500;font-size:13.5px;color:var(--ink2)}
+.hero-sub{margin:0;font-size:15px;line-height:1.45;color:var(--ink2);max-width:46ch}
+.proof-cta{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;min-height:44px;padding:0 20px;border-radius:999px;font-size:14px;font-weight:800;white-space:nowrap}
+.proof-cta:focus-visible{outline:2px solid var(--pink);outline-offset:2px}
 .proof{align-self:start;display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:14px 16px;border-radius:12px;background:var(--card);border:1px solid var(--line)}
 .proof>div{display:flex;flex-direction:column;gap:6px}
 .proof-wait{visibility:hidden}
@@ -640,10 +634,7 @@
 @media (max-width:699px){
   .hero-in{grid-template-columns:minmax(0,1fr);gap:14px;padding:18px 16px 18px}
   .hero-h{font-size:clamp(27px,8vw,34px);margin-bottom:8px}
-  .hero-sub{font-size:14px;margin-bottom:14px}
-  .hero-ctas{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
-  .hero-go,.hero-make{justify-content:center;min-height:48px}
-  .hero-micro{text-align:center;margin-top:8px}
+  .hero-sub{font-size:14px}
   .proof{flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:4px 10px;padding:10px 12px}
   .proof-h{width:100%}
   .proof>div{width:100%}
