@@ -322,7 +322,7 @@
 .sl-item{display:flex;flex-direction:column;gap:6px;width:100%;padding:0;border:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
 .sl-item .spot.still{pointer-events:none;width:100%}
 .sl-item:focus-visible{outline:none}
-.sl-why{font-size:11.5px;line-height:1.3;color:var(--ink2)}
+.sl-why{display:block;height:1.3em;font-size:11.5px;line-height:1.3;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* the one thing that changed for you: a quiet link in the since line */
 .sl-mine{display:inline;padding:0;border:0;background:none;font:inherit;font-weight:800;color:var(--ink);text-align:left;text-decoration:underline;text-decoration-thickness:2px;text-decoration-color:var(--pink);text-underline-offset:3px;cursor:pointer}
 .sl-mine:hover{text-decoration-color:var(--ink)}
@@ -338,7 +338,7 @@
 @media (min-width:980px){
   .sl-in{grid-template-columns:minmax(0,1184px);gap:14px;padding:20px 24px 24px;justify-content:center}
   .sl-head{justify-content:flex-start;gap:8px 16px}
-  .sl-note{display:block}
+  .sl-note{display:block;white-space:nowrap}
   .sl-since{margin-left:auto}
   .sl-row{grid-template-columns:repeat(7,minmax(0,1fr));gap:14px}
 }

@@ -64,7 +64,10 @@ export function Spotlight() {
           <li key={s.id ?? s.no}>
             <button type="button" className="sl-item" onClick={() => bridge.actions.openHot(s.no, view)} aria-label={`${s.name}, No. ${pad(numOf(s))}${why ? `: ${why}` : ""}`}>
               <SpotTile s={s} />
-              {why && <span className="sl-why">{why}</span>}
+              {/* always one line, empty or not: switching Hotspots and Newest never moves the wall below */}
+              <span className="sl-why" aria-hidden="true">
+                {why || "\u00a0"}
+              </span>
             </button>
           </li>
         ))}

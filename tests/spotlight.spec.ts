@@ -26,6 +26,31 @@ for (const viewport of viewports)
       });
     });
 
+for (const viewport of viewports)
+  test.describe(`${viewport.name}: switching Hotspots and Newest`, () => {
+    test.use({ viewport: { width: viewport.width, height: viewport.height }, viewportSpec: viewport, hasTouch: viewport.width < 700 });
+
+    test("moves nothing below the rail, not by a pixel", async ({ wall, page }) => {
+      await wall.goto("", { spotlight: true });
+      const tops = () =>
+        page.evaluate(() =>
+          ["#rack", "#card", "#rack .spot", ".site-foot", ".sl-row"].map((sel) => {
+            const e = document.querySelector(sel);
+            return e ? e.getBoundingClientRect().top + scrollY : null;
+          }),
+        );
+      const height = () => page.locator(".spotlight").evaluate((e) => e.getBoundingClientRect().height);
+      const before = await tops();
+      const h = await height();
+      for (const name of ["Newest", "Hotspots", "Newest", "Hotspots"]) {
+        await page.locator(".sl-tabs").getByRole("tab", { name }).click();
+        await expect(page.locator(".sl-tabs").getByRole("tab", { name })).toHaveAttribute("aria-selected", "true");
+        expect(await tops()).toEqual(before);
+        expect(await height()).toBe(h);
+      }
+    });
+  });
+
 test.describe("the rail on desktop", () => {
   test.use({ viewport: { width: 1400, height: 900 }, viewportSpec: viewports[2] });
 
