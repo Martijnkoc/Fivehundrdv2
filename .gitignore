@@ -5,5 +5,11 @@ test-results/
 .env
 .env.*
 !.env.example
-public/reference.html
+.generated/
 *.tsbuildinfo
+public/fonts/
+# baselines are written from the reference on every run, except the
+# approved redesigns, which are the app's own and committed
+tests/__baselines__/**
+!tests/__baselines__/**/
+!tests/__baselines__/**/approved/**
