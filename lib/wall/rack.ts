@@ -43,20 +43,24 @@ export function buildRack(opts: { wall: Spot[]; lane: NavId; query: string; cols
   const ring = list.slice(at).concat(list.slice(0, at));
 
   /*
-   * Craft pass: open spots next to each other on the whole wall (same lane on
-   * the live wall) become one quiet slot, "No. 139–140". The first one stands
-   * for the run; the order of the circle is unchanged.
+   * Craft pass: open spots next to each other on the whole wall become one
+   * quiet slot, "No. 139–140", when they are in the same lane and their
+   * numbers follow on (on the live wall, neighbours can be Nos. 005 and 300).
+   * The first one stands for the run; the order of the circle is unchanged.
    */
   const runs: Record<number, Spot[]> = {};
   const merge = (seg: Spot[]) => {
     const out: Spot[] = [];
     for (const s of seg) {
       const prev = out[out.length - 1];
-      const run = prev && prev.vacant && s.vacant ? runs[prev.no] : null;
       if (prev && prev.vacant && s.vacant && (prev.lane ?? null) === (s.lane ?? null)) {
-        if (run) run.push(s);
-        else runs[prev.no] = [prev, s];
-        continue;
+        const run = runs[prev.no];
+        const last = run ? run[run.length - 1] : prev;
+        if (numOf(s) === numOf(last) + 1) {
+          if (run) run.push(s);
+          else runs[prev.no] = [prev, s];
+          continue;
+        }
       }
       out.push(s);
     }
