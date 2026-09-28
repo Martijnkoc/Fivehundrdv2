@@ -29,7 +29,7 @@ export default async function Image() {
           <div style={{ display: "flex", fontFamily: "Fraunces", fontWeight: 800, fontSize: 104, letterSpacing: -2 }}>
             Fivehundrd<span style={{ color: "#ff7bc3" }}>.</span>
           </div>
-          <div style={{ display: "flex", fontFamily: "Fraunces", fontStyle: "italic", fontWeight: 500, fontSize: 40 }}>Discover before the crowd.</div>
+          <div style={{ display: "flex", fontFamily: "Fraunces", fontStyle: "italic", fontWeight: 500, fontSize: 40 }}>Find what’s next. Before everyone else does.</div>
         </div>
         <div style={{ display: "flex", gap: 14 }}>
           {LANES.map((l) => (

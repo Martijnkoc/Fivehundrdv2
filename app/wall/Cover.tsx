@@ -1,6 +1,7 @@
 "use client";
 
 import { memo, useEffect, useState, useSyncExternalStore } from "react";
+import { SCOUT, TIMEHEART } from "../../lib/site/copy";
 import { HANDS, HEART, ICON } from "../../lib/wall/icons";
 import { LANE, LIFE, numOf, pad, rng, type FilledSpot } from "../../lib/wall/model";
 import { skey } from "../../lib/wall/saves";
@@ -121,13 +122,13 @@ function ScoutNudge({ s }: { s: FilledSpot }) {
   return (
     <p className="scout-nudge" role="status">
       <span>
-        <b>Fivehundrd remembers what you found early.</b> Sign in and this Timeheart becomes a Scout call.
+        <b>{SCOUT.askHead}</b> {SCOUT.askBody} <small>{SCOUT.askSub}</small>
       </span>
       <button type="button" className="scout-in" onClick={() => bridge.actions.scoutSignIn(s.id)}>
-        Sign in to Scout this
+        {SCOUT.askYes}
       </button>
-      <button type="button" className="scout-x" aria-label="Not now" onClick={() => bridge.actions.scoutNudgeClosed()}>
-        &times;
+      <button type="button" className="scout-x" onClick={() => bridge.actions.scoutNudgeClosed()}>
+        {SCOUT.askNo}
       </button>
     </p>
   );
@@ -175,13 +176,13 @@ export const Cover = memo(function Cover({ s, saved, preview }: { s: FilledSpot;
               Share
             </button>
             {/* craft pass: Save is the Timeheart; keeping a find is its own small moment */}
-            <button className="act th" data-save="" aria-pressed={saved} title={saved ? "In your Scouts. Tap to let it go." : "Keep it: it goes in your Scouts, even after it leaves the wall."}>
+            <button className="act th" data-save="" aria-pressed={saved} title={saved ? TIMEHEART.titleDone : TIMEHEART.title}>
               <svg className="th-ic" viewBox="0 0 24 24" aria-hidden="true">
                 <g className="th-fill" dangerouslySetInnerHTML={{ __html: HEART }} />
                 <g className="th-line" dangerouslySetInnerHTML={{ __html: HEART }} />
                 <g className="th-hands" dangerouslySetInnerHTML={{ __html: HANDS }} />
               </svg>
-              <span>{saved ? "Kept" : "Timeheart"}</span>
+              <span>{saved ? TIMEHEART.done : TIMEHEART.give}</span>
             </button>
             <button className="act" data-next="">
               Next spot

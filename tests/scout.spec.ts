@@ -34,12 +34,14 @@ test.describe("desktop", () => {
 
   test("signed out: a Timeheart still works, and one quiet line says what signing in is for, once a day", async ({ wall, page }) => {
     await wall.goto();
-    await expect(page.locator("#card .sc-out .lc-h")).toHaveText("Fivehundrd remembers what you found early.");
-    await expect(page.locator("#card [data-keep]")).toHaveText("Sign in to Scout");
+    await expect(page.locator("#card .sc-out .lc-h")).toHaveText("Think you know what’s next? Prove it.");
+    await expect(page.locator("#card [data-keep]")).toHaveText("Start Scouting");
     await wall.openView.locator("[data-save]").click();
     await expect(wall.openView.locator("[data-save]")).toHaveText("Kept");
     const nudge = wall.openView.locator(".scout-nudge");
-    await expect(nudge).toContainText("Fivehundrd remembers what you found early. Sign in and this Timeheart becomes a Scout call.");
+    await expect(nudge).toContainText("Scout this? Sign in to remember you found it early.");
+    await expect(nudge).toContainText("Fivehundrd will track when you discovered it and show you what happens next.");
+    await expect(nudge.locator(".scout-in")).toHaveText("Sign in & Scout");
     await nudge.getByRole("button", { name: "Not now" }).click();
     await expect(nudge).toHaveCount(0);
     /* the next Timeheart today: no line */
@@ -57,9 +59,9 @@ test.describe("desktop", () => {
     await wall.openView.locator(".scout-in").click();
     await expect(page.locator("#shareSheet h2")).toHaveText("Sign in to Scout");
     await page.locator('#shareSheet [data-login="Google"]').click();
-    await expect(page.locator("#toast")).toHaveText("You're a Scout. Your Timehearts are calls from now on.");
+    await expect(page.locator("#toast")).toHaveText("You're a Scout. From now on, Fivehundrd remembers when you found things.");
     await expect(page.locator("#card .sc-status b")).toHaveText("Building your Scout history");
-    await expect(page.locator("#card .sc-status span")).toHaveText("0 of 10 calls settled");
+    await expect(page.locator("#card .sc-status span")).toHaveText("Your standing shows once 10 of your Scouts have had their 72 hours · 0 so far");
     await expect(page.locator("#card .sc-facts")).toHaveText("1 Scout");
     await expect(page.locator("#card")).not.toContainText("Top ");
     await expect(page.locator("#card .lc")).not.toHaveAttribute("data-tier");
@@ -73,7 +75,8 @@ test.describe("desktop", () => {
     await expect(page.locator("#card .sc-status")).toHaveText("Top 8%Silver Scout");
     await expect(page.locator("#card .sc-facts")).toHaveText("42 Scouts · 11 Early Calls · 4 became Hotspots");
     await expect(page.locator("#card .sc-best")).toContainText("Lowtide ClubFound #14 · 1,284 kept it · a Hotspot");
-    await expect(page.locator("#card .sc-move")).toHaveText("You moved into the top 10% of Scouts. Silver Scout");
+    await expect(page.locator("#card .sc-move")).toContainText("Your eye is getting sharper.You’re now a Silver Scout. Top 10% of Fivehundrd Scouts.Some of the things you found early are starting to move.");
+    await expect(page.locator("#card .sc-move button")).toHaveText(["See your Scouts", "Share your Scout Card"]);
     await page.reload();
     await page.waitForSelector("#rack[data-complete]");
     await expect(page.locator("#card .sc-status")).toHaveText("Top 8%Silver Scout");
@@ -92,7 +95,9 @@ test.describe("desktop", () => {
     await page.addInitScript((c) => localStorage.setItem("fh-scout", JSON.stringify(c)), scout());
     await wall.goto();
     await expect(page.locator("#card .sc-out")).toBeVisible();
-    await expect(page.locator("#card")).not.toContainText("Silver");
+    /* the explainer names the tiers; the stored card's own name and standing never show */
+    await expect(page.locator("#card")).not.toContainText("Martijn");
+    await expect(page.locator("#card .sc-status")).toHaveCount(0);
   });
 
   test("each Scout's line comes from its call", async ({ wall, page }) => {

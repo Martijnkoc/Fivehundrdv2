@@ -98,10 +98,26 @@ export function personalItem(p: {
   since: number;
   wall: Spot[];
   /** Scout (docs/scout.md): the signed-in Scout's calls; a breakout since the last visit comes first */
-  scout?: { id: string; name: string; position: number; breakout: "hotspot" | "grew" | null; breakoutAt: string | null; hidden: boolean }[];
+  scout?: {
+    id: string;
+    name: string;
+    position: number;
+    breakout: "hotspot" | "grew" | null;
+    breakoutAt: string | null;
+    hidden: boolean;
+    early?: boolean | null;
+    settledAt?: string | null;
+  }[];
 }): SinceItem | null {
   const byId = new Map<string, FilledSpot>();
   for (const s of p.wall) if (!s.vacant && s.id) byId.set(s.id, s);
+
+  /* an Early Call is only said once it's settled (docs/copy.md) */
+  const proved = (p.scout ?? [])
+    .filter((c) => !c.hidden && c.early && c.settledAt && Date.parse(c.settledAt) > p.since)
+    .sort((a, b) => Date.parse(b.settledAt!) - Date.parse(a.settledAt!))[0];
+  if (proved)
+    return { kind: "breakout", text: `You called it early. You were #${proved.position} to keep ${proved.name}`, story: proved.id };
 
   const broke = (p.scout ?? [])
     .filter((c) => !c.hidden && c.breakout && c.breakoutAt && Date.parse(c.breakoutAt) > p.since)
@@ -110,7 +126,7 @@ export function personalItem(p: {
     const s = byId.get(broke.id);
     return {
       kind: "breakout",
-      text: `You Scouted ${broke.name} #${broke.position}. ${broke.breakout === "hotspot" ? "It just became a Hotspot" : "It's breaking out"}`,
+      text: `Something you Scouted is taking off: ${broke.name}${broke.breakout === "hotspot" ? " is a Hotspot" : ""}. You were #${broke.position}`,
       no: s && left(s) > 0 ? s.no : undefined,
       story: broke.id,
     };
@@ -137,12 +153,7 @@ export function personalItem(p: {
     };
   }
 
-  const moving = p.saves.filter((x) => {
-    if (!x.liveNow) return false;
-    const was = p.prior.get(x.k),
-      now = (x.cur as FilledSpot).saves;
-    return was != null && now != null && now - was >= Math.max(5, Math.ceil(was / 2));
-  });
+  const moving = p.saves.filter(isMoving(p.prior));
   if (moving.length)
     return {
       kind: "moving",
@@ -197,3 +208,23 @@ export function callable(s: FilledSpot, hotIds: Set<string>) {
 }
 
 export const callKey = skey;
+
+/** A Scout that clearly gained Timehearts since the last visit (as `prior` left it): at least 5, and half again. */
+const isMoving = (prior: Map<string, number | undefined>) => (x: OrderedSave) => {
+  if (!x.liveNow) return false;
+  const was = prior.get(x.k),
+    now = (x.cur as FilledSpot).saves;
+  return was != null && now != null && now - was >= Math.max(5, Math.ceil(was / 2));
+};
+
+/**
+ * Your Wall Today (docs/copy.md): the real reasons to look again, each only
+ * when it's more than zero. `fresh`: spots new since your last visit.
+ */
+export function wallToday(p: { saves: OrderedSave[]; prior: Map<string, number | undefined>; fresh: number }) {
+  return {
+    fresh: p.fresh,
+    moving: p.saves.filter(isMoving(p.prior)).length,
+    ending: p.saves.filter((x) => x.liveNow && left(x.cur as FilledSpot) < SOON).length,
+  };
+}

@@ -5,6 +5,7 @@ import { LANE, TOTAL, numOf, pad, type FilledSpot, type Spot } from "../../lib/w
 import { provenance, type FindStatus, type Finds } from "../../lib/wall/retention";
 import { callLine, statusLine, tierUp, TIER_NAME, type ScoutCall, type ScoutMe } from "../../lib/wall/scout";
 import { numbersLine, type MakerNumbers } from "../../lib/site/reminderEmail";
+import { MAKER, SCOUT, SCOUTS, WALL_TODAY } from "../../lib/site/copy";
 import { foundOrder, savesOrder, skey, type OrderedSave, type SaveEntry } from "../../lib/wall/saves";
 import { left, short, styleFor } from "../../lib/wall/time";
 import { bridge, wallStore } from "./store";
@@ -29,6 +30,8 @@ export type CardData = {
   history?: Finds;
   /** the signed-in Scout's card and calls (docs/scout.md); null until known or when signed out */
   scout?: ScoutMe | null;
+  /** Your Wall Today: real reasons to look again (lib/wall/retention.ts, wallToday) */
+  today?: { fresh: number; moving: number; ending: number };
 };
 
 /* Whitespace text nodes as in the reference's renderCard template. */
@@ -56,15 +59,18 @@ function MakerLine({ s, m }: { s: FilledSpot; m?: MakerNumbers }) {
     nums.hotAt && "Hotspot",
     nums.seen > 0 && `${n(nums.seen)} saw it`,
     nums.opened > 0 && `${n(nums.opened)} opened`,
-    nums.kept > 0 && `${n(nums.kept)} kept`,
+    nums.kept > 0 && `${n(nums.kept)} ${nums.kept === 1 ? "Timeheart" : "Timehearts"}`,
     nums.clicked > 0 && `${n(nums.clicked)} to your links`,
     nums.shared > 0 && `${n(nums.shared)} shared`,
   ].filter(Boolean) as string[];
   const line = numbersLine(nums);
   return (
-    <small className="mine-nums" title={line ? `So far, ${line}.` : undefined}>
-      {parts.length ? parts.join(" · ") : "Live now. Your first numbers show up here."}
-    </small>
+    <>
+      <small className="mine-nums" title={line ? `So far, ${line}.` : undefined}>
+        {parts.length ? parts.join(" · ") : "Live now. Your first numbers show up here."}
+      </small>
+      {nums.kept > 0 && <small className="mine-kept">{MAKER.kept(n(nums.kept), nums.kept === 1)}</small>}
+    </>
   );
 }
 
@@ -154,12 +160,13 @@ function Saves({ card, wall }: { card: CardData; wall: Spot[] }) {
   return (
     <div className="sv-box">
       <div className="sv-head">
-        <span>Your Scouts</span>
+        <span>{SCOUTS.head}</span>
         <b>{all.length}</b>
       </div>
-      {!card.account && all.length > 0 && <p className="sv-local">On this device only. Sign in and Fivehundrd remembers them everywhere.</p>}
+      <p className="sv-sub">{SCOUTS.sub}</p>
+      {!card.account && all.length > 0 && <p className="sv-local">{SCOUTS.local}</p>}
       {all.length > 1 && (
-        <div className="sv-order" role="radiogroup" aria-label="Order your finds">
+        <div className="sv-order" role="radiogroup" aria-label="Order your Scouts">
           <button type="button" role="radio" aria-checked={order === "leaving"} onClick={() => choose("leaving")}>
             Leaving first
           </button>
@@ -169,9 +176,14 @@ function Saves({ card, wall }: { card: CardData; wall: Spot[] }) {
         </div>
       )}
       {!all.length ? (
-        <p className="sv-empty">
-          The things you called early. Give anything a Timeheart and it lands here, even after it leaves the wall.
-        </p>
+        <div className="sv-empty">
+          <p>
+            <b>{SCOUT.startsHead}</b> {SCOUT.startsBody}
+          </p>
+          <button type="button" className="sv-explore" data-explore="">
+            {SCOUTS.explore}
+          </button>
+        </div>
       ) : (
         <>
           <ul className="sv-list">
@@ -228,12 +240,22 @@ function ScoutCard({ card }: { card: CardData }) {
   if (!card.account)
     return (
       <div className="sc-card sc-out">
-        <h2 className="lc-h">
-          Fivehundrd remembers what you found early<span className="bdot">.</span>
-        </h2>
-        <p className="sc-pitch">Sign in and every Timeheart is a call. When the things you kept early break out, your Scout Card shows it.</p>
+        <h2 className="lc-h">{SCOUT.pitchHead}</h2>
+        {SCOUT.pitch.map((l) => (
+          <p className="sc-pitch" key={l}>
+            {l}
+          </p>
+        ))}
+        <ul className="sc-tiers" aria-label="Scout tiers">
+          {SCOUT.tiers.map(([top, name]) => (
+            <li key={name} className={`t-${name.toLowerCase()}`}>
+              <b>{top}</b> {name}
+            </li>
+          ))}
+        </ul>
+        <p className="sc-receipts">{SCOUT.receipts}</p>
         <button className="sc-cta" data-keep="">
-          Sign in to Scout
+          {SCOUT.start}
         </button>
       </div>
     );
@@ -241,9 +263,10 @@ function ScoutCard({ card }: { card: CardData }) {
     return (
       <div className="sc-card">
         <h2 className="lc-h">
-          Your Scout Card<span className="bdot">.</span>
+          {SCOUT.cardFallbackName}
+          <span className="bdot">.</span>
         </h2>
-        <p className="sc-pitch">Every Timeheart you give from now on is a call.</p>
+        <p className="sc-pitch">{SCOUT.proven}</p>
       </div>
     );
   const status = statusLine(me);
@@ -256,33 +279,52 @@ function ScoutCard({ card }: { card: CardData }) {
   return (
     <div className="sc-card">
       <h2 className="lc-h">
-        {me.name || "Your Scout Card"}
+        {me.name || SCOUT.cardFallbackName}
         <span className="bdot">.</span>
       </h2>
+      <p className="sc-proven">{SCOUT.proven}</p>
       <p className={`sc-status${me.status === "building" ? " building" : ""}`}>
         <b>{status.head}</b>
         {status.sub && <span>{status.sub}</span>}
       </p>
       {move && move.to && (
-        <p className="sc-move" role="status">
-          {`You moved into the top ${move.to === "gold" ? 3 : move.to === "silver" ? 10 : 25}% of Scouts. `}
-          <b>{TIER_NAME[move.to]}</b>
+        <div className="sc-move" role="status">
+          <p className="sc-move-h">{SCOUT.moveHead}</p>
+          <p>
+            <b>{SCOUT.moveTier(TIER_NAME[move.to].replace(" Scout", ""))}</b>{" "}
+            {SCOUT.moveTop(move.to === "gold" ? 3 : move.to === "silver" ? 10 : 25)}
+          </p>
+          <p>{SCOUT.moveLine}</p>
+          <div className="sc-move-acts">
+            <button type="button" className="sc-link" data-go-scouts="">
+              {SCOUT.seeScouts}
+            </button>
+            <button type="button" className="sc-link" data-scout-share="">
+              {SCOUT.shareYours}
+            </button>
+          </div>
+        </div>
+      )}
+      {me.calls > 0 ? (
+        <p className="sc-facts">{facts.join(" · ")}</p>
+      ) : (
+        <p className="sc-facts">
+          <b>{SCOUT.startsHead}</b> {SCOUT.startsBody}
         </p>
       )}
-      <p className="sc-facts">{facts.join(" · ")}</p>
       {best && (
         <div className="sc-best">
-          <span>Strongest call</span>
+          <span>{SCOUT.strongest}</span>
           <b>{best.name}</b>
           <em>{`Found #${best.position} · ${(best.finalKeepers ?? best.keepersNow).toLocaleString("en-US")} kept it${best.breakout === "hotspot" ? " · a Hotspot" : ""}`}</em>
           <button type="button" className="sc-link" data-share-call={best.id}>
-            Share this call
+            {SCOUT.shareCall}
           </button>
         </div>
       )}
       <div className="sc-acts">
         <button type="button" className="sc-cta" data-scout-share="">
-          Share Scout Card
+          {SCOUT.share}
         </button>
         {me.share && (
           <button type="button" className="sc-link" data-scout-unshare="">
@@ -290,6 +332,33 @@ function ScoutCard({ card }: { card: CardData }) {
           </button>
         )}
       </div>
+    </div>
+  );
+}
+
+/**
+ * Your Wall Today: real reasons to look again, from this visitor's own
+ * Scouts and the wall (lib/wall/retention.ts, wallToday). Only lines that are
+ * true today; nothing at all when there's nothing to say.
+ */
+function WallToday({ today }: { today?: CardData["today"] }) {
+  if (!today) return null;
+  const lines = [
+    today.fresh > 0 && `${today.fresh} new ${today.fresh === 1 ? "spot" : "spots"} since your last visit`,
+    today.moving > 0 && `${today.moving} of your Scouts gained Timehearts while you were away`,
+    today.ending > 0 && `${today.ending} of your Scouts ${today.ending === 1 ? "ends" : "end"} within 6 hours`,
+  ].filter(Boolean) as string[];
+  if (!lines.length) return null;
+  return (
+    <div className="lc-today">
+      <p className="lc-today-h">
+        <b>{WALL_TODAY.head}</b> {WALL_TODAY.sub}
+      </p>
+      <ul>
+        {lines.map((l) => (
+          <li key={l}>{l}</li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -315,6 +384,7 @@ function CardBody({ card, wall }: { card: CardData; wall: Spot[] }) {
           <span>{day}</span>
         </div>
         <ScoutCard card={card} />
+        <WallToday today={card.today} />
         <button className="lc-entry" data-go={card.entryNo}>
           <span>You walked in at</span>
           <b>{`No. ${pad(card.entryNum ?? card.entryNo)}`}</b>

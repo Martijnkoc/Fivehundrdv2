@@ -24,6 +24,8 @@ const SURFACE = new Set([
   "since_shown", "since_tap", "hot_tap", "new_tap",
   "scout_prompt_shown", "scout_prompt_tap", "scout_signed_in", "scout_card_view", "scout_card_share",
   "scout_call_share", "scout_move_seen", "scout_breakout_seen",
+  "hero_explore_wall_clicked", "hero_creator_cta_clicked", "live_proof_creator_cta_clicked",
+  "scout_explainer_cta_clicked", "open_spot_clicked", "creator_place_clicked",
 ]);
 /** At most four plain values, short keys and strings: what happened, never who. */
 function plainProps(p: unknown): Record<string, string | number | boolean> {
@@ -90,7 +92,7 @@ export const POST = measured("/api/track", async (req: Request) => {
             p_visitor: visitor,
             p_kind: it.kind,
             p_story: it.story && UUID.test(it.story) ? it.story : null,
-            p_props: it.kind.startsWith("scout_") ? plainProps(it.props) : { item: str(it.props?.item, 20) ?? null, holdout: it.props?.holdout === true },
+            p_props: !it.kind.startsWith("since_") ? plainProps(it.props) : { item: str(it.props?.item, 20) ?? null, holdout: it.props?.holdout === true },
           });
         } else if (it.t === "error") {
           await rpc("track_event", {

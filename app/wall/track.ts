@@ -45,7 +45,14 @@ type Surface =
   | "scout_card_share"
   | "scout_call_share"
   | "scout_move_seen"
-  | "scout_breakout_seen";
+  | "scout_breakout_seen"
+  /* the first screen's calls to action (docs/copy.md) */
+  | "hero_explore_wall_clicked"
+  | "hero_creator_cta_clicked"
+  | "live_proof_creator_cta_clicked"
+  | "scout_explainer_cta_clicked"
+  | "open_spot_clicked"
+  | "creator_place_clicked";
 /** a few plain values about the moment, never about the person */
 type SurfaceProps = Record<string, string | number | boolean>;
 

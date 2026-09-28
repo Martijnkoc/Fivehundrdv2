@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { FilledSpot } from "../../lib/wall/model";
+import { SCOUT } from "../../lib/site/copy";
 import { FORMATS, cardFileName, shareCardBlob, type ShareFormat } from "./shareCard";
 import { bridge, wallStore } from "./store";
 import { statusLine, TIER_NAME, type ScoutCall, type ScoutMe } from "../../lib/wall/scout";
@@ -364,9 +365,9 @@ function Keep() {
         &times;
       </button>
       {ws(2)}
-      <h2 id="shareH">Sign in to Scout</h2>
+      <h2 id="shareH">{SCOUT.signInHead}</h2>
       {ws(2)}
-      <p className="sub">Fivehundrd remembers what you found early. Your Timehearts become calls, on every device. Browsing never needs an account.</p>
+      <p className="sub">{SCOUT.signInSub}</p>
       {ws(2)}
       <div className="sharelist">
         {ws(4)}

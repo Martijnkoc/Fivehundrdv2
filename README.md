@@ -76,7 +76,7 @@ which were signed off:
     - **Screenshots.** Every state, desktop included, compares at zero tolerance against the approved baselines, which are frozen regression baselines. `pnpm test:approve` refuses to rewrite them unless run as `APPROVE=yes pnpm test:approve`, after a signed-off visual change. Multi-line text in the desktop card used to render one of two ways from run to run (the card is its own scroll container, and Chromium didn't always give it a layer); the card now always has one (`will-change`), and the text is compared like everything else. `tests/craft.spec.ts` covers phases, pointer, flight, Timeheart, reduced motion and keyboard. With reduced motion nothing moves; only the state changes.
 15. Scout (docs/scout.md), approved 2026-09-28:
     - The Fivehundrd card is the **Scout Card** and Finds are **Scouts**.
-    - **Signed out**, the card says what signing in is for. After a Timeheart, one quiet line says it too, at most once a day: "Fivehundrd remembers what you found early. Sign in to Scout this."
+    - **Signed out**, the card says what signing in is for. After a Timeheart, one quiet line says it too, at most once a day: "Scout this? Sign in to remember you found it early." (the words since item 16).
     - **Signed in**, the card shows:
       - where you stand: "Building your Scout history", "Scout", or "Top 8% · Silver Scout" once tiers are active;
       - your Scouts, Early Calls and Hotspots;
@@ -87,6 +87,22 @@ which were signed off:
     - **Data:** `supabase/migrations/20260928090000_scout.sql`, API under `app/api/scout/*`, and a nightly recalculation (`/api/cron/scout`).
     - **Public pages:** shared cards at `/scout/[slug]` and single Early Calls at `/scout/[slug]/[story]`, each with its own link image. They are not indexed.
     - **Tests:** `db/scout.test.mjs`, `lib/wall/scout.test.mjs` and `tests/scout.spec.ts`.
+16. The copy pass (docs/copy.md), approved 2026-09-28:
+    - **Words:** they live in one module, `lib/site/copy.ts`, with one locked vocabulary.
+    - **First visit:** the first screen shows:
+      - "Find what’s next. Before everyone else does.";
+      - "Explore the Wall" and "Put your work on the Wall";
+      - today's real numbers (`public.today_public()` via `/api/today`), or none;
+      - the loop in three steps.
+    - **Returning visitors** (after a Timeheart, or signed in) start on the wall.
+    - **Scout Card:**
+      - the signed-out explainer ("Think you know what’s next? Prove it.", the tiers, "Start Scouting");
+      - the empty state and the promotion;
+      - "Your Wall Today", with real reasons only.
+    - **Open Spots** say "Put something worth finding here. Claim this spot".
+    - **Create** reads "Put it on the Wall." and "Place it · $9.95".
+    - **The header** says "Claim a spot".
+    - **Data:** `supabase/migrations/20260928100000_copy.sql`. **Tests:** `tests/copy.spec.ts`.
 
 CSS for these lives in `app/wall/overrides.css`. The visual suite applies it
 to the reference too, so the baselines are "the reference plus the approved

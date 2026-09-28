@@ -203,6 +203,8 @@ export const bridge = {
     /** The sign-in sheet, from a Timeheart: back to this story afterwards. */
     scoutSignIn: (story?: string) => void;
     scoutNudgeClosed: () => void;
+    /** The first screen's calls to action (docs/copy.md). */
+    heroCta: (which: "explore" | "create" | "proof") => void;
     spotURL: (spot: FilledSpot) => string;
   },
 };

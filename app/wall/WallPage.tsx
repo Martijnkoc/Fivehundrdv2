@@ -1,7 +1,7 @@
 import { preload } from "react-dom";
 import { Card } from "./Card";
 import { Footer, Header, Overlays, TabBar } from "./Chrome";
-import { Intro } from "./Intro";
+import { Hero, heroGate } from "./Hero";
 import { Rack } from "./Rack";
 import { Spotlight } from "./Spotlight";
 import { WallRuntime } from "./WallRuntime";
@@ -20,15 +20,17 @@ export function WallPage({ heading = "The wall", ld }: { heading?: string; ld?: 
   if (process.env.NEXT_PUBLIC_SUPABASE_URL) preload("/api/wall", { as: "fetch", crossOrigin: "anonymous" });
   return (
     <>
+      {/* a returning visitor goes straight to the wall: decided before the first paint */}
+      <script dangerouslySetInnerHTML={{ __html: heroGate }} />
       <Header />
+      <Hero />
       <Spotlight />
       <div className="stage">
-        <aside className="colophon" id="card" aria-label="Your Fivehundrd card">
+        <aside className="colophon" id="card" aria-label="Your Scout Card">
           <Card />
         </aside>
         <main>
           <h1 className="sr">{heading}</h1>
-          <Intro />
           <Rack />
         </main>
       </div>

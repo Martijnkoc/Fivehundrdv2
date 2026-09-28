@@ -118,13 +118,14 @@ test.describe("desktop", () => {
 
   test("the empty Scouts line: its words, and it sits inside the card", async ({ wall, page }) => {
     await wall.goto();
-    const line = page.locator("#card .sv-empty");
-    await expect(line).toHaveText("The things you called early. Give anything a Timeheart and it lands here, even after it leaves the wall.");
+    const line = page.locator("#card .sv-empty p");
+    await expect(line).toHaveText("Your Scout story starts here. Scout a few things you believe in. We’ll remember when you found them.");
+    await expect(page.locator("#card .sv-empty [data-explore]")).toHaveText("Explore the Wall");
     const [l, c] = await Promise.all([line.boundingBox(), page.locator("#card .lc").boundingBox()]);
     expect(l!.x).toBeGreaterThanOrEqual(c!.x);
     expect(l!.x + l!.width).toBeLessThanOrEqual(c!.x + c!.width);
     const lines = await line.evaluate((el) => Math.round(el.getBoundingClientRect().height / parseFloat(getComputedStyle(el).lineHeight)));
-    expect(lines).toBe(3);
+    expect(lines).toBeLessThanOrEqual(3);
   });
 
   test("keyboard: a focused tile lifts, and Enter opens it", async ({ wall, page }) => {

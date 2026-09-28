@@ -108,6 +108,20 @@ describe("Scout calls", () => {
     assert.equal(rows[0].hidden_at, null, "keeping it again brings it back, same call");
   });
 
+  test("letting go on another device (no saves row there) still hides the account's call", async () => {
+    await user(U1);
+    const s = await live();
+    await keep(s, "phone", U1);
+    assert.equal((await event(s, "unsave", "tablet", U1)).r, true);
+    assert.equal((await calls("user_id = $1 and hidden_at is not null", [U1])).length, 1);
+    assert.equal((await one("select count(*)::int n from public.saves where story_id = $1", [s])).n, 0);
+    assert.equal((await one("select saves from public.stories where id = $1", [s])).saves, 0);
+    /* signed out, another browser can't let go of someone else's */
+    await keep(s, "phone", U1);
+    assert.equal((await event(s, "unsave", "stranger")).r, false);
+    assert.equal((await calls("user_id = $1 and hidden_at is null", [U1])).length, 1);
+  });
+
   test("your own story, and a Timeheart without opening, never count", async () => {
     await user(U1, "maker@example.com");
     const s = await live();
@@ -366,3 +380,18 @@ describe("sharing", () => {
     await assert.rejects(one("select public.scout_recalc('wrong')"), /forbidden/);
   });
 });
+
+describe("today on Fivehundrd", () => {
+  test("real counts for the day: distinct visitors, and opens once per visitor and story", async () => {
+    const s = await live();
+    assert.deepEqual(pick((await one("select public.today_public() r")).r), { visitors: 0, opened: 0 });
+    await db.query("insert into public.visits (visitor, is_new) values ('a', true), ('a', false), ('b', true)");
+    await event(s, "open", "a");
+    await event(s, "open", "a");
+    await event(s, "open", "b");
+    /* yesterday doesn't count */
+    await db.query("insert into public.visits (visitor, is_new, at) values ('c', true, now() - interval '2 days')");
+    assert.deepEqual(pick((await one("select public.today_public() r")).r), { visitors: 2, opened: 2 });
+  });
+});
+const pick = (r) => ({ visitors: Number(r.visitors), opened: Number(r.opened) });

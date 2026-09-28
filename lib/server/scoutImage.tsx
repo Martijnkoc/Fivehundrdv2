@@ -57,7 +57,7 @@ export async function scoutImage(o: { kicker?: string; title: string; lines: str
             <span style={{ fontWeight: 900 }}>{o.name}</span>
             <span style={{ color: edge }}>{o.standing}</span>
           </div>
-          <span style={{ color: "#5d564a" }}>Discover before the crowd.</span>
+          <span style={{ color: "#5d564a" }}>Find what’s next.</span>
         </div>
       </div>
     </div>,

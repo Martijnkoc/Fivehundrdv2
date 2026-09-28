@@ -15,7 +15,7 @@
     "test:visual": "playwright test --project=app",
     "test:db": "node --test db/schema.test.mjs db/scout.test.mjs",
     "test:unit": "node --import ./scripts/ts-resolve.mjs --test \"lib/**/*.test.mjs\"",
-    "test:approve": "node -e \"if (process.env.APPROVE !== 'yes') { console.error('The approved screenshots are frozen regression baselines. Rewrite them only after a signed-off visual change: APPROVE=yes pnpm test:approve'); process.exit(1) }\" && playwright test tests/visual-parity.spec.ts tests/spotlight.spec.ts tests/retention.spec.ts --project=app --update-snapshots=all -g \"approved|phone (light|dark)|breakpoint (light|dark)|desktop (light|dark)\""
+    "test:approve": "node -e \"if (process.env.APPROVE !== 'yes') { console.error('The approved screenshots are frozen regression baselines. Rewrite them only after a signed-off visual change: APPROVE=yes pnpm test:approve'); process.exit(1) }\" && playwright test tests/visual-parity.spec.ts tests/spotlight.spec.ts tests/retention.spec.ts tests/copy.spec.ts --project=app --update-snapshots=all -g \"approved|phone (light|dark)|breakpoint (light|dark)|desktop (light|dark)\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.128.0",

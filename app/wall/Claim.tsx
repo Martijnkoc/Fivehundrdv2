@@ -1,9 +1,10 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
+import { CREATE } from "../../lib/site/copy";
 import { readDataURL, shrink } from "../../lib/wall/image";
 import { parseLink } from "../../lib/wall/links";
-import { LANES, PRICE, numOf, pad, type FilledSpot, type LaneId, type Link, type Palette } from "../../lib/wall/model";
+import { LANES, numOf, pad, type FilledSpot, type LaneId, type Link, type Palette } from "../../lib/wall/model";
 import { styleFor, until } from "../../lib/wall/time";
 import { playingIn, stopAudio } from "./audio";
 import { createMoment } from "./track";
@@ -238,12 +239,12 @@ function ClaimForm({ start }: { start: ClaimStart }) {
       </button>
       {ws(2)}
       {/* craft pass: the mental model is putting something on the wall */}
-      <h2 id="claimH">Put it on the wall.</h2>
+      <h2 id="claimH">{CREATE.head}</h2>
       {ws(2)}
       <p className="sub">
         {"Spot "}
         <b id="claimNo">{pad(no)}</b>
-        {`. ${PRICE}, live straight away for three days. `}
+        {`. ${CREATE.sub} `}
         <button
           className="chip"
           id="reroll"
@@ -257,14 +258,15 @@ function ClaimForm({ start }: { start: ClaimStart }) {
         </button>
       </p>
       {ws(2)}
-      <p className="promise">There&apos;s no front row. Every visitor starts somewhere else on the wall, and Hotspots changes every few hours, so every spot gets its turn at the top.</p>
+      <p className="promise">{`${CREATE.body} ${CREATE.fair}`}</p>
       {ws(2)}
       <div className="claim-grid">
         {ws(3)}
         <form id="cf" noValidate onSubmit={submit}>
           {ws(4)}
           <div className="f">
-            <label htmlFor="fName">Name</label>
+            <label htmlFor="fName">{F.name[0]}</label>
+            <span className="hint">{F.name[1]}</span>
             <input
               ref={nameRef}
               type="text"
@@ -278,7 +280,8 @@ function ClaimForm({ start }: { start: ClaimStart }) {
           </div>
           {ws(4)}
           <div className="f">
-            <span className="lbl">Lane</span>
+            <span className="lbl">{F.lane[0]}</span>
+            <span className="hint">{F.lane[1]}</span>
             <div className="lanepick" id="fLane">
               {LANES.map(([k, v]) => (
                 <button key={k} type="button" className="chip" data-l={k} aria-pressed={k === lane} onClick={() => {
@@ -292,7 +295,8 @@ function ClaimForm({ start }: { start: ClaimStart }) {
           </div>
           {ws(4)}
           <div className="f">
-            <span className="lbl">Artwork or logo</span>
+            <span className="lbl">{F.artwork[0]}</span>
+            <span className="hint">{F.artwork[1]}</span>
             {ws(6)}
             <label className="drop-art">
               <span className="th" id="fTh">
@@ -327,8 +331,8 @@ function ClaimForm({ start }: { start: ClaimStart }) {
           <div id="fExtra">{extra}</div>
           {ws(4)}
           <div className="f">
-            <span className="lbl">Where people find you</span>
-            <span className="hint">Up to three links. Spotify, Steam, Substack, your site, anything.</span>
+            <span className="lbl">{F.links[0]}</span>
+            <span className="hint">{`${F.links[1]} Up to three: Spotify, Steam, Substack, your site, anything.`}</span>
             {ws(6)}
             {[0, 1, 2].map((i) => (
               <input
@@ -346,11 +350,12 @@ function ClaimForm({ start }: { start: ClaimStart }) {
           </div>
           {ws(4)}
           <div className="f">
-            <label htmlFor="fSnip">Preview line</label>
+            <label htmlFor="fSnip">{F.story[0]}</label>
+            <span className="hint">{F.story[1]}</span>
             <textarea
               id="fSnip"
               maxLength={140}
-              placeholder="One line that makes someone click. What should they hear, read or play first?"
+              placeholder="What should they hear, read or play first?"
               value={snip}
               onChange={(e) => setSnip(e.target.value)}
             />
@@ -362,7 +367,7 @@ function ClaimForm({ start }: { start: ClaimStart }) {
           </p>
           {ws(4)}
           <button className="pay" id="fPay" type="submit" disabled={placing}>
-            {placing ? "Placing you on the wall…" : `Place it · ${PRICE} for 72 hours`}
+            {placing ? CREATE.placing : CREATE.place}
           </button>
           {ws(4)}
           <p className="fine">
@@ -388,7 +393,8 @@ function ClaimForm({ start }: { start: ClaimStart }) {
   );
 }
 
-const STEPS = ["Lane", "Artwork", "Name", "Description", "Links", "Preview"] as const;
+const STEPS = ["Lane", "Artwork", "Name", "Story", "Links", "Preview"] as const;
+const F = CREATE.fields;
 
 type StepsProps = {
   step: number;
@@ -490,7 +496,7 @@ function Steps(p: StepsProps) {
   const body = [
     /* 1. lane */
     <>
-      {head("What are you putting on the wall?")}
+      {head(CREATE.head, `${CREATE.sub} ${F.lane[1]}`)}
       <div className="st-lanes" role="radiogroup" aria-label="Lane">
         {LANES.map(([k, v]) => (
           <button
@@ -511,7 +517,7 @@ function Steps(p: StepsProps) {
         ))}
       </div>
       <p className="st-note">
-        {`Spot ${pad(p.no)}. ${PRICE}, live straight away for three days. `}
+        {`Spot ${pad(p.no)}. Live the moment you place it. `}
         <button
           className="st-link"
           type="button"
@@ -526,7 +532,7 @@ function Steps(p: StepsProps) {
     </>,
     /* 2. artwork */
     <>
-      {head("Add your artwork", "Square works best. No image yet? We'll print a pattern for you.")}
+      {head(F.artwork[0], `${F.artwork[1]} Square works best. No image yet? We'll print a pattern for you.`)}
       <label className="st-upload">
         <input type="file" accept="image/*" onChange={(e) => p.onArt(e.target.files?.[0])} />
         <span className="st-btn">{p.img ? "Change artwork" : "Choose artwork"}</span>
@@ -538,7 +544,7 @@ function Steps(p: StepsProps) {
     </>,
     /* 3. name */
     <>
-      {head("Who's it by?", "Your name, band or project. It's the title of your spot.")}
+      {head(F.name[0], `${F.name[1]} Your name, band or project.`)}
       <input
         ref={p.nameRef}
         type="text"
@@ -554,7 +560,7 @@ function Steps(p: StepsProps) {
     </>,
     /* 4. description */
     <>
-      {head("One line that makes someone tap", "What should they hear, read or play first?")}
+      {head(F.story[0], `${F.story[1]} What should they hear, read or play first?`)}
       <textarea id="fSnip" maxLength={140} value={p.snip} onChange={(e) => p.setSnip(e.target.value)} placeholder="Slow songs for the last train home." />
       <span className="hint">{`${140 - p.snip.length} left`}</span>
       {lane === "music" || lane === "podcasts" ? (
@@ -568,7 +574,7 @@ function Steps(p: StepsProps) {
     </>,
     /* 5. links */
     <>
-      {head("Where can people find you?", "Up to three links. Spotify, Steam, Substack, your site, anything.")}
+      {head(F.links[0], `${F.links[1]} Up to three: Spotify, Steam, Substack, your site, anything.`)}
       {[0, 1, 2].map((i) => (
         <input
           key={i}
@@ -633,7 +639,7 @@ function Steps(p: StepsProps) {
       ) : (
         <div className="st-pay">
           <button className="pay" id="fPay" type="button" onClick={p.place} disabled={p.placing}>
-            {p.placing ? "Placing you on the wall…" : `Place it · ${PRICE} for 72 hours`}
+            {p.placing ? CREATE.placing : CREATE.place}
           </button>
           <p className="fine">{live ? "Secure payment with Stripe. Refunded if your spot doesn't go live." : "Prototype. No payment is taken."}</p>
         </div>

@@ -15,7 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const s = await scoutBySlug((await params).slug);
   if (!s) return { title: { absolute: "fivehundrd." }, robots: { index: false } };
   const title = `${s.name} · ${standing(s)}`;
-  const description = s.early ? `${s.early} Early ${s.early === 1 ? "Call" : "Calls"} on Fivehundrd. Discover before the crowd.` : "A Scout on Fivehundrd. Discover before the crowd.";
+  const description = s.early ? `${s.early} Early ${s.early === 1 ? "Call" : "Calls"} on Fivehundrd. Find what’s next.` : "A Scout on Fivehundrd. Find what’s next.";
   return { title: { absolute: title }, description, robots: { index: false, follow: false }, openGraph: { title, description, type: "profile" }, twitter: { card: "summary_large_image", title, description } };
 }
 

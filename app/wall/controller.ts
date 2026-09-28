@@ -17,7 +17,7 @@ import { savesOrder as savesOrderOf, skey, type SaveEntry } from "../../lib/wall
 import { SCOUT as SCOUT_CFG, type ScoutMe } from "../../lib/wall/scout";
 import { bigSpots as bigSpotsFor, sinceLastVisit, type VisitMemory } from "../../lib/wall/hot";
 import type { MakerNumbers } from "../../lib/site/reminderEmail";
-import { inHoldout, ordinal, personalItem, readCalls, type Calls, type Finds } from "../../lib/wall/retention";
+import { inHoldout, ordinal, personalItem, readCalls, wallToday, type Calls, type Finds } from "../../lib/wall/retention";
 import { left, short, styleFor } from "../../lib/wall/time";
 import { startPlay, stopAudio, togglePlay } from "./audio";
 import { startFeel } from "./feel";
@@ -25,7 +25,7 @@ import type { Account } from "./Card";
 import type { Draft } from "./Claim";
 import type { ShareData } from "./Sheets";
 import { cardFileName, readyCard, shareCardBlob } from "./shareCard";
-import type { Bridge } from "./store";
+import { wallStore, type Bridge } from "./store";
 import * as liveApi from "./liveClient";
 import { laneBySlug, lanePath } from "../../lib/site/facts";
 import { createMoment, startTracking, surface, visitorId, watchTiles } from "./track";
@@ -102,13 +102,17 @@ export function startWall(bridge: Bridge, live?: Live) {
   /** Counts an open, save, share… on the live wall. */
   const ev = (id: string | undefined, kind: liveApi.EventKind) => {
     if (!live || !id) return;
-    /* Scout: a signed-in Timeheart is a call made by the account (the server checks the token) */
-    if (ACCOUNT && (kind === "save" || kind === "unsave")) liveApi.authToken().then((t) => liveApi.sendEvent(id, kind, t));
-    else liveApi.sendEvent(id, kind);
-    if (ACCOUNT && kind === "save") setTimeout(loadScout, 2500);
-    /* a logged-in visitor's saves follow them to every device */
-    if (ACCOUNT && kind === "save") setTimeout(syncAccount, 1500);
-    if (ACCOUNT && kind === "unsave") liveApi.unsaveForAccount(id).catch(() => {});
+    if (kind !== "save" && kind !== "unsave") return liveApi.sendEvent(id, kind);
+    /* Scout: a signed-in Timeheart is a call made by the account (the server checks the token). The
+       session is read directly, not from ACCOUNT, which is only filled once syncAccount() returns */
+    void liveApi.authToken().then((t) => {
+      liveApi.sendEvent(id, kind, t);
+      if (!t) return;
+      if (kind === "save") setTimeout(loadScout, 2500);
+      /* a logged-in visitor's saves follow them to every device */
+      if (kind === "save") setTimeout(syncAccount, 1500);
+      if (kind === "unsave") liveApi.unsaveForAccount(id).catch(() => {});
+    });
   };
   /** A spot's address: /s/music/217 on the live wall, #217 on the demo wall. */
   const addressOf = (s: FilledSpot) => (live ? `/s/${s.lane}/${numOf(s)}${s.slug ? "/" + s.slug : ""}` : "#" + pad(s.no));
@@ -405,6 +409,7 @@ export function startWall(bridge: Bridge, live?: Live) {
       reminders: REMINDERS,
       makers: MAKERS,
       scout: ACCOUNT ? SCOUT : null,
+      today: wallToday({ saves: savesOrder(), prior: PRIOR, fresh: wallStore.get().since?.fresh ?? 0 }),
     });
   }
 
@@ -646,7 +651,10 @@ export function startWall(bridge: Bridge, live?: Live) {
       return;
     }
     if (el.classList.contains("vacant")) {
-      if (t.closest(".book,.cap")) openClaim(noOf(el));
+      if (t.closest(".book,.cap")) {
+        surface("open_spot_clicked");
+        openClaim(noOf(el));
+      }
       return;
     }
     if (t.closest(".book,.cap")) {
@@ -835,7 +843,13 @@ export function startWall(bridge: Bridge, live?: Live) {
       renderCard();
       return;
     }
-    if (t.closest("[data-keep]")) openKeep();
+    if (t.closest("[data-keep]")) {
+      /* the Scout explainer on a signed-out card: Start Scouting */
+      if (t.closest(".sc-out")) surface("scout_explainer_cta_clicked");
+      openKeep();
+    }
+    if (t.closest("[data-explore]")) exploreWall();
+    if (t.closest("[data-go-scouts]")) document.querySelector("#card .sv-box")?.scrollIntoView({ block: "start", behavior: "smooth" });
     if (t.closest("[data-scout-share]")) openScoutShare();
     if (t.closest("[data-scout-unshare]")) void bridge.actions.scoutShare(false);
     const sc = t.closest<HTMLElement>("[data-share-call]");
@@ -1176,6 +1190,13 @@ export function startWall(bridge: Bridge, live?: Live) {
     if (!navigator.canShare) return;
     warmT = setTimeout(() => void shareCardBlob(s, spotURL(s), "story").catch(() => {}), 700);
   }
+  /** Explore the Wall: the card out of the way, the wall right under the header. */
+  function exploreWall() {
+    if (cardOpen) setCard(false);
+    const sl = document.querySelector<HTMLElement>(".spotlight");
+    const to = sl && sl.offsetParent ? sl : rack;
+    glideTo(scrollY + to.getBoundingClientRect().top - $("#top").getBoundingClientRect().bottom);
+  }
   /** The Scout Card's share sheet; with `story`, one Early Call from it. */
   function openScoutShare(story?: string) {
     if (!SCOUT) return;
@@ -1251,6 +1272,7 @@ export function startWall(bridge: Bridge, live?: Live) {
     document.body.style.overflow = "hidden";
   }
   function placeClaim(draft: Draft): string | null | Promise<string | null> {
+    surface("creator_place_clicked", undefined, { lane: draft.lane });
     /* the live wall holds the spot and sends the maker to Stripe Checkout */
     if (live) return liveApi.checkout(draft);
     if (!WALL[draft.no - 1].vacant) {
@@ -1360,7 +1382,7 @@ export function startWall(bridge: Bridge, live?: Live) {
       closeVeils();
       SCOUT = demoScout();
       renderCard();
-      toast(byEmail ? "Check your inbox for the link. You're a Scout." : "You're a Scout. Your Timehearts are calls from now on.");
+      toast(byEmail ? "Check your inbox for the link. You're a Scout." : "You're a Scout. From now on, Fivehundrd remembers when you found things.");
     },
     randomVacant,
     numberFor,
@@ -1407,6 +1429,11 @@ export function startWall(bridge: Bridge, live?: Live) {
     },
     scoutNudgeClosed() {
       bridge.setScoutNudge(null);
+    },
+    heroCta(which: "explore" | "create" | "proof") {
+      surface(which === "explore" ? "hero_explore_wall_clicked" : which === "create" ? "hero_creator_cta_clicked" : "live_proof_creator_cta_clicked");
+      if (which === "explore") exploreWall();
+      else openClaim();
     },
     scoutMoveSeen() {
       surface("scout_move_seen");
@@ -1489,6 +1516,7 @@ export function startWall(bridge: Bridge, live?: Live) {
     localStorage.setItem("fh-visits", JSON.stringify(r.mem));
     bridge.setSince(r.since);
     SINCE_AT = r.since?.at ?? null;
+    renderCard();
     refreshSince(!live);
     /* staying keeps it the same visit */
     setInterval(() => {

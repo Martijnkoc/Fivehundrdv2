@@ -529,7 +529,7 @@ test.describe("desktop: Create your story (§13)", () => {
     await page.locator("#fName").fill("Lowtide Club");
     await page.locator("[data-link]").first().fill("open.spotify.com/artist/lowtide");
     await page.locator("#fPay").click();
-    await expect(page.locator("#fPay")).toHaveText("Placing you on the wall…");
+    await expect(page.locator("#fPay")).toHaveText(wall.isReference ? "Placing you on the wall…" : "Placing you on the Wall…");
     await expect(page.locator("#fPay")).toBeDisabled();
     await expect(page.locator("#claimH")).toHaveText("You're on the wall.");
     await expect(page.locator("#claimSheet .sub").first()).toContainText(`Spot ${no} is yours until`);
@@ -882,7 +882,7 @@ for (const ph of PHONES) {
       await expect(page.locator("#fErr")).toHaveText("Add your name so people know who they're looking at.");
       await page.locator("#fName").fill("Paper Moons");
       await page.locator("#fName").press("Enter");
-      await expect(page.locator("#claimH")).toHaveText("Step 4 of 6 · Description");
+      await expect(page.locator("#claimH")).toHaveText("Step 4 of 6 · Story");
       /* the live tile is the wall tile, and it already carries the name and lane */
       await expect(page.locator(".st-live .bk-strip b")).toHaveText("Paper Moons");
       await expect(page.locator(".st-live .bk-strip small")).toHaveText("Books");

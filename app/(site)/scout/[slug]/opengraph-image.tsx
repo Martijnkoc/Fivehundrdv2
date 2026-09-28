@@ -8,7 +8,7 @@ export const alt = "A Fivehundrd Scout Card";
 /** The shared Scout Card, for link previews (docs/scout.md). */
 export default async function Image({ params }: { params: Promise<{ slug: string }> }) {
   const s = await scoutBySlug((await params).slug);
-  if (!s) return scoutImage({ title: "Fivehundrd", lines: ["Discover before the crowd."], name: "", standing: "", tier: null });
+  if (!s) return scoutImage({ title: "Fivehundrd", lines: ["Find what’s next."], name: "", standing: "", tier: null });
   const facts = [s.early > 0 && `${s.early} Early ${s.early === 1 ? "Call" : "Calls"}`, s.hotspots > 0 && `${s.hotspots} became ${s.hotspots === 1 ? "a Hotspot" : "Hotspots"}`].filter(Boolean) as string[];
   return scoutImage({
     title: s.name,

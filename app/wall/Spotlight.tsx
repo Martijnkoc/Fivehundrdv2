@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useSyncExternalStore } from "react";
+import { HOTSPOTS } from "../../lib/site/copy";
 import { hotspots, newest } from "../../lib/wall/hot";
 import { numOf, pad } from "../../lib/wall/model";
 import { bridge, wallStore } from "./store";
@@ -52,7 +53,7 @@ export function Spotlight() {
             )}
           </p>
         )}
-        <p className="sl-note">{view === "hot" ? "Traction right now. Changes every few hours." : "Just joined the wall."}</p>
+        <p className="sl-note">{view === "hot" ? HOTSPOTS.sub : HOTSPOTS.newest}</p>
       </div>
       <ol className="sl-row">
         {shown.map(({ s, why }) => (

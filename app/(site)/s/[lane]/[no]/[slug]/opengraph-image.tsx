@@ -41,7 +41,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
       <div style={{ display: "flex", fontFamily: "Fraunces", fontWeight: 800, fontSize: 46, color: ink, letterSpacing: -0.5 }}>
         Fivehundrd<span style={{ color: "#ff7bc3" }}>.</span>
       </div>
-      <div style={{ fontFamily: "Fraunces", fontStyle: "italic", fontWeight: 500, fontSize: 24, color: "#5d564a" }}>Discover before the crowd.</div>
+      <div style={{ fontFamily: "Fraunces", fontStyle: "italic", fontWeight: 500, fontSize: 24, color: "#5d564a" }}>Find what’s next.</div>
     </div>
   );
   if (!s)

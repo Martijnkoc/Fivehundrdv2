@@ -10,7 +10,7 @@ export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://fivehundrd
 /** Only shown when the founder has set it; no address is made up. */
 export const CONTACT_EMAIL = process.env.NEXT_PUBLIC_CONTACT_EMAIL || "";
 export const NAME = "Fivehundrd";
-export const TAGLINE = "Discover before the crowd.";
+export const TAGLINE = "Find what’s next. Before everyone else does.";
 export const SLOGAN = "Good stories find good people.";
 export const PRICE_USD = "9.95";
 export const UPDATED = "2026-09-27";
@@ -113,7 +113,10 @@ export const orgJsonLd = () => ({
         { "@type": "DefinedTerm", name: "The Wall", description: "Fivehundrd's public wall: six lanes of 500 numbered spots, the same for every visitor, with no feed and no algorithm." },
         { "@type": "DefinedTerm", name: "Spot", description: "One numbered place on The Wall, held by one maker for a 72-hour placement." },
         { "@type": "DefinedTerm", name: "Discovery", description: "A maker's work in a spot: name, artwork, pitch, preview and links, with a lasting link that keeps working after the 72 hours." },
+        { "@type": "DefinedTerm", name: "Timeheart", description: "How a visitor says \"I want to remember this\" about a discovery. Once given, the discovery is Kept." },
         { "@type": "DefinedTerm", name: "Scouts", description: "The discoveries a visitor kept with a Timeheart; they stay after the spot ends." },
+        { "@type": "DefinedTerm", name: "Hotspot", description: "A discovery getting noticed right now, from real opens, click-throughs and Timehearts in the last 6 hours." },
+        { "@type": "DefinedTerm", name: "Open Spot", description: "A spot no maker holds yet: $9.95 for 72 hours." },
         { "@type": "DefinedTerm", name: "Early Call", description: "A signed-in visitor's Timeheart among the first 20% of a discovery's keepers, before it broke out (became a Hotspot, or grew to 25 keepers and three times that place)." },
         { "@type": "DefinedTerm", name: "Create", description: "Where a maker claims a spot and builds their tile." },
       ],

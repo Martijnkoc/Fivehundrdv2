@@ -51,6 +51,8 @@ export type ScoutCall = {
   finalKeepers: number | null;
   early: boolean | null;
   settled: boolean;
+  /** when the verdict was reached (older databases may not send it) */
+  settledAt?: string | null;
   hidden: boolean;
 };
 
@@ -129,7 +131,8 @@ const n = (v: number) => v.toLocaleString("en-US");
 
 /** The card's one line about where you stand. */
 export function statusLine(me: Pick<ScoutMe, "status" | "percentile" | "settled" | "minSettled">) {
-  if (me.status === "building") return { head: "Building your Scout history", sub: `${me.settled} of ${me.minSettled} calls settled` };
+  if (me.status === "building")
+    return { head: "Building your Scout history", sub: `Your standing shows once ${me.minSettled} of your Scouts have had their 72 hours · ${me.settled} so far` };
   if (me.status === "scout") return { head: "Scout", sub: null };
   return { head: `Top ${me.percentile}%`, sub: TIER_NAME[me.status] };
 }
