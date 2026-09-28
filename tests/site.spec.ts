@@ -55,7 +55,7 @@ test("sitemap index, robots and llms.txt", async ({ request }) => {
   const llms = await request.get("/llms.txt");
   expect(llms.headers()["content-type"]).toContain("text/markdown");
   const text = await llms.text();
-  for (const t of ["The Wall", "72 hours", "Finds", "Create"]) expect(text).toContain(t);
+  for (const t of ["The Wall", "72 hours", "Scouts", "Create"]) expect(text).toContain(t);
 });
 
 test("private surfaces send noindex, and pages without a story are a real 404", async ({ request }) => {

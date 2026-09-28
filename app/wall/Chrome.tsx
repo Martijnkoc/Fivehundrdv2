@@ -1,5 +1,6 @@
 /* The fixed parts of the wall page, markup as in reference.html. */
 import { NAV } from "../../lib/wall/model";
+import { BRAND, CREATE } from "../../lib/site/copy";
 import { TabBadge } from "./Card";
 import { ClaimContent } from "./Claim";
 import { LaneNav } from "./LaneNav";
@@ -17,7 +18,7 @@ export function Header() {
             <span className="bn">
               Fivehundrd<span className="bdot">.</span>
             </span>
-            <span className="slogan">Discover before the crowd.</span>
+            <span className="slogan">{BRAND.short}</span>
           </a>
           <LaneNav />
           <label className="searchbox">
@@ -32,7 +33,7 @@ export function Header() {
               <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                 <path d="M13 2 3 14h7l-1 8 11-13h-7z" />
               </svg>
-              Create
+              {CREATE.nav}
             </button>
             {/* phones: search sits behind this button, so the header stays one line of brand */}
             <button className="search-toggle" type="button" id="searchToggle" aria-label="Search the wall" aria-expanded="false" aria-controls="q">
@@ -47,9 +48,9 @@ export function Header() {
             <div className="who">
               <div className="avatar-fallback"></div>
               <small>
-                Good taste
+                Your taste.
                 <br />
-                lives here.
+                With receipts.
               </small>
             </div>
           </div>
@@ -110,14 +111,14 @@ export function TabBar() {
           </svg>
           <TabBadge />
         </span>
-        Finds
+        Scouts
       </button>
       <button type="button" data-tab="create" className="tb-create">
         {/* craft pass: put something on the wall, a lime disc rather than a lime block */}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
           <path d="M12 5v14M5 12h14" />
         </svg>
-        Create
+        {CREATE.tab}
       </button>
     </nav>
   );

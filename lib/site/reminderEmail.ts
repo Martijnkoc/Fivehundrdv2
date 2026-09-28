@@ -17,14 +17,14 @@ export function reminderEmail(stories: DueStory[], site: string, offUrl: string,
   const subject =
     stories.length === 1
       ? `${first.name} leaves The Wall ${inTime(minutesLeft(first.endsAt, now))}`
-      : `${stories.length} of your Finds leave The Wall within the hour`;
+      : `${stories.length} of your Scouts leave The Wall within the hour`;
   const rows = stories.map((s) => {
     const url = `${site}/s/${s.lane}/${s.no}/${s.slug}`;
     const lane = laneById(s.lane)?.label ?? s.lane;
     return { s, url, lane, when: inTime(minutesLeft(s.endsAt, now)) };
   });
   const text = [
-    stories.length === 1 ? "One of your Finds is about to leave The Wall." : `${stories.length} of your Finds are about to leave The Wall.`,
+    stories.length === 1 ? "One of your Scouts is about to leave The Wall." : `${stories.length} of your Scouts are about to leave The Wall.`,
     "",
     ...rows.map((r) => `${r.s.name} (${r.lane}, No. ${String(r.s.no).padStart(3, "0")}) ends ${r.when}\n${r.url}`),
     "",
@@ -35,7 +35,7 @@ export function reminderEmail(stories: DueStory[], site: string, offUrl: string,
   const html = `<!doctype html><html><body style="margin:0;padding:24px;background:#f7f3ea;font-family:Inter,Arial,sans-serif;color:#0d0d0d">
 <div style="max-width:520px;margin:0 auto">
 <p style="font:800 22px Georgia,serif;margin:0 0 18px">${esc(NAME)}.</p>
-<p style="font-size:16px;line-height:1.5;margin:0 0 16px">${stories.length === 1 ? "One of your Finds is about to leave The Wall." : `${stories.length} of your Finds are about to leave The Wall.`}</p>
+<p style="font-size:16px;line-height:1.5;margin:0 0 16px">${stories.length === 1 ? "One of your Scouts is about to leave The Wall." : `${stories.length} of your Scouts are about to leave The Wall.`}</p>
 ${rows
   .map(
     (r) => `<p style="margin:0 0 14px;padding:14px 16px;background:#fffdf8;border:1px solid #e3ddd0;border-radius:12px">

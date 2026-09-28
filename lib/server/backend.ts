@@ -93,3 +93,20 @@ export async function adminFrom(req: Request): Promise<string | null> {
   if (error || !email || !data.user?.email_confirmed_at) return null;
   return env.adminEmails.includes(email) ? email : null;
 }
+
+/**
+ * The signed-in visitor's account id, from the Supabase access token the
+ * browser sends, or null. Supabase checks the token; anonymous sign-ins
+ * don't count as an account (Scout, docs/scout.md).
+ */
+export async function userFrom(req: Request): Promise<string | null> {
+  const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
+  if (!token) return null;
+  try {
+    const { data, error } = await database().auth.getUser(token);
+    if (error || !data.user || data.user.is_anonymous) return null;
+    return data.user.id;
+  } catch {
+    return null;
+  }
+}

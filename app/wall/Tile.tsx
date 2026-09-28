@@ -1,4 +1,5 @@
 import { createElement, memo, type CSSProperties } from "react";
+import { BRAND, OPEN_SPOT } from "../../lib/site/copy";
 import { artShapes, genArt } from "../../lib/wall/art";
 import { EYE, HANDS, HEART, LANE_ICON_PATHS } from "../../lib/wall/icons";
 import { LANE, LIFE, PRICE, fmt, numOf, pad, type FilledSpot, type LaneId, type Palette, type Spot } from "../../lib/wall/model";
@@ -143,16 +144,18 @@ function Vacant({ s, run }: { s: Spot; run?: Spot[] }) {
       <div className="stand">
         <button
           className="book vbook"
-          aria-label={`${lane ? LANE[lane] + " spot" : "Spot"} ${numOf(s)} is open${run ? `, one of ${run.length} in a row` : ""}. Claim it for ${PRICE}`}
+          aria-label={`Open Spot ${numOf(s)}${lane ? `, ${LANE[lane]}` : ""}${run ? `, one of ${run.length} in a row` : ""}. ${OPEN_SPOT.head} ${OPEN_SPOT.cta}: ${PRICE} for 72 hours`}
         >
-          <span>{run ? `${run.length} open spots` : "Open spot"}</span>
+          <span>{run ? OPEN_SPOT.many(run.length) : "Open Spot"}</span>
+          <small className="v-h">{run ? BRAND.creator : OPEN_SPOT.head}</small>
+          <em className="v-cta">{OPEN_SPOT.cta}</em>
         </button>
       </div>
       {NL4}
       <div className="cap">
         <strong className="vno">{nos}</strong>
         {/* the live wall numbers each lane, so an open spot says which lane it is in */}
-        <span className="v2">{lane ? `${LANE[lane]} · ${PRICE}` : `Claim for ${PRICE}`}</span>
+        <span className="v2">{lane ? `${LANE[lane]} · ${PRICE} · 72h` : `${PRICE} · 72 hours`}</span>
       </div>
     </>
   );

@@ -315,13 +315,12 @@ test.describe("desktop: the Fivehundrd card (§10, §11, §12)", () => {
     await expect(page.locator("#rack .panel")).toHaveAttribute("data-no", entry!);
   });
 
-  test("Keep my card appears with a save and opens the login sheet", async ({ wall, page }) => {
+  test("Sign in to Scout is offered from the start and opens the login sheet", async ({ wall, page }) => {
+    appOnly("Scout (docs/scout.md): the card says what signing in is for");
     await wall.goto();
-    await expect(page.locator("#card [data-keep]")).toHaveCount(0);
-    await wall.save(1);
     await page.locator("#card [data-keep]").click();
     await expect(page.locator("#shareVeil")).toHaveClass(/\bon\b/);
-    await expect(page.locator("#shareSheet h2")).toHaveText("Keep your card");
+    await expect(page.locator("#shareSheet h2")).toHaveText("Sign in to Scout");
     await expect(page.locator("#kRemind")).toBeChecked();
   });
 
@@ -407,6 +406,7 @@ test.describe("desktop: sharing and Keep my card (§12, §15)", () => {
   });
 
   test("Keep my card checks the email, then keeps the card with reminders", async ({ wall, page }) => {
+    appOnly("Scout (docs/scout.md): signing in makes you a Scout");
     await wall.goto();
     await wall.save(1);
     await page.locator("#card [data-keep]").click();
@@ -416,19 +416,20 @@ test.describe("desktop: sharing and Keep my card (§12, §15)", () => {
     await page.locator("#kEmail").fill("maker@example.com");
     await page.locator('#shareSheet [data-login="email"]').click();
     await expect(page.locator("#shareVeil")).not.toHaveClass(/\bon\b/);
-    await expect(page.locator("#toast")).toHaveText("Check your inbox for the link. Your card is kept.");
-    await expect(page.locator("#card .kept")).toHaveText("Card kept with maker@example.com. Reminders on.");
+    await expect(page.locator("#toast")).toHaveText("Check your inbox for the link. You're a Scout.");
+    await expect(page.locator("#card .kept")).toHaveText("Signed in with maker@example.com. Reminders on.");
     await expect(page.locator("#card [data-keep]")).toHaveCount(0);
   });
 
   test("Continue with Google keeps the card without reminders when unticked", async ({ wall, page }) => {
+    appOnly("Scout (docs/scout.md): signing in makes you a Scout");
     await wall.goto();
     await wall.save(1);
     await page.locator("#card [data-keep]").click();
     await page.locator("#kRemind").uncheck();
     await page.locator('#shareSheet [data-login="Google"]').click();
-    await expect(page.locator("#toast")).toHaveText("Card kept.");
-    await expect(page.locator("#card .kept")).toHaveText("Card kept with Google.");
+    await expect(page.locator("#toast")).toHaveText("You're a Scout. From now on, Fivehundrd remembers when you found things.");
+    await expect(page.locator("#card .kept")).toHaveText("Signed in with Google.");
   });
 });
 
@@ -528,7 +529,7 @@ test.describe("desktop: Create your story (§13)", () => {
     await page.locator("#fName").fill("Lowtide Club");
     await page.locator("[data-link]").first().fill("open.spotify.com/artist/lowtide");
     await page.locator("#fPay").click();
-    await expect(page.locator("#fPay")).toHaveText("Placing you on the wall…");
+    await expect(page.locator("#fPay")).toHaveText(wall.isReference ? "Placing you on the wall…" : "Placing you on the Wall…");
     await expect(page.locator("#fPay")).toBeDisabled();
     await expect(page.locator("#claimH")).toHaveText("You're on the wall.");
     await expect(page.locator("#claimSheet .sub").first()).toContainText(`Spot ${no} is yours until`);
@@ -668,7 +669,7 @@ test.describe("approved changes on top of the reference", () => {
       await expect(page.locator("#card")).not.toHaveClass(/\bon\b/);
       await expect(page.locator('#shareSheet [data-login="Google"]')).toBeInViewport();
       await page.locator('#shareSheet [data-login="Google"]').click();
-      await expect(page.locator("#toast")).toHaveText("Card kept.");
+      await expect(page.locator("#toast")).toHaveText("You're a Scout. From now on, Fivehundrd remembers when you found things.");
     });
   });
 
@@ -829,12 +830,13 @@ for (const ph of PHONES) {
 
     test("an open spot's buttons are thumb-sized", async ({ wall, page }) => {
       appOnly("approved change: mobile audit");
-      /* Call it included (docs/retention.md) */
-      await wall.goto("", { call: true });
+      /* the Scout line after a Timeheart included (docs/scout.md) */
+      await wall.goto();
       await wall.openTile(0);
-      await expect(wall.openView.getByRole("button", { name: "Call it" })).toBeVisible();
+      await wall.openView.locator("[data-save]").click();
+      await expect(wall.openView.locator(".scout-nudge")).toBeVisible();
       const small = await page.evaluate(() =>
-        [...document.querySelectorAll<HTMLElement>("#dsheet .acts button, #dsheet .dclose, #dsheet [data-play]")]
+        [...document.querySelectorAll<HTMLElement>("#dsheet .acts button, #dsheet .dclose, #dsheet [data-play], #dsheet .scout-nudge button")]
           .map((e) => [e.textContent!.trim() || e.getAttribute("aria-label"), e.getBoundingClientRect().height] as const)
           .filter(([, h]) => h < 44),
       );
@@ -880,7 +882,7 @@ for (const ph of PHONES) {
       await expect(page.locator("#fErr")).toHaveText("Add your name so people know who they're looking at.");
       await page.locator("#fName").fill("Paper Moons");
       await page.locator("#fName").press("Enter");
-      await expect(page.locator("#claimH")).toHaveText("Step 4 of 6 · Description");
+      await expect(page.locator("#claimH")).toHaveText("Step 4 of 6 · Story");
       /* the live tile is the wall tile, and it already carries the name and lane */
       await expect(page.locator(".st-live .bk-strip b")).toHaveText("Paper Moons");
       await expect(page.locator(".st-live .bk-strip small")).toHaveText("Books");

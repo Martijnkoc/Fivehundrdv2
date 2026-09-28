@@ -30,7 +30,7 @@ function Wordmark() {
       <span>
         Fivehundrd<span className="bdot">.</span>
       </span>
-      <small>Discover before the crowd.</small>
+      <small>Find what’s next.</small>
     </span>
   );
 }

@@ -27,7 +27,7 @@ export const INFO: Record<PageSlug, Info> = {
             or creator trailer. Up to three links take you to the maker.
           </li>
           <li>
-            <b>Give what you like a Timeheart.</b> It stays in your Finds, even after the spot ends. No account needed.
+            <b>Give what you like a Timeheart.</b> It stays in your Scouts, even after the spot ends. No account needed; sign in and Fivehundrd remembers what you found early.
           </li>
           <li>
             <b>Share it.</b> Every spot has a lasting link and a share card made for stories and feeds.
@@ -58,19 +58,20 @@ export const INFO: Record<PageSlug, Info> = {
         <p>
           Above the wall, Hotspots shows five spots with traction right now: how many people opened them, visited the maker, kept them and shared them in the last hours, weighed against how
           often they were seen, so a spot that joined an hour ago can be there too. A spot&apos;s turn in Hotspots fades after a few hours. Switch to Newest for the five that
-          joined last. When you come back, the wall tells you how many spots are new since your last visit, and the one thing that changed for you: a Find about to
-          end, Finds gaining Timehearts, or a maker you found back on the wall.
+          joined last. When you come back, the wall tells you how many spots are new since your last visit, and the one thing that changed for you: something you
+          Scouted breaking out, one of your Scouts about to end, Scouts gaining Timehearts, or a maker you found back on the wall.
         </p>
-        <h2>Call it</h2>
+        <h2>Scout</h2>
         <p>
-          Think a discovery is going to take off? Open it and tap Call it. Your call is private: nobody sees it, it doesn&apos;t count toward Hotspots, and there is no
-          score. The spot goes into your Finds, and if it becomes a Hotspot or clearly gains Timehearts afterwards, your Finds says so, for example &quot;Called 14h early&quot;.
-          Three calls a day.
+          Signed in, every Timeheart is a call: Fivehundrd notes, at that moment, how many people had kept the discovery before you. If it then breaks out (it becomes a
+          Hotspot, or grows to at least 25 people keeping it and three times your place) and you were among the first 20% to keep it, it is an Early Call. That is settled
+          when its 72 hours end. Your Scout Card shows your Early Calls, and once there are enough Scouts, where you stand among them: Top 25%, 10% or 3%. It is
+          private unless you share it. There are no points, no leaderboards and no public rankings, and Scouting never counts toward Hotspots.
         </p>
-        <h2>Your Finds</h2>
+        <h2>Your Scouts</h2>
         <p>
-          Each Find keeps one line of its history: how many people had kept it when you did and how many have now, whether you found it early (among its first 10% of
-          savers, or before it became a Hotspot), and whether its maker is back on the wall. Finds stay after their 72 hours.
+          Everything you gave a Timeheart, with one line of its history: the place you kept it at and how many keep it now, and whether it was an Early Call.
+          Scouts stay after their 72 hours. Without an account they stay in this browser only.
         </p>
         <h2>The lanes</h2>
         <ul>
@@ -233,7 +234,7 @@ export const INFO: Record<PageSlug, Info> = {
           limit any rights you have under the law where you live.
         </p>
         <h2>6. Accounts</h2>
-        <p>Keep my card is optional. You can sign in to keep your Finds on every device.</p>
+        <p>Signing in is optional. You can sign in to Scout: your Timehearts become calls and your Scouts follow you to every device.</p>
         <h2>7. Liability</h2>
         <p>
           Fivehundrd is provided as it is. Links on the wall lead to other sites that we don&apos;t control. To the extent the law allows, our liability is limited to what you paid
@@ -253,7 +254,7 @@ export const INFO: Record<PageSlug, Info> = {
         <h2>Visitors</h2>
         <ul>
           <li>
-            <b>A random visitor id</b> stored in your browser, and your Finds. They keep your card working, count opens, Timehearts and shares, and keep your calls (Call it) so your Finds can show how they went.
+            <b>A random visitor id</b> stored in your browser, and your Scouts. They keep your card working and count opens, Timehearts and shares.
           </li>
           <li>
             <b>How you arrived and on what</b>: the referring site, campaign tags in the link, device type (phone, tablet or computer) and country. Never your exact location.
@@ -266,14 +267,16 @@ export const INFO: Record<PageSlug, Info> = {
             reports, uploads and purchases, and don&apos;t use it to identify anyone.
           </li>
         </ul>
-        <h2>Keep my card (optional)</h2>
+        <h2>Scout (optional)</h2>
         <p>
-          If you sign in, we keep your email address to sync your Finds across devices. Where reminders are offered and you leave them on, we also use it to email you
-          about an hour before one of your Finds leaves the wall, through our email provider (Resend). Every reminder has a link to turn them off.
+          If you sign in, we keep your email address to sync your Scouts across devices. Each Timeheart you give while signed in is kept as a call, with how many people had
+          kept that discovery before you, so your Scout Card can show your Early Calls and, once there are enough Scouts, your standing among them. Your Scout Card is
+          private until you share it; a shared card shows the name you choose, never your email, and you can switch the link off at any time. Where reminders are offered and you leave them on, we also use it to email you
+          about an hour before one of your Scouts leaves the wall, through our email provider (Resend). Every reminder has a link to turn them off.
         </p>
         <h2>Cookies and local storage</h2>
         <p>
-          The site keeps your visitor id, your Finds and your preferences in your browser&apos;s local storage. We use no advertising or third-party tracking cookies. Stripe and
+          The site keeps your visitor id, your Scouts and your preferences in your browser&apos;s local storage. We use no advertising or third-party tracking cookies. Stripe and
           Cloudflare may set their own cookies during checkout.
         </p>
         <h2>Makers</h2>
@@ -294,7 +297,7 @@ export const INFO: Record<PageSlug, Info> = {
         </ul>
         <h2>Your choices</h2>
         <p>
-          Clearing your browser&apos;s site data removes your visitor id and your Finds on this device. To see, correct or delete data linked to your email address, {CONTACT_EMAIL ? <>write to {mail}</> : "contact us"}.
+          Clearing your browser&apos;s site data removes your visitor id and your Scouts on this device. To see, correct or delete data linked to your email address, {CONTACT_EMAIL ? <>write to {mail}</> : "contact us"}.
         </p>
       </>
     ),

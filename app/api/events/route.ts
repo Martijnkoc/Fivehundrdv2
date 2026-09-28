@@ -1,5 +1,5 @@
 import { isBot } from "../../../lib/founder/attribution";
-import { hasDatabase, ipHash, json, rpc } from "../../../lib/server/backend";
+import { hasDatabase, ipHash, json, rpc, userFrom } from "../../../lib/server/backend";
 import { measured } from "../../../lib/server/ops";
 
 const KINDS = new Set(["open", "save", "unsave", "link_click", "share", "entry"]);
@@ -14,12 +14,16 @@ export const POST = measured("/api/events", async (req: Request) => {
   const b = (await req.json().catch(() => ({}))) as { story?: string; kind?: string; visitor?: string };
   if (!b.story || !UUID.test(b.story) || !b.kind || !KINDS.has(b.kind) || !b.visitor || !VISITOR.test(b.visitor))
     return json({ error: "bad request" }, { status: 400 });
+  /* Scout: a signed-in Timeheart is the account's call (only saves carry the account) */
+  const user = b.kind === "save" || b.kind === "unsave" ? await userFrom(req) : null;
   try {
     const counted = await rpc<boolean>("record_event", {
       p_story: b.story,
       p_kind: b.kind,
       p_visitor: b.visitor,
       p_ip_hash: ipHash(req),
+      /* only when signed in: without it the call matches the database before Scout as well */
+      ...(user && { p_user: user }),
     });
     return json({ counted });
   } catch {

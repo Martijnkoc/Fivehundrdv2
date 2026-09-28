@@ -4,11 +4,14 @@
 
 These hold for every change, whoever asks for it; raise it before building anything that breaks one.
 
-- **Provenance, not competition.** Retention shows a visitor their own history as context
-  ("Called 3rd", "Found at 23 · now 1,284"), never status. No scores, taste ratings, levels,
-  badges, streaks, win counts, percentiles of people, leaderboards or public counts of calls.
-  Calls and personal history are private to the visitor and never feed anything public
-  (not the Hotspot score, not a counter). See docs/retention.md.
+- **Reputation for taste, never competition.** (Replaces "provenance, not competition",
+  2026-09-28, by Martijn.) Signed-in visitors are Scouts: their Timehearts are calls with a
+  snapshot frozen at that moment, and proven early calls earn a private percentile and a tier
+  (Gold top 3%, Silver 10%, Bronze 25%), shown only to them and shared only by their own
+  explicit action. No leaderboards, no rankings of people, no "#1 Scout", no public lists,
+  no raw scores, no points, XP or streaks. Tiers and percentiles only exist above a minimum
+  population of real eligible Scouts; below it nobody gets one. Scout history never feeds
+  the Hotspot score. See docs/scout.md.
 - **Discovery first, no front row.** Every visitor starts somewhere else on the wall; no
   single editorial pick for everyone, no paid boost, no infinite feed.
 - **Real numbers only.** Nothing public shows a made-up or placeholder number, date, name,

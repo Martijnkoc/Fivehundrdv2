@@ -8,6 +8,7 @@ import { PAL } from "../../lib/wall/demo";
 import type { Feed } from "../../lib/wall/live";
 import type { Draft } from "./Claim";
 import type { CallResult, FindStatus } from "../../lib/wall/retention";
+import type { ScoutMe } from "../../lib/wall/scout";
 import type { MakerNumbers } from "../../lib/site/reminderEmail";
 
 export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -57,8 +58,13 @@ export function addMine(id: string) {
 }
 
 export type EventKind = "open" | "save" | "unsave" | "link_click" | "share" | "entry";
-export function sendEvent(story: string, kind: EventKind) {
+/** `token`: a signed-in visitor's access token, so a Timeheart is the account's Scout call. */
+export function sendEvent(story: string, kind: EventKind, token?: string | null) {
   const body = JSON.stringify({ story, kind, visitor: visitorId() });
+  if (token) {
+    fetch("/api/events", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body, keepalive: true }).catch(() => {});
+    return;
+  }
   try {
     if (kind === "link_click" && navigator.sendBeacon) {
       navigator.sendBeacon("/api/events", new Blob([body], { type: "application/json" }));
@@ -243,9 +249,11 @@ async function providers(): Promise<Record<string, boolean>> {
 export async function signIn(via: string, remind: boolean): Promise<string | null> {
   try {
     localStorage.setItem("fh-remind", remind ? "1" : "0");
+    localStorage.setItem(SIGNING_IN, String(Date.now()));
   } catch {}
   const auth = (await supabase()).auth;
-  const back = location.origin + "/";
+  /* back to the spot you were on (Scout: the Timeheart that led here) */
+  const back = location.origin + (location.pathname.startsWith("/s/") ? location.pathname : "/");
   if (via === "Google" || via === "Apple") {
     const id = via.toLowerCase() as "google" | "apple";
     if (!(await providers())[id]) return `${via} login isn't switched on yet. Use your email for now.`;
@@ -316,3 +324,49 @@ export async function report(story: string, reason: ReportReason, note: string, 
     return false;
   }
 }
+
+/* ---------- Scout (docs/scout.md) ---------- */
+
+const SIGNING_IN = "fh-signing-in";
+/** Whether this load follows a sign-in started here in the last hour (once). */
+export function justSignedIn() {
+  try {
+    const at = Number(localStorage.getItem(SIGNING_IN) || 0);
+    localStorage.removeItem(SIGNING_IN);
+    return Date.now() - at < 3600e3;
+  } catch {
+    return false;
+  }
+}
+
+/** The signed-in visitor's access token, or null. */
+export async function authToken(): Promise<string | null> {
+  try {
+    const { data } = await (await supabase()).auth.getSession();
+    return data.session?.access_token ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function scoutFetch<T>(path: string, body?: unknown): Promise<T | null> {
+  const token = await authToken();
+  if (!token) return null;
+  try {
+    const r = await fetch(path, {
+      method: body === undefined ? "GET" : "POST",
+      headers: { Authorization: `Bearer ${token}`, ...(body !== undefined && { "Content-Type": "application/json" }) },
+      ...(body !== undefined && { body: JSON.stringify(body) }),
+      cache: "no-store",
+    });
+    return r.ok ? r.json() : null;
+  } catch {
+    return null;
+  }
+}
+
+/** This browser's history joins the account; `story`: the Timeheart that led to signing in. */
+export const scoutAttach = (story?: string) => scoutFetch<{ migrated: number; counted: number }>("/api/scout/attach", { visitor: visitorId(), story });
+export const scoutMe = () => scoutFetch<ScoutMe>("/api/scout/me");
+/** Shares the Scout Card (or stops); the link's slug, null when off. */
+export const scoutShare = (on: boolean, name?: string, fresh?: boolean) => scoutFetch<{ slug: string | null }>("/api/scout/share", { on, name, fresh });
