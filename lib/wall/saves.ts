@@ -42,3 +42,10 @@ export function savesOrder(saves: SaveEntry[], wall: Spot[]): OrderedSave[] {
     .sort((a, b) => left(a.cur as { start: number }) - left(b.cur as { start: number }))
     .concat(now.filter((x) => !x.liveNow));
 }
+
+/** Craft pass: your finds as a history, the latest find first, ended ones included. */
+export function foundOrder(saves: SaveEntry[], wall: Spot[]): OrderedSave[] {
+  /* new finds go to the front of the list, which breaks ties */
+  const at = new Map(saves.map((x, i) => [x.k, i] as const));
+  return savesOrder(saves, wall).sort((a, b) => b.savedAt - a.savedAt || at.get(a.k)! - at.get(b.k)!);
+}

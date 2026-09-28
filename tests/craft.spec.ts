@@ -94,6 +94,28 @@ test.describe("desktop", () => {
     await expect(heart).toHaveCSS("animation-name", "none");
   });
 
+  test("Finds read leaving first or as you found them, and remember the choice", async ({ wall, page }) => {
+    await wall.goto();
+    const names: string[] = [];
+    for (let i = 0; i < 3; i++) {
+      names.push((await wall.openView.locator(".title").textContent())!);
+      await wall.save(1);
+      if (i < 2) {
+        const no = await wall.openView.getAttribute("data-no");
+        await wall.openView.locator("[data-next]").click();
+        await expect(wall.openView).not.toHaveAttribute("data-no", no ?? "");
+      }
+    }
+    const order = page.locator("#card .sv-order");
+    await expect(order.getByRole("radio", { name: "Leaving first" })).toHaveAttribute("aria-checked", "true");
+    await order.getByRole("radio", { name: "As you found them" }).click();
+    await expect(page.locator("#card .msp .sq-n")).toHaveText([...names].reverse());
+    await page.reload();
+    await page.waitForSelector("#rack[data-complete]");
+    await expect(page.locator("#card .sv-order").getByRole("radio", { name: "As you found them" })).toHaveAttribute("aria-checked", "true");
+    await expect(page.locator("#card .msp .sq-n")).toHaveText([...names].reverse());
+  });
+
   test("keyboard: a focused tile lifts, and Enter opens it", async ({ wall, page }) => {
     await wall.goto();
     await wall.closeOpenTile();

@@ -493,3 +493,23 @@
 }
 /* the wall's column never grows past the screen for a long name */
 @media (max-width:979px){.stage{grid-template-columns:minmax(0,1fr)}.stage>main{min-width:0}}
+
+/*
+ * Craft pass, part 3: Finds are your discovery history, not bookmarks.
+ * Three to a row so each find has room; its line of history ("Found at 12 ·
+ * now 340", "Called 3rd · 5h early") is the caption, in ink; an ended find is
+ * stamped like a library card. Read them leaving first or as you found them.
+ */
+.sv-list{grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 10px}
+.sq-n{font-size:12px;margin-top:5px}
+.sq-r{font-size:11px;font-weight:800;color:rgba(20,18,16,.78);margin-top:2px;letter-spacing:-.01em}
+.sq-r.early,.sq-r.called{color:#141210;text-decoration:underline;text-decoration-color:#ff7bc3;text-decoration-thickness:2px;text-underline-offset:3px}
+.sq-r.back{color:#141210}
+.sq-t.off{left:50%;top:50%;transform:translate(-50%,-50%) rotate(-8deg);background:none;color:#141210;border:1.5px solid #141210;border-radius:3px;padding:2px 6px;
+  font-size:10px;letter-spacing:.12em;text-transform:uppercase;z-index:2;box-shadow:0 0 0 2px rgba(243,233,214,.8)}
+.msp.gone .sq-art{opacity:.62}
+.sv-order{display:flex;gap:14px;margin:0 0 8px}
+.sv-order button{all:unset;cursor:pointer;font-size:11.5px;font-weight:700;color:rgba(20,18,16,.55);padding:4px 0;border-bottom:2px solid transparent}
+.sv-order button[aria-checked="true"]{color:#141210;border-bottom-color:#ff7bc3}
+.sv-order button:focus-visible{outline:2px solid #ff7bc3;outline-offset:2px}
+@media (max-width:979px){.sv-order button{min-height:44px;padding:0;display:inline-flex;align-items:center}}

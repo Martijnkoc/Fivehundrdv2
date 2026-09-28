@@ -1,10 +1,10 @@
 "use client";
 
-import { Fragment, useSyncExternalStore } from "react";
+import { Fragment, useState, useSyncExternalStore } from "react";
 import { BIND, LANE, LANES, TOTAL, lum, numOf, pad, seenKey, type FilledSpot, type Spot } from "../../lib/wall/model";
 import { provenance, type FindStatus, type Finds } from "../../lib/wall/retention";
 import { numbersLine, type MakerNumbers } from "../../lib/site/reminderEmail";
-import { savesOrder, skey, type OrderedSave, type SaveEntry } from "../../lib/wall/saves";
+import { foundOrder, savesOrder, skey, type OrderedSave, type SaveEntry } from "../../lib/wall/saves";
 import { left, short, styleFor } from "../../lib/wall/time";
 import { wallStore } from "./store";
 import { GenArt, LaneIcon, cssVars } from "./Tile";
@@ -125,18 +125,46 @@ function SaveTile({ x, f }: { x: OrderedSave; f?: FindStatus }) {
 }
 
 /** §11: saves, leaving first; 12 at a time; the "Keep my card" nudge (§12). */
+/* craft pass: the order you last chose, remembered on this device */
+const ORDER_KEY = "fh-finds-order";
+function readOrder(): "leaving" | "found" {
+  try {
+    return localStorage.getItem(ORDER_KEY) === "found" ? "found" : "leaving";
+  } catch {
+    return "leaving";
+  }
+}
+
 function Saves({ card, wall }: { card: CardData; wall: Spot[] }) {
-  const all = savesOrder(card.saves, wall),
+  /* craft pass: Finds are your discovery history; read them by what leaves first, or by when you found them */
+  const [order, setOrder] = useState(readOrder);
+  const choose = (o: "leaving" | "found") => {
+    setOrder(o);
+    try {
+      localStorage.setItem(ORDER_KEY, o);
+    } catch {}
+  };
+  const all = (order === "found" ? foundOrder : savesOrder)(card.saves, wall),
     shown = all.slice(0, card.savesShown);
   return (
     <div className="sv-box">
       <div className="sv-head">
-        <span>{`${card.finds ? "Your finds" : "Your saves"}${all.length ? ", leaving first" : ""}`}</span>
+        <span>Your finds</span>
         <b>{all.length}</b>
       </div>
+      {all.length > 1 && (
+        <div className="sv-order" role="radiogroup" aria-label="Order your finds">
+          <button type="button" role="radio" aria-checked={order === "leaving"} onClick={() => choose("leaving")}>
+            Leaving first
+          </button>
+          <button type="button" role="radio" aria-checked={order === "found"} onClick={() => choose("found")}>
+            As you found them
+          </button>
+        </div>
+      )}
       {!all.length ? (
         <p className="sv-empty">
-          {card.finds ? "Nothing found yet. Give anything you like a Timeheart and it lands here, even after it leaves the wall." : "Nothing kept yet. Give a spot a Timeheart and it lands here."}
+          Nothing found yet. Give anything you like a Timeheart and it lands here, even after it leaves the wall.
         </p>
       ) : (
         <>
@@ -210,7 +238,7 @@ function CardBody({ card, wall }: { card: CardData; wall: Spot[] }) {
           {ws(6)}
           <div>
             <b>{saved.length}</b>
-            <span>saved</span>
+            <span>kept</span>
           </div>
           {ws(6)}
           <div>
