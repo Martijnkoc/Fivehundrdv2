@@ -22,7 +22,8 @@ export const POST = measured("/api/events", async (req: Request) => {
       p_kind: b.kind,
       p_visitor: b.visitor,
       p_ip_hash: ipHash(req),
-      p_user: user,
+      /* only when signed in: without it the call matches the database before Scout as well */
+      ...(user && { p_user: user }),
     });
     return json({ counted });
   } catch {
