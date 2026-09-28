@@ -224,6 +224,91 @@ describe("signing in", () => {
   });
 });
 
+describe("when a call's checks are made (review fix: flags at called_at)", () => {
+  /** n live stories on spots 1..n */
+  const many = async (n) => {
+    const out = [];
+    for (let i = 1; i <= n; i++) out.push(await live(i));
+    return out;
+  };
+
+  test("ten quick anonymous Timehearts, then signing in from the tenth: that call counts, not 'burst'", async () => {
+    await user(U1);
+    const ss = await many(10);
+    for (const s of ss) await keep(s, "br");
+    await attach(U1, "br", ss[9]);
+    const c = (await calls("story_id = $1", [ss[9]]))[0];
+    assert.equal(c.source, "signed_in");
+    assert.deepEqual(c.flags, []);
+    assert.equal(c.scored, true);
+  });
+
+  test("after signing in, this browser's anonymous history doesn't count toward a burst", async () => {
+    await user(U1);
+    const ss = await many(11);
+    for (const s of ss.slice(0, 10)) await keep(s, "br");
+    await attach(U1, "br");
+    await keep(ss[10], "br", U1);
+    const c = (await calls("story_id = $1", [ss[10]]))[0];
+    assert.deepEqual(c.flags, []);
+    assert.equal(c.scored, true);
+  });
+
+  test("eleven signed-in calls in a minute: the eleventh is a burst", async () => {
+    await user(U1);
+    const ss = await many(11);
+    for (const s of ss) await keep(s, "br", U1);
+    const rows = await calls("user_id = $1", [U1]);
+    assert.deepEqual(rows.slice(0, 10).map((r) => r.scored), Array(10).fill(true));
+    assert.deepEqual(rows[10].flags, ["burst"]);
+    assert.equal(rows[10].scored, false);
+  });
+
+  test("the daily cap counts the UTC day of the call", async () => {
+    await user(U1);
+    const ss = await many(22);
+    await user(U2);
+    const put = (u, visitor, story, at) =>
+      db.query(
+        `insert into public.scout_calls (user_id, visitor, story_id, lane, called_at, source, keepers_before, position, opens, exposed, was_hot, story_age_min, scored, flags)
+         values ($1, $2, $3, 'music', ${at}, 'signed_in', 0, 1, 1, 1, false, 0, true, '{}')`,
+        [u, visitor, story],
+      );
+    /* twenty counted calls a minute before today began (UTC), and twenty earlier today */
+    const midnight = "date_trunc('day', now() at time zone 'UTC') at time zone 'UTC'";
+    for (const s of ss.slice(0, 20)) await put(U1, "old1", s, `${midnight} - interval '1 minute'`);
+    for (const s of ss.slice(0, 20)) await put(U2, "old2", s, `greatest(${midnight}, now() - interval '1 hour')`);
+    await keep(ss[20], "br1", U1);
+    await keep(ss[21], "br2", U2);
+    assert.deepEqual((await calls("story_id = $1 and user_id = $2", [ss[20], U1]))[0].flags, [], "yesterday's calls don't count today");
+    assert.deepEqual((await calls("story_id = $1 and user_id = $2", [ss[21], U2]))[0].flags, ["daily_cap"]);
+  });
+
+  test("no_open is judged at the moment of the call, not at signing in", async () => {
+    await user(U1);
+    const s = await live();
+    await event(s, "save", "br");
+    await event(s, "open", "br");
+    await attach(U1, "br", s);
+    const c = (await calls("story_id = $1", [s]))[0];
+    assert.deepEqual(c.flags, ["no_open"]);
+    assert.equal(c.scored, false);
+  });
+
+  test("a save committed with a later clock still counts before you: positions never tie", async () => {
+    await user(U1);
+    const s = await live();
+    await event(s, "open", "other");
+    /* another browser's Timeheart, in a transaction whose clock ran ahead of this one */
+    await db.query("insert into public.saves (visitor, story_id) values ('other', $1)", [s]);
+    await db.query("insert into public.events (story_id, kind, visitor, at) values ($1, 'save', 'other', now() + interval '2 seconds')", [s]);
+    await keep(s, "me", U1);
+    const c = (await calls("user_id = $1", [U1]))[0];
+    assert.equal(c.keepers_before, 1);
+    assert.equal(c.position, 2);
+  });
+});
+
 describe("verdicts", () => {
   test("an Early Call: kept early, and the story broke out before it ended", async () => {
     await user(U1);
@@ -324,6 +409,61 @@ describe("reputation and tiers", () => {
     const first = await one("select tier, eligible from public.scout_profiles where user_id = '00000000-0000-4000-8000-000000001000'");
     assert.equal(first.tier, null, "no Early Call");
     for (const u of [a, b]) assert.deepEqual(await one("select tier, eligible from public.scout_profiles where user_id = $1", [u]), { tier: null, eligible: false });
+  });
+
+  /**
+   * A Scout with 10 settled counted calls on `stories`, made `offset` after
+   * now() - 1 day (minutes apart per call), seen on `ip` through browser `visitor`.
+   */
+  async function scoutOn(n, ip, stories, offsetMin) {
+    const id = `00000000-0000-4000-8000-${String(5000 + n).padStart(12, "0")}`;
+    const visitor = "ipv" + n;
+    await user(id);
+    await db.query("insert into public.scout_profiles (user_id, scout_since) values ($1, now() - interval '8 days')", [id]);
+    await db.query("insert into public.scout_devices (user_id, visitor) values ($1, $2)", [id, visitor]);
+    await db.query("insert into public.events (story_id, kind, visitor, ip_hash) values ($1, 'open', $2, $3)", [stories[0], visitor, ip]);
+    for (let k = 0; k < 10; k++)
+      await db.query(
+        `insert into public.scout_calls (user_id, visitor, story_id, lane, called_at, source, keepers_before, position, opens, exposed, was_hot, story_age_min, scored,
+                                         breakout, final_keepers, early, settled_at)
+         values ($1, $2, $3, 'music', now() - interval '1 day' + make_interval(mins => $4), 'signed_in', 1, 2, 1, 1, false, 1, true, 'grew', 100, true, now())`,
+        [id, visitor, stories[k], offsetMin + k],
+      );
+    return id;
+  }
+  const eligible = async (ids) =>
+    (await db.query("select eligible from public.scout_profiles where user_id = any($1) order by user_id", [ids])).rows.map((r) => r.eligible);
+
+  test("colleagues on one address (an office, a campus) who each find their own things stay eligible", async () => {
+    const stories = [];
+    for (let i = 1; i <= 10; i++) stories.push(await live(i));
+    /* five accounts, one address; the same popular stories, but hours apart */
+    const ids = [];
+    for (let u = 0; u < 5; u++) ids.push(await scoutOn(u, "office", stories, u * 120));
+    await recalc();
+    assert.deepEqual(await eligible(ids), [true, true, true, true, true]);
+  });
+
+  test("accounts on one address calling the same stories within minutes of each other are not eligible", async () => {
+    const stories = [];
+    for (let i = 1; i <= 10; i++) stories.push(await live(i));
+    const ring = [];
+    for (let u = 0; u < 4; u++) ring.push(await scoutOn(u, "ring", stories, u));
+    /* someone else on another address calling the same stories at the same time is not affected */
+    const other = await scoutOn(9, "home", stories, 0);
+    await recalc();
+    assert.deepEqual(await eligible(ring), [false, false, false, false]);
+    assert.deepEqual(await eligible([other]), [true]);
+  });
+
+  test("an address with very many visitors (a carrier's shared address) says nothing on its own", async () => {
+    const stories = [];
+    for (let i = 1; i <= 10; i++) stories.push(await live(i));
+    for (let v = 0; v < 60; v++) await db.query("insert into public.events (story_id, kind, visitor, ip_hash) values ($1, 'open', $2, 'carrier')", [stories[1], "crowd" + v]);
+    const ids = [];
+    for (let u = 0; u < 4; u++) ids.push(await scoutOn(u, "carrier", stories, u));
+    await recalc();
+    assert.deepEqual(await eligible(ids), [true, true, true, true]);
   });
 
   test("letting go of a call doesn't change the record", async () => {

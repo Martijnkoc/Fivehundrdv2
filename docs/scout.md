@@ -70,14 +70,32 @@ A call doesn't count toward reputation (`scored = false`, with flags) when any o
 - it is on your own story (the browser that paid, or your account's email as the maker's);
 - you kept it without opening it (`no_open`);
 - it is over 20 counted calls in a UTC day (`daily_cap`);
-- it is the 11th or later call within a minute (`burst`).
+- it is the 11th or later signed-in call within a minute (`burst`).
+
+Every check is made at the moment of the call (`called_at`), also when signing in makes the
+prompting Timeheart count. Burst and the daily cap count only calls made signed in, never a
+browser's anonymous or migrated history and never the call itself. A Timeheart takes the
+clock once, with the story's row locked, so the call, its snapshot and its save event share
+one time and two Timehearts can't share a position
+(`supabase/migrations/20260928110000_scout_flags_at.sql`).
 
 The one exception to the first rule: the Timeheart that led to signing in, made within the
 last 30 minutes on a live story, counts as if made signed in, with the same checks.
 
-Multiple accounts, meaning a browser used by two accounts, or more than 3 accounts on one
-IP hash within 30 days, make those accounts ineligible for a percentile. They keep their
-history.
+Multiple accounts make those accounts ineligible for a percentile this cycle. They keep
+their history. The signals are:
+
+- **A browser used by two accounts.** This is a hard signal.
+- **A shared address with co-ordination.** A shared address on its own is no longer enough.
+  It only counts when accounts on it called at least 3 of the same stories, each within
+  10 minutes of the other account's call, and those make up at least 30% of the account's
+  counted calls.
+- **Crowded addresses are ignored.** An address with more than 50 browsers in 30 days (a
+  carrier, a campus) is no signal at all.
+
+These thresholds are in `private.scout_cfg()` (`coordStories`, `coordMinutes`,
+`coordShare`, `ipCrowdVisitors`) and are hypotheses
+(`supabase/migrations/20260928120000_scout_shared_ip.sql`).
 
 None of this is visible in the interface.
 
@@ -114,4 +132,5 @@ against other visitors. Behaviour only: no profiling.
   sizes a few people decide it.
 - **The minimum population (200).** It is a guess at "big enough that the top 3% means
   something".
-- **The multi-account rule.** It will catch shared households.
+- **The multi-account rule.** A shared browser still catches shared households. The
+  shared-address rule needs co-ordination, and its thresholds are guesses.

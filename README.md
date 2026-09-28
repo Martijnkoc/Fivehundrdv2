@@ -85,6 +85,10 @@ which were signed off:
     - The outline is the tier's ink: warm gold, steel or copper, never shiny. A tier move is said once, on the next visit.
     - **Call it is gone:** the Timeheart is the call.
     - **Data:** `supabase/migrations/20260928090000_scout.sql`, API under `app/api/scout/*`, and a nightly recalculation (`/api/cron/scout`).
+    - **Review fixes:**
+      - `…095000_scout_unsave`: letting go on another device.
+      - `…110000_scout_flags_at`: checks at the moment of the call, burst only over signed-in calls, one timestamp per Timeheart.
+      - `…120000_scout_shared_ip`: a shared address only counts together with co-ordination.
     - **Public pages:** shared cards at `/scout/[slug]` and single Early Calls at `/scout/[slug]/[story]`, each with its own link image. They are not indexed.
     - **Tests:** `db/scout.test.mjs`, `lib/wall/scout.test.mjs` and `tests/scout.spec.ts`.
 16. The copy pass (docs/copy.md), approved 2026-09-28:
