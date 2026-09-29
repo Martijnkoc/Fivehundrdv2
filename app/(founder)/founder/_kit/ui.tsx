@@ -9,15 +9,6 @@ import { Icons } from "./icons";
 
 export const LANE_SLOT: Record<string, number> = { music: 1, art: 2, writers: 3, podcasts: 4, games: 5, letters: 6 };
 
-export function LaneTag({ lane }: { lane: string }) {
-  return (
-    <span className="lane-tag">
-      <i className="sw" style={{ background: `var(--s${LANE_SLOT[lane] ?? 1})` }} />
-      {LANE_LABEL[lane] ?? lane}
-    </span>
-  );
-}
-
 export function Card({ title, desc, tools, children, className = "" }: { title?: ReactNode; desc?: ReactNode; tools?: ReactNode; children: ReactNode; className?: string }) {
   return (
     <section className={`card ${className}`}>

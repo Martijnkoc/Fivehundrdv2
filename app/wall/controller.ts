@@ -17,7 +17,7 @@ import { savesOrder as savesOrderOf, skey, type SaveEntry } from "../../lib/wall
 import { SCOUT as SCOUT_CFG, type ScoutMe } from "../../lib/wall/scout";
 import { bigSpots as bigSpotsFor, sinceLastVisit, type VisitMemory } from "../../lib/wall/hot";
 import type { MakerNumbers } from "../../lib/site/reminderEmail";
-import { inHoldout, ordinal, personalItem, readCalls, wallToday, type Calls, type Finds } from "../../lib/wall/retention";
+import { inHoldout, personalItem, wallToday, type Finds } from "../../lib/wall/retention";
 import { left, short, styleFor } from "../../lib/wall/time";
 import { startPlay, stopAudio, togglePlay } from "./audio";
 import { startFeel } from "./feel";
@@ -34,7 +34,33 @@ type Opts = { align: boolean; auto?: boolean };
 /** The live wall (Supabase): the feed it was built from and the storage base URL. */
 export type Live = { feed: Feed; base: string };
 
-export function startWall(bridge: Bridge, live?: Live) {
+/**
+ * Starts the wall on the rendered page and returns `stop`, which undoes it:
+ * every listener goes with one AbortController, every interval is cleared.
+ * Leaving the wall by a link inside the app and coming back mounts it anew,
+ * so the old run must let go of the old page (WallRuntime calls stop).
+ */
+export function startWall(bridge: Bridge, live?: Live): () => void {
+  const ac = new AbortController();
+  const sig = { signal: ac.signal };
+  const alive = () => !ac.signal.aborted;
+  const intervals: number[] = [];
+  const every = (f: () => void, ms: number) => void intervals.push(window.setInterval(f, ms));
+  function stop() {
+    if (!alive()) return;
+    ac.abort();
+    intervals.forEach(clearInterval);
+    unidle(buildT);
+    clearTimeout(qT);
+    clearTimeout(warmT);
+    clearTimeout(beatT);
+    cancelTween(false);
+    rackWatch?.disconnect();
+    stopAudio();
+    document.documentElement.classList.remove("sheet-lock");
+    document.body.style.overflow = "";
+  }
+  bridge.reset();
   const $ = <T extends Element = HTMLElement>(s: string) => document.querySelector<T>(s)!;
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   /* a tile phones haven't built yet is built on the spot (see buildRest) */
@@ -132,6 +158,7 @@ export function startWall(bridge: Bridge, live?: Live) {
     renderRack();
     window.scrollTo({ top: 0 });
     requestAnimationFrame(() => {
+      if (!alive()) return;
       const f = $("#rack").querySelector(".spot:not(.vacant):not(.filler)");
       if (f) openSpot(f as HTMLElement, { align: false, auto: true });
     });
@@ -155,7 +182,7 @@ export function startWall(bridge: Bridge, live?: Live) {
       query = "";
       setLane("all");
     }
-  });
+  }, sig);
   let query = "",
     qT: ReturnType<typeof setTimeout> | undefined;
   /* phones: the search button opens the search field in place of the brand, and closes it again */
@@ -173,10 +200,10 @@ export function startWall(bridge: Bridge, live?: Live) {
       qInput.blur();
     } else qInput.blur();
   }
-  qToggle.addEventListener("click", () => setSearching(!top.classList.contains("searching")));
+  qToggle.addEventListener("click", () => setSearching(!top.classList.contains("searching")), sig);
   qInput.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && top.classList.contains("searching")) setSearching(false);
-  });
+  }, sig);
   $("#q").addEventListener("input", (e) => {
     clearTimeout(qT);
     qT = setTimeout(() => {
@@ -186,12 +213,13 @@ export function startWall(bridge: Bridge, live?: Live) {
       const f = $("#rack").querySelector(".spot:not(.vacant):not(.filler)");
       if (query && f) openSpot(f as HTMLElement, { align: false, auto: true });
     }, 140);
-  });
+  }, sig);
 
   /* ---------- the rack (§5, §6) ---------- */
   const rack = $("#rack");
   startFeel(rack);
   /* the Control Room's measurements (live wall only): the visit, and which live tiles were seen */
+  let rackWatch: MutationObserver | undefined;
   if (live) {
     startTracking();
     let wq = 0;
@@ -202,9 +230,10 @@ export function startWall(bridge: Bridge, live?: Live) {
         return s && !s.vacant ? s.id : undefined;
       });
     };
-    new MutationObserver(() => {
+    rackWatch = new MutationObserver(() => {
       if (!wq) wq = window.setTimeout(watch, 400);
-    }).observe(rack, { childList: true, subtree: true });
+    });
+    rackWatch.observe(rack, { childList: true, subtree: true });
     watch();
   }
   let open: HTMLElement | null = null;
@@ -232,7 +261,7 @@ export function startWall(bridge: Bridge, live?: Live) {
         if (el) swapTo(el, false);
       }
     }
-  });
+  }, sig);
   /*
    * Phones build the wall a few rows at a time: the first screens at once,
    * the rest while the phone is idle, so the wall is there and scrolls
@@ -294,13 +323,11 @@ export function startWall(bridge: Bridge, live?: Live) {
   } catch {}
   bridge.setSaved(SAVES.map((x) => x.k));
   /* retention (docs/retention.md): each Find's save count as the last visit
-     left it (for "moving"), its history from the database, this browser's calls */
+     left it (for "moving"), and its history from the database */
   const PRIOR = new Map(SAVES.map((x) => [x.k, x.count] as const));
   let FINDS: Finds = {};
-  let CALLS: Calls = {};
   try {
     FINDS = JSON.parse(localStorage.getItem("fh-finds") || "{}");
-    CALLS = readCalls(JSON.parse(localStorage.getItem("fh-calls") || "{}"));
   } catch {}
   const isSaved = (s: FilledSpot) => SAVES.some((x) => x.k === skey(s));
   function persistSaves() {
@@ -340,7 +367,7 @@ export function startWall(bridge: Bridge, live?: Live) {
       return;
     }
     const me = await liveApi.scoutMe();
-    if (me) {
+    if (me && alive()) {
       /* the desktop rail shows the card on every visit: counted once a visit */
       if (!SCOUT && !mobileCard()) surface("scout_card_view");
       SCOUT = me;
@@ -438,8 +465,7 @@ export function startWall(bridge: Bridge, live?: Live) {
     beatT = window.setTimeout(() => document.querySelectorAll(".beat").forEach((el) => el.classList.remove("beat")), 900);
   }
 
-  /** `called`: saved by Call it, which the server already counted as a save. */
-  function toggleSave(li: HTMLElement, s: FilledSpot, btn: HTMLElement, called = false, callRank?: number) {
+  function toggleSave(li: HTMLElement, s: FilledSpot, btn: HTMLElement) {
     const on = !isSaved(s);
     if (on)
       SAVES.unshift({
@@ -459,7 +485,7 @@ export function startWall(bridge: Bridge, live?: Live) {
       });
     else SAVES = SAVES.filter((x) => x.k !== skey(s));
     s.saves = Math.max(0, (s.saves || 0) + (on ? 1 : -1));
-    if (!called) ev(s.id, on ? "save" : "unsave");
+    ev(s.id, on ? "save" : "unsave");
     persistSaves();
     const from = on && !sheetOn ? li.querySelector(".book")!.getBoundingClientRect() : null;
     if (on && !mobileCard()) {
@@ -476,7 +502,7 @@ export function startWall(bridge: Bridge, live?: Live) {
       } else flyToCard(li, s, from);
       heartbeat(btn, li);
       scoutNudge(s);
-      toast(called ? `Called${callRank ? `, the ${ordinal(callRank)} to call it` : ""}. It's in your Scouts, kept; see how it goes.` : "Kept in your Scouts.");
+      toast("Kept in your Scouts.");
       try {
         localStorage.setItem("fh-intro", "1");
       } catch {}
@@ -550,7 +576,7 @@ export function startWall(bridge: Bridge, live?: Live) {
     };
     tween = requestAnimationFrame(f);
   }
-  ["wheel", "touchstart"].forEach((ev) => addEventListener(ev, () => cancelTween(true), { passive: true }));
+  ["wheel", "touchstart"].forEach((ev) => addEventListener(ev, () => cancelTween(true), { signal: ac.signal, passive: true }));
   const rowOf = (el: Element) => el.closest(".shelf-row");
   const alignY = (el: Element) => scrollY + (rowOf(el) || el).getBoundingClientRect().top - headY() + 4;
   function placeNotch(el: Element, panel: HTMLElement) {
@@ -592,7 +618,7 @@ export function startWall(bridge: Bridge, live?: Live) {
     flight.onfinish = land;
     flight.oncancel = land;
     /* scrolling or another click mid-flight: land at once */
-    addEventListener("wheel", land, { once: true, passive: true });
+    addEventListener("wheel", land, { signal: ac.signal, once: true, passive: true });
   }
   function swapTo(el: HTMLElement, morph = true) {
     const s = filledOf(el);
@@ -666,7 +692,7 @@ export function startWall(bridge: Bridge, live?: Live) {
       if (el === open) return closeSpot();
       openSpot(el, { align: true });
     }
-  });
+  }, sig);
   function closeSpot() {
     if (sheetOn) return hideSheet();
     if (!open) return;
@@ -705,7 +731,7 @@ export function startWall(bridge: Bridge, live?: Live) {
       e.preventDefault();
       step(-1);
     }
-  });
+  }, sig);
 
   /* ---------- the card: fly-to-card, and the phone card behind the tab bar (§10, §11) ---------- */
   const mobileCard = () => matchMedia("(max-width:979px)").matches;
@@ -815,11 +841,11 @@ export function startWall(bridge: Bridge, live?: Live) {
       setCard(false);
       openClaim();
     }
-  });
-  $("#cardVeil").addEventListener("click", () => setCard(false));
+  }, sig);
+  $("#cardVeil").addEventListener("click", () => setCard(false), sig);
   addEventListener("keydown", (e) => {
     if (e.key === "Escape" && cardOpen) setCard(false);
-  });
+  }, sig);
   document.addEventListener("click", (e) => {
     const t = e.target as Element;
     if (!t.closest("#card")) return;
@@ -859,7 +885,7 @@ export function startWall(bridge: Bridge, live?: Live) {
     if (t.closest("[data-scout-unshare]")) void bridge.actions.scoutShare(false);
     const sc = t.closest<HTMLElement>("[data-share-call]");
     if (sc) openScoutShare(sc.dataset.shareCall);
-  });
+  }, sig);
   document.addEventListener("click", (e) => {
     const g = (e.target as Element).closest<HTMLElement>("#card [data-go]");
     if (!g) return;
@@ -878,7 +904,7 @@ export function startWall(bridge: Bridge, live?: Live) {
       if (el === open) glideTo(alignY(el));
       else openSpot(el, { align: true });
     }
-  });
+  }, sig);
 
   /* ---------- phones: the tile comes forward as a sheet (§7) ---------- */
   const phoneSheet = () => matchMedia("(max-width:699px)").matches;
@@ -1048,11 +1074,11 @@ export function startWall(bridge: Bridge, live?: Live) {
     }
     if (top === "card") return setCard(false, true);
     if (sheetOn) hideSheet(true);
-  });
-  dveil.addEventListener("click", () => hideSheet());
+  }, sig);
+  dveil.addEventListener("click", () => hideSheet(), sig);
   addEventListener("keydown", (e) => {
     if (e.key === "Escape" && sheetOn) hideSheet();
-  });
+  }, sig);
   dsheet.addEventListener("click", (e) => {
     const t = e.target as Element;
     if (t.closest(".dclose")) return hideSheet();
@@ -1068,7 +1094,7 @@ export function startWall(bridge: Bridge, live?: Live) {
       hideSheet();
       return openReport(s);
     }
-  });
+  }, sig);
   /* pull the sheet down to put it away: past 120px, or a fast flick */
   {
     let y0 = 0,
@@ -1103,10 +1129,10 @@ export function startWall(bridge: Bridge, live?: Live) {
         dsheet.style.transform = "none";
       }
     };
-    dsheet.addEventListener("touchstart", start, { passive: true });
-    dsheet.addEventListener("touchmove", move, { passive: false });
-    dsheet.addEventListener("touchend", end);
-    dsheet.addEventListener("touchcancel", end);
+    dsheet.addEventListener("touchstart", start, { signal: ac.signal, passive: true });
+    dsheet.addEventListener("touchmove", move, { signal: ac.signal, passive: false });
+    dsheet.addEventListener("touchend", end, sig);
+    dsheet.addEventListener("touchcancel", end, sig);
   }
   /* rotating keeps the open spot open in the form that fits: phone → wide
      hands the sheet over to the inline panel, and (approved change, as the
@@ -1122,7 +1148,7 @@ export function startWall(bridge: Bridge, live?: Live) {
       open = null;
       showSheet(el, true);
     }
-  });
+  }, sig);
 
   /* ---------- the minute tick: ageing, time left, expiry ---------- */
   function afterChange(changed: boolean) {
@@ -1133,7 +1159,7 @@ export function startWall(bridge: Bridge, live?: Live) {
     } else bridge.tickMinute();
     renderCard();
   }
-  setInterval(() => {
+  every(() => {
     let changed = false;
     WALL.forEach((s, i) => {
       if (!s.vacant && left(s) <= 0) {
@@ -1149,6 +1175,7 @@ export function startWall(bridge: Bridge, live?: Live) {
     if (!live) return;
     try {
       live.feed = await liveApi.fetchFeed();
+      if (!alive()) return;
       bridge.setHot(live.feed.hot ?? null);
     } catch {
       return;
@@ -1239,7 +1266,7 @@ export function startWall(bridge: Bridge, live?: Live) {
   document.querySelectorAll(".veil").forEach((v) =>
     v.addEventListener("click", (e) => {
       if (e.target === v || (e.target as Element).closest("[data-close]")) closeVeils();
-    }),
+    }, sig),
   );
   const toast = (m: string) => bridge.toast(m);
 
@@ -1286,6 +1313,7 @@ export function startWall(bridge: Bridge, live?: Live) {
       draft.no = n;
     }
     setTimeout(() => {
+      if (!alive()) return;
       const L = draft.lane;
       const s: FilledSpot = {
         no: draft.no,
@@ -1326,7 +1354,7 @@ export function startWall(bridge: Bridge, live?: Live) {
   /** Logged in (live wall): the account's saves join this browser's, and the card says it is kept. */
   async function syncAccount() {
     const acc = await liveApi.syncCard().catch(() => null);
-    if (!acc || !live) return;
+    if (!acc || !live || !alive()) return;
     ACCOUNT = { via: acc.via, remind: acc.remind };
     const have = new Set(SAVES.map((x) => x.k));
     for (const a of acc.saves) {
@@ -1358,6 +1386,7 @@ export function startWall(bridge: Bridge, live?: Live) {
     } catch {}
     const story = pending && Date.now() - pending.at < 30 * 60e3 ? pending.id : undefined;
     const r = await liveApi.scoutAttach(story);
+    if (!alive()) return;
     if (r && (story || liveApi.justSignedIn())) surface("scout_signed_in", story, { from: story ? "timeheart" : "card", counted: r.counted, migrated: r.migrated });
     await loadScout();
   }
@@ -1479,27 +1508,17 @@ export function startWall(bridge: Bridge, live?: Live) {
     const ids = [...liveApi.mineIds()];
     if (!ids.length) return;
     const r = await liveApi.makerStats(ids);
-    if (!r) return;
+    if (!r || !alive()) return;
     MAKERS = Object.fromEntries(r.map((m) => [m.id, m]));
     renderCard();
   }
   /** The Finds' history from the database (live wall): once a visit, and after a call. */
   async function loadFinds() {
-    const ids = [...new Set([...SAVES.map((x) => x.k), ...Object.keys(CALLS)])];
+    const ids = SAVES.map((x) => x.k);
     const r = ids.length ? await liveApi.findsStatus(ids) : [];
+    if (!alive()) return;
     if (r) {
       FINDS = Object.fromEntries(r.map((f) => [f.id, f]));
-      /* which caller you were, as the database counts it */
-      let ranked = false;
-      for (const f of r)
-        if (f.call?.rank && CALLS[f.id] && CALLS[f.id].rank !== f.call.rank) {
-          CALLS = { ...CALLS, [f.id]: { ...CALLS[f.id], rank: f.call.rank } };
-          ranked = true;
-        }
-      if (ranked)
-        try {
-          localStorage.setItem("fh-calls", JSON.stringify(CALLS));
-        } catch {}
       try {
         localStorage.setItem("fh-finds", JSON.stringify(FINDS));
       } catch {}
@@ -1510,9 +1529,9 @@ export function startWall(bridge: Bridge, live?: Live) {
 
   /* ---------- boot ---------- */
   /* the card says "Finds" on phones and tablets */
-  matchMedia("(max-width:979px)").addEventListener("change", () => renderCard());
-  matchMedia("(max-width:699px)").addEventListener("change", (e) => bridge.setCompact(e.matches));
-  const setHead = () => document.documentElement.style.setProperty("--headY", $("#top").getBoundingClientRect().bottom + 12 + "px");
+  matchMedia("(max-width:979px)").addEventListener("change", () => renderCard(), sig);
+  matchMedia("(max-width:699px)").addEventListener("change", (e) => bridge.setCompact(e.matches), sig);
+  const setHead = () => alive() && document.documentElement.style.setProperty("--headY", $("#top").getBoundingClientRect().bottom + 12 + "px");
   /* what changed since the last visit (a new visit after 30 minutes away) */
   try {
     const mem = JSON.parse(localStorage.getItem("fh-visits") || "null") as VisitMemory | null;
@@ -1523,7 +1542,7 @@ export function startWall(bridge: Bridge, live?: Live) {
     renderCard();
     refreshSince(!live);
     /* staying keeps it the same visit */
-    setInterval(() => {
+    every(() => {
       if (document.hidden) return;
       try {
         const m = JSON.parse(localStorage.getItem("fh-visits") || "null") as VisitMemory | null;
@@ -1540,27 +1559,29 @@ export function startWall(bridge: Bridge, live?: Live) {
     try {
       history.replaceState(null, "", location.pathname);
     } catch {}
-    requestAnimationFrame(() => openClaim());
+    requestAnimationFrame(() => alive() && openClaim());
   }
-  addEventListener("resize", setHead);
+  addEventListener("resize", setHead, sig);
   (document.fonts ? document.fonts.ready : Promise.resolve()).then(setHead);
   if (live) {
     bootLive();
     syncAccount();
     loadFinds();
     loadMakerStats();
-    setInterval(() => document.hidden || loadMakerStats(), 5 * 60e3);
-    return;
+    every(() => document.hidden || loadMakerStats(), 5 * 60e3);
+    return stop;
   }
   if (ACCOUNT) void loadScout();
   const h = location.hash.replace("#", "");
   const start = (h && /^\d{1,3}$/.test(h) && spotEl(+h)) || rack.querySelector<HTMLElement>(".spot:not(.vacant):not(.filler)")!;
   requestAnimationFrame(() => {
+    if (!alive()) return;
     openSpot(start.classList.contains("vacant") ? rack.querySelector<HTMLElement>(".spot:not(.vacant):not(.filler)") : start, {
       align: !!h,
       auto: !h,
     });
   });
+  return stop;
 
   /* ---------- the live wall: shared links, and coming back from Checkout ---------- */
   function bootLive() {
@@ -1580,6 +1601,7 @@ export function startWall(bridge: Bridge, live?: Live) {
     const first = rack.querySelector<HTMLElement>(".spot:not(.vacant):not(.filler)");
     const start = shared ? spotEl(shared.no) : first;
     requestAnimationFrame(() => {
+      if (!alive()) return;
       if (start) openSpot(start, { align: !!shared, auto: !shared });
       if (shared) ev(shared.id, "entry");
     });
@@ -1591,6 +1613,7 @@ export function startWall(bridge: Bridge, live?: Live) {
     }
     if (cancelled)
       liveApi.cancelCheckout(cancelled).then(() => {
+        if (!alive()) return;
         toast("Checkout cancelled. Nothing was charged.");
         refreshFeed();
       });
@@ -1600,6 +1623,7 @@ export function startWall(bridge: Bridge, live?: Live) {
     liveApi.addMine(id);
     for (let i = 0; i < 20; i++) {
       const st = await liveApi.checkoutStatus(id).catch(() => null);
+      if (!alive()) return;
       if (st?.status === "live") {
         await refreshFeed();
         const s = WALL.find((w): w is FilledSpot => !w.vacant && w.id === id);

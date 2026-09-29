@@ -931,3 +931,33 @@ for (const ph of PHONES) {
     });
   });
 }
+
+test.describe("leaving the wall inside the app and coming back", () => {
+  test.use({ viewport: { width: desktop.width, height: desktop.height }, viewportSpec: desktop });
+
+  /* a link inside the app (a shared Scout Card's "See what's on the wall" is a Next <Link>) keeps the page:
+     the wall's run must let go of the old page and a new one must start */
+  test("the wall still opens, searches and resizes, with no errors", async ({ wall, page }) => {
+    appOnly("the app's own navigation; the reference is one static page");
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await wall.goto();
+    await page.evaluate(() => (window as unknown as { next: { router: { push(u: string): void } } }).next.router.push("/faq"));
+    await page.waitForURL("**/faq");
+    await page.setViewportSize({ width: 1300, height: 900 });
+    await page.setViewportSize({ width: desktop.width, height: desktop.height });
+    await page.goBack();
+    await page.waitForURL((u) => new URL(u).pathname === "/");
+    await page.waitForSelector("#rack[data-complete]");
+    /* a tile opens its spot */
+    const tile = wall.filledTile(4);
+    const no = await tile.evaluate((e) => e.closest<HTMLElement>(".spot")!.dataset.no);
+    await tile.click();
+    await expect(page.locator("#rack .panel")).toHaveAttribute("data-no", no!);
+    /* search filters the wall */
+    const all = await page.locator("#rack .spot:not(.vacant):not(.filler)").count();
+    await page.locator("#q").fill("night");
+    await expect.poll(() => page.locator("#rack .spot:not(.vacant):not(.filler)").count()).toBeLessThan(all);
+    expect(errors).toEqual([]);
+  });
+});

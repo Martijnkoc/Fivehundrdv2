@@ -107,6 +107,11 @@ function set(patch: Partial<WallState>) {
 }
 
 export const bridge = {
+  /** A fresh start: nothing of a previous run of the wall (left by a link, then back) is left over. */
+  reset() {
+    clearTimeout(toastTimer);
+    set(initial);
+  },
   setWall(wall: Spot[]) {
     set({ wall });
   },
@@ -204,7 +209,7 @@ export const bridge = {
     scoutSignIn: (story?: string) => void;
     scoutNudgeClosed: () => void;
     /** The first screen's calls to action (docs/copy.md). */
-    heroCta: (which: "proof") => void;
+    heroCta: () => void;
     spotURL: (spot: FilledSpot) => string;
   },
 };
