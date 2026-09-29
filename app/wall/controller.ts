@@ -28,7 +28,7 @@ import { cardFileName, readyCard, shareCardBlob } from "./shareCard";
 import { wallStore, type Bridge } from "./store";
 import * as liveApi from "./liveClient";
 import { laneBySlug, lanePath } from "../../lib/site/facts";
-import { createMoment, startTracking, surface, visitorId, watchTiles } from "./track";
+import { createMoment, startTracking, surface, unwatchTiles, visitorId, watchTiles } from "./track";
 
 type Opts = { align: boolean; auto?: boolean };
 /** The live wall (Supabase): the feed it was built from and the storage base URL. */
@@ -56,6 +56,7 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
     clearTimeout(beatT);
     cancelTween(false);
     rackWatch?.disconnect();
+    unwatchTiles();
     stopAudio();
     document.documentElement.classList.remove("sheet-lock");
     document.body.style.overflow = "";
@@ -225,6 +226,7 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
     let wq = 0;
     const watch = () => {
       wq = 0;
+      if (!alive()) return;
       watchTiles(rack, ".spot[data-no]:not(.vacant)", (el) => {
         const s = WALL[noOf(el) - 1];
         return s && !s.vacant ? s.id : undefined;
