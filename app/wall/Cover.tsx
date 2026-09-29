@@ -172,21 +172,24 @@ export const Cover = memo(function Cover({ s, saved, preview }: { s: FilledSpot;
         {ws(6)}
         {!preview && (
           <div className="acts">
-            <button className="act solid" data-share="">
-              Share
-            </button>
-            {/* craft pass: Save is the Timeheart; keeping a find is its own small moment */}
-            <button className="act th" data-save="" aria-pressed={saved} title={saved ? TIMEHEART.titleDone : TIMEHEART.title}>
-              <svg className="th-ic" viewBox="0 0 24 24" aria-hidden="true">
-                <g className="th-fill" dangerouslySetInnerHTML={{ __html: HEART }} />
-                <g className="th-line" dangerouslySetInnerHTML={{ __html: HEART }} />
-                <g className="th-hands" dangerouslySetInnerHTML={{ __html: HANDS }} />
-              </svg>
-              <span>{saved ? TIMEHEART.done : TIMEHEART.give}</span>
-            </button>
-            <button className="act" data-next="">
-              Next spot
-            </button>
+            {/* one row that stays in reach on phones (overrides.css); a plain part of the row elsewhere */}
+            <div className="acts-bar">
+              <button className="act solid" data-share="">
+                Share
+              </button>
+              {/* craft pass: Save is the Timeheart; keeping a find is its own small moment */}
+              <button className="act th" data-save="" aria-pressed={saved} title={saved ? TIMEHEART.titleDone : TIMEHEART.title}>
+                <svg className="th-ic" viewBox="0 0 24 24" aria-hidden="true">
+                  <g className="th-fill" dangerouslySetInnerHTML={{ __html: HEART }} />
+                  <g className="th-line" dangerouslySetInnerHTML={{ __html: HEART }} />
+                  <g className="th-hands" dangerouslySetInnerHTML={{ __html: HANDS }} />
+                </svg>
+                <span>{saved ? TIMEHEART.done : TIMEHEART.give}</span>
+              </button>
+              <button className="act" data-next="">
+                Next spot
+              </button>
+            </div>
             {/* live stories only: anyone can flag one for a person to look at */}
             {s.id && (
               <button className="act report" data-report="" aria-label={`Report ${s.name}`}>

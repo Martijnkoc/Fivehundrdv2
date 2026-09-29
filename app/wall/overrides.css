@@ -745,3 +745,22 @@
   .sheet-handle{position:relative;z-index:2;width:88px;height:44px;margin:-8px auto -15px;background:none;border-radius:0}
   .sheet-handle::after{content:"";position:absolute;left:24px;right:24px;top:12px;height:5px;border-radius:3px;background:var(--line)}
 }
+
+/*
+ * Phones (approved change, 2026-09-29): in an open spot, Share, Timeheart and
+ * Next spot stay in reach. The row sticks to the bottom of the overlay while
+ * the story scrolls under it, and settles into its place at the end. Elsewhere
+ * .acts-bar is not a box of its own, so the row is unchanged.
+ */
+.acts-bar{display:contents}
+@media (max-width:699px){
+  .dsheet .cover{overflow:clip}
+  .dsheet .acts{display:contents}
+  .dsheet .acts-bar{position:sticky;bottom:0;z-index:3;display:flex;gap:8px;margin:0 -16px;padding:10px 16px 12px;
+    background:var(--paper);box-shadow:0 -12px 18px -14px rgba(0,0,0,.28)}
+  .dsheet .acts-bar .act{flex:1 1 auto;min-width:0;padding-inline:10px;justify-content:center;white-space:nowrap}
+  .dsheet .acts-bar .act.th{flex-grow:1.6}
+  .dsheet .act.report{align-self:flex-end}
+  .dsheet-scroll{scroll-padding-bottom:76px}
+}
+@media (max-width:359px){.dsheet .acts-bar{gap:6px}.dsheet .acts-bar .act{padding-inline:7px}.dsheet .acts-bar .act.th{gap:5px}}
