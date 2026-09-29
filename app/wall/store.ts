@@ -204,7 +204,7 @@ export const bridge = {
     scoutSignIn: (story?: string) => void;
     scoutNudgeClosed: () => void;
     /** The first screen's calls to action (docs/copy.md). */
-    heroCta: (which: "explore" | "create" | "proof") => void;
+    heroCta: (which: "proof") => void;
     spotURL: (spot: FilledSpot) => string;
   },
 };

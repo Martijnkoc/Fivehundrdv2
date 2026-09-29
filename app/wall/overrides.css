@@ -176,6 +176,9 @@
   nav.primary{gap:22px;margin:0 calc(-1 * clamp(16px,2.6vw,36px));padding:0 clamp(16px,2.6vw,36px);
     -webkit-mask-image:linear-gradient(90deg,#000 86%,transparent);mask-image:linear-gradient(90deg,#000 86%,transparent)}
   nav.primary a{padding:13px 0 11px;font-size:15px}
+  /* iPhone pass: short lane names still get a 44px-wide target (half the gap on each side) */
+  nav.primary a{position:relative}
+  nav.primary a::before{content:"";position:absolute;inset:0 -11px -2px}
 
   /* thumb-sized controls: 44px or more */
   .dsheet .act{min-height:44px;padding:11px 18px}
@@ -238,7 +241,7 @@
 .st-lane[aria-checked="true"]{border-color:var(--ink);box-shadow:inset 0 0 0 1px var(--ink)}
 .st-lane:focus-visible{outline:2px solid var(--pink);outline-offset:2px}
 .st-note{margin:4px 0 0;font-size:14px;color:var(--ink2);line-height:1.5}
-.st-link{all:unset;cursor:pointer;font-weight:700;color:var(--ink);text-decoration:underline;text-underline-offset:3px;padding:10px 0}
+.st-link{all:unset;cursor:pointer;font-weight:700;color:var(--ink);text-decoration:underline;text-underline-offset:3px;padding:12px 0}
 .st-upload{position:relative;display:block;cursor:pointer}
 .st-upload input{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer}
 .st-btn{display:flex;align-items:center;justify-content:center;min-height:52px;border-radius:999px;background:var(--ink);color:var(--paper);font-weight:800;font-size:16px}
@@ -303,9 +306,14 @@
 :root[data-theme="dark"] .spotlight{background:color-mix(in oklab,var(--bg),#fff 4%)}
 .sl-in{max-width:1240px;margin:0 auto;padding:16px max(12px,env(safe-area-inset-right,0px)) 18px max(12px,env(safe-area-inset-left,0px));display:grid;gap:12px}
 .sl-head{display:flex;align-items:center;justify-content:space-between;gap:8px 12px;flex-wrap:wrap}
-.sl-tabs{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--line);border-radius:999px;background:var(--paper)}
-.sl-tabs button{min-height:32px;padding:0 14px;border:0;border-radius:999px;background:none;font:inherit;font-size:13px;font-weight:800;letter-spacing:-.01em;color:var(--ink2);cursor:pointer}
-.sl-tabs button.on{background:var(--ink);color:var(--bg)}
+/* one segmented control: two equal capsules, same height, padding and baseline; only the fill says which is on */
+.sl-tabs{display:inline-grid;grid-template-columns:1fr 1fr;gap:2px;padding:3px;border:1px solid var(--line);border-radius:999px;background:var(--paper)}
+.sl-tabs button{box-sizing:border-box;height:32px;min-width:84px;padding:0 14px;border:1px solid transparent;border-radius:999px;background:transparent;
+  font:inherit;font-size:13px;font-weight:800;line-height:1;letter-spacing:-.01em;color:var(--ink);cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;transition:background-color .18s,color .18s}
+.sl-tabs button.on{background:var(--ink);color:var(--paper)}
+.sl-tabs button:not(.on):not(:disabled):hover{background:color-mix(in oklab,var(--ink),transparent 93%)}
+.sl-tabs button:focus-visible{outline:2px solid var(--pink);outline-offset:2px}
 .sl-tabs button:disabled{opacity:.45;cursor:default}
 .sl-since{margin:0;font-size:13px;color:var(--ink2)}
 .sl-since b{color:var(--ink);font-weight:800}
@@ -313,9 +321,10 @@
 .sl-row{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
 .sl-item{display:flex;flex-direction:column;gap:6px;width:100%;padding:0;border:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
 .sl-item .spot.still{pointer-events:none;width:100%}
-.sl-item:hover .book{transform:translateY(-2px)}
-.sl-item:focus-visible{outline:2px solid var(--ink);outline-offset:4px;border-radius:8px}
-.sl-why{font-size:11.5px;line-height:1.3;color:var(--ink2)}
+.sl-item:focus-visible{outline:none}
+/* in the rail every time label takes the countdown pill's height, so a card in its last hours doesn't make the row 1px taller */
+.sl-row .cap-l .t{padding-top:1px;padding-bottom:1px}
+.sl-why{display:block;height:1.3em;font-size:11.5px;line-height:1.3;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 /* the one thing that changed for you: a quiet link in the since line */
 .sl-mine{display:inline;padding:0;border:0;background:none;font:inherit;font-weight:800;color:var(--ink);text-align:left;text-decoration:underline;text-decoration-thickness:2px;text-decoration-color:var(--pink);text-underline-offset:3px;cursor:pointer}
 .sl-mine:hover{text-decoration-color:var(--ink)}
@@ -327,12 +336,21 @@
 .call-note{display:inline-flex;align-items:center;min-height:40px;font-size:13.5px;font-weight:700;color:var(--ink2)}
 /* approved change: the maker's own numbers under "Your story" */
 .lc-row.mine .mine-nums{grid-column:1/3;margin-top:4px;font-size:11.5px;font-weight:700;line-height:1.35;color:rgba(20,18,16,.8);white-space:normal}
-/* desktop: the controls over the card, the tiles over the wall, on the same grid */
+/* desktop: the controls and their line on top, then seven spots across the page (the card's and the wall's width together) */
 @media (min-width:980px){
-  .sl-in{grid-template-columns:320px minmax(0,820px);gap:44px;padding:20px 24px 22px;justify-content:center;align-items:start}
-  .sl-head{flex-direction:column;align-items:flex-start;gap:10px}
-  .sl-note{display:block}
+  .sl-in{grid-template-columns:minmax(0,1184px);gap:14px;padding:20px 24px 24px;justify-content:center}
+  .sl-head{justify-content:flex-start;gap:8px 16px}
+  .sl-note{display:block;white-space:nowrap}
+  .sl-since{margin-left:auto}
+  .sl-row{grid-template-columns:repeat(7,minmax(0,1fr));gap:14px}
 }
+/* one footprint below desktop, set by the taller state: the rail and its placeholder (while the wall
+   loads) take the same room, so neither loading nor switching Hotspots / Newest moves the wall */
+.sl-wait{display:none}
+@media (max-width:699px){.sl-wait{display:block}.spotlight{min-height:282px}}
+@media (max-width:453px){.spotlight{min-height:298px}}
+/* below desktop: five, as before */
+@media (max-width:979px){.sl-row li:nth-child(n+6){display:none}}
 /* phones: a strip to swipe */
 @media (max-width:699px){
   .sl-in{padding:12px 0 14px;gap:10px}
@@ -609,15 +627,9 @@
 .hero-in{max-width:1480px;margin:0 auto;padding:26px clamp(16px,2.6vw,36px) 24px;display:grid;
   grid-template-columns:minmax(0,1.35fr) minmax(0,.8fr) minmax(0,1.1fr);gap:22px 40px;align-items:start}
 .hero-h{font-family:"Fraunces",Georgia,serif;font-weight:800;font-size:clamp(30px,3.3vw,46px);line-height:1.02;letter-spacing:-.025em;margin:0 0 10px;text-wrap:balance}
-.hero-sub{margin:0 0 16px;font-size:15px;line-height:1.45;color:var(--ink2);max-width:46ch}
-.hero-ctas{display:flex;flex-wrap:wrap;gap:10px}
-.hero-go,.hero-make,.proof-cta{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;min-height:44px;padding:0 20px;border-radius:999px;font-size:14px;font-weight:800;white-space:nowrap}
-.hero-go{background:var(--ink);color:var(--paper)}
-.hero-go:hover{background:var(--pink);color:#0d0d0d}
-.hero-make{border:1.5px solid var(--ink);color:var(--ink)}
-.hero-make:hover{border-color:var(--pink);background:color-mix(in oklab,var(--pink),transparent 82%)}
-.hero-go:focus-visible,.hero-make:focus-visible,.proof-cta:focus-visible{outline:2px solid var(--pink);outline-offset:2px}
-.hero-micro{margin:10px 0 0;font-family:"Fraunces",Georgia,serif;font-style:italic;font-weight:500;font-size:13.5px;color:var(--ink2)}
+.hero-sub{margin:0;font-size:15px;line-height:1.45;color:var(--ink2);max-width:46ch}
+.proof-cta{all:unset;box-sizing:border-box;cursor:pointer;display:inline-flex;align-items:center;min-height:44px;padding:0 20px;border-radius:999px;font-size:14px;font-weight:800;white-space:nowrap}
+.proof-cta:focus-visible{outline:2px solid var(--pink);outline-offset:2px}
 .proof{align-self:start;display:flex;flex-direction:column;align-items:flex-start;gap:6px;padding:14px 16px;border-radius:12px;background:var(--card);border:1px solid var(--line)}
 .proof>div{display:flex;flex-direction:column;gap:6px}
 .proof-wait{visibility:hidden}
@@ -640,10 +652,7 @@
 @media (max-width:699px){
   .hero-in{grid-template-columns:minmax(0,1fr);gap:14px;padding:18px 16px 18px}
   .hero-h{font-size:clamp(27px,8vw,34px);margin-bottom:8px}
-  .hero-sub{font-size:14px;margin-bottom:14px}
-  .hero-ctas{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}
-  .hero-go,.hero-make{justify-content:center;min-height:48px}
-  .hero-micro{text-align:center;margin-top:8px}
+  .hero-sub{font-size:14px}
   .proof{flex-direction:row;flex-wrap:wrap;align-items:baseline;gap:4px 10px;padding:10px 12px}
   .proof-h{width:100%}
   .proof>div{width:100%}
@@ -652,7 +661,9 @@
   .proof-line{font-size:14px}
   .proof-cta{margin:0;min-height:44px}
   .steps3 ol{flex-direction:column;gap:6px}
-  .steps3 li{display:grid;grid-template-columns:84px minmax(0,1fr);gap:8px;font-size:13px;line-height:1.35}
+  .steps3 li{display:grid;grid-template-columns:98px minmax(0,1fr);gap:8px;font-size:13px;line-height:1.35}
+  /* iPhone pass: the promise breaks between its two sentences, not inside them */
+  .hero-h span{display:block}
   .proof-sub{width:100%}
 }
 
@@ -693,3 +704,44 @@
 .vbook .v-h{font-size:10.5px;font-weight:500;line-height:1.3;color:var(--ink2);max-width:15ch}
 .vbook .v-cta{font-style:normal;font-size:11px;font-weight:800;color:var(--ink);text-decoration:underline;text-decoration-color:var(--pink);text-decoration-thickness:2px;text-underline-offset:3px}
 @media (max-width:699px){.vbook .v-h{display:none}}
+
+/*
+ * The Hotspots / Newest rail only (approved change): each spot as a printed
+ * card behind a thin layer of museum glass. The card underneath is the same;
+ * on top: a faint highlight toward the top edge, a thin inner highlight, a
+ * restrained outline and a very soft halo off the paper. Hover and focus lift
+ * it 3px, light the edge in the lane's colour and move the highlight a little.
+ * No blur, no glow, no zoom: the artwork stays the thing. Wall tiles are not
+ * touched (everything here is under .sl-row).
+ */
+.sl-row .book{border-color:color-mix(in oklab,var(--ink),transparent 80%);
+  box-shadow:0 1px 1px rgba(28,27,24,.06),0 12px 24px -16px rgba(28,27,24,.42),0 0 0 4px color-mix(in oklab,var(--paper),transparent 55%);
+  transition:transform .28s cubic-bezier(.2,.8,.2,1),box-shadow .28s,border-color .28s}
+.sl-row .book::before{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:inherit;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.42),inset 0 1px 0 rgba(255,255,255,.6);
+  background:
+    linear-gradient(112deg,transparent 34%,rgba(255,255,255,.10) 44%,rgba(255,255,255,.02) 50%,transparent 58%) 0 0/260% 100% no-repeat,
+    linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,.05) 14%,transparent 34%);
+  background-position:100% 0,0 0;transition:background-position .6s cubic-bezier(.2,.8,.2,1),box-shadow .28s}
+@media (hover:hover){
+  .sl-item:hover .book{transform:translateY(-3px);border-color:color-mix(in oklab,var(--ink),transparent 55%);
+    box-shadow:0 0 0 1px color-mix(in oklab,var(--pill,#ff7bc3),transparent 40%),0 2px 3px rgba(28,27,24,.08),0 18px 30px -18px rgba(28,27,24,.5),0 0 0 4px color-mix(in oklab,var(--paper),transparent 55%)}
+  .sl-item:hover .book::before{background-position:60% 0,0 0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.55),inset 0 1px 0 rgba(255,255,255,.75)}
+}
+.sl-item:focus-visible .book{transform:translateY(-3px);border-color:var(--ink);
+  box-shadow:0 0 0 2px var(--pill,#ff7bc3),0 18px 30px -18px rgba(28,27,24,.5)}
+.sl-item:focus-visible .book::before{background-position:60% 0,0 0}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .sl-row .book::before{box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),inset 0 1px 0 rgba(255,255,255,.22);opacity:.7}}
+:root[data-theme="dark"] .sl-row .book::before{box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),inset 0 1px 0 rgba(255,255,255,.22);opacity:.7}
+@media (prefers-reduced-motion:reduce){.sl-row .book,.sl-row .book::before{transition:none}}
+
+/* iPhone pass: 44px targets where the look stays smaller (the toggle, the sheet's grabber) */
+@media (max-width:699px){
+  .sl-tabs button{position:relative}
+  .sl-tabs button::before{content:"";position:absolute;inset:-7px -1px}
+}
+/* the grabber: an 88x44 button with the same 40x5 bar at the same place; the card below doesn't move */
+@media (max-width:979px){
+  .sheet-handle{position:relative;z-index:2;width:88px;height:44px;margin:-8px auto -15px;background:none;border-radius:0}
+  .sheet-handle::after{content:"";position:absolute;left:24px;right:24px;top:12px;height:5px;border-radius:3px;background:var(--line)}
+}

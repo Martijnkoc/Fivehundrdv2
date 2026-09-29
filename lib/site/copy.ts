@@ -21,12 +21,6 @@ export const BRAND = {
   scout: "Your taste. With receipts.",
 };
 
-export const HERO = {
-  explore: "Explore the Wall",
-  create: "Put your work on the Wall",
-  micro: "No follower count required.",
-};
-
 /** Today on Fivehundrd: real counts only (public.today_public), never a promise of reach. */
 export const PROOF = {
   head: "Today on Fivehundrd",

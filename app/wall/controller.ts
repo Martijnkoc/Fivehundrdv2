@@ -1435,10 +1435,9 @@ export function startWall(bridge: Bridge, live?: Live) {
     scoutNudgeClosed() {
       bridge.setScoutNudge(null);
     },
-    heroCta(which: "explore" | "create" | "proof") {
-      surface(which === "explore" ? "hero_explore_wall_clicked" : which === "create" ? "hero_creator_cta_clicked" : "live_proof_creator_cta_clicked");
-      if (which === "explore") exploreWall();
-      else openClaim();
+    heroCta() {
+      surface("live_proof_creator_cta_clicked");
+      openClaim();
     },
     scoutMoveSeen() {
       surface("scout_move_seen");

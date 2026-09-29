@@ -38,28 +38,21 @@ for (const viewport of [phone, desktop])
 test.describe("desktop", () => {
   test.use({ viewport: { width: desktop.width, height: desktop.height }, viewportSpec: desktop });
 
-  test("the hero says what this is, and both ways in", async ({ wall, page }) => {
+  test("the hero says what this is, without buttons of its own", async ({ wall, page }) => {
     await wall.goto("", { hero: true });
     const hero = page.locator(".hero");
     await expect(hero.locator(".hero-h")).toHaveText("Find what’s next. Before everyone else does.");
     await expect(hero.locator(".hero-sub")).toHaveText("500 spots. 72 hours. New music, creators, books, games and ideas.");
-    await expect(hero.locator(".hero-go")).toHaveText("Explore the Wall");
-    await expect(hero.locator(".hero-make")).toHaveText("Put your work on the Wall");
-    await expect(hero.locator(".hero-micro")).toHaveText("No follower count required.");
+    /* the only button on the first screen is Claim a spot, in today's box */
+    await expect(hero.getByRole("button")).toHaveText(["Claim a spot · $9.95 / 72h"]);
     await expect(hero.locator(".steps3-h")).toHaveText("See it. Scout it. Watch what happens.");
     await expect(hero.locator(".steps3 li b")).toHaveText(["1. Discover", "2. Scout", "3. Come back"]);
     await expect(page.locator("#brand .slogan")).toHaveText("Find what’s next.");
   });
 
-  test("Explore the Wall brings the wall into view", async ({ wall, page }) => {
+  test("Claim a spot on the first screen opens Create, in its words", async ({ wall, page }) => {
     await wall.goto("", { hero: true });
-    await page.locator(".hero-go").click();
-    await expect.poll(() => page.evaluate(() => document.querySelector(".hero")!.getBoundingClientRect().bottom)).toBeLessThanOrEqual(80);
-  });
-
-  test("Put your work on the Wall opens Create, in its words", async ({ wall, page }) => {
-    await wall.goto("", { hero: true });
-    await page.locator(".hero-make").click();
+    await page.locator(".proof-cta").click();
     await expect(page.locator("#claimH")).toHaveText("Put it on the Wall.");
     await expect(page.locator("#claimSheet .sub")).toContainText("72 hours. $9.95. No follower count required.");
     await expect(page.locator("#claimSheet .promise")).toContainText("People come to Fivehundrd to find things they don’t know yet.");
@@ -161,10 +154,49 @@ test.describe("phone", () => {
       [...document.querySelectorAll<HTMLElement>(".hero button")].filter((e) => e.getBoundingClientRect().height < 44).map((e) => e.textContent),
     );
     expect(small).toEqual([]);
-    /* the promise and both ways in are on the first screen */
-    const bottom = await page.evaluate(() => document.querySelector(".hero-micro")!.getBoundingClientRect().bottom);
+    /* the promise and today's box are on the first screen */
+    const bottom = await page.evaluate(() => document.querySelector(".proof")!.getBoundingClientRect().bottom);
     expect(bottom).toBeLessThanOrEqual(phone.height - 70);
     expect(await page.evaluate(() => (window as unknown as { cls: number }).cls)).toBeLessThan(0.02);
+  });
+
+  test("iPhone pass: small-looking controls are real 44px targets", async ({ wall, page }) => {
+    await wall.goto("", { spotlight: true });
+    /* the corners of a 44px box around the centre still land on the control */
+    const target = (sel: string, i = 0) =>
+      page.evaluate(([sel, i]) => {
+        const e = document.querySelectorAll<HTMLElement>(sel as string)[i as number];
+        e.scrollIntoView({ block: "center" });
+        const r = e.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2;
+        return [[-21, -21], [21, -21], [-21, 21], [21, 21]].every(([dx, dy]) => { const t = document.elementFromPoint(x + dx, y + dy); return !!t && (t === e || e.contains(t)); });
+      }, [sel, i] as const);
+    expect(await target("nav.primary a", 0)).toBe(true);
+    expect(await target(".sl-tabs button", 0)).toBe(true);
+    expect(await target(".sl-tabs button", 1)).toBe(true);
+    await wall.showCard();
+    expect(await target(".sheet-handle")).toBe(true);
+  });
+
+  test("iPhone pass: a returning visitor's wall doesn't jump when Hotspots arrive", async ({ page }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem("fh-intro", "1");
+      (window as unknown as { cls: number }).cls = 0;
+      new PerformanceObserver((l) => {
+        for (const e of l.getEntries() as unknown as { value: number; hadRecentInput: boolean }[]) if (!e.hadRecentInput) (window as unknown as { cls: number }).cls += e.value;
+      }).observe({ type: "layout-shift", buffered: true });
+    });
+    await page.goto("/?fixture=1");
+    await page.waitForSelector("#rack[data-complete]");
+    await expect(page.locator(".sl-row")).toBeVisible();
+    await page.waitForTimeout(300);
+    expect(await page.evaluate(() => (window as unknown as { cls: number }).cls)).toBeLessThan(0.02);
+  });
+
+  test("iPhone pass: the promise breaks between its two sentences", async ({ wall, page }) => {
+    await wall.goto("", { hero: true });
+    const tops = await page.locator(".hero-h span").evaluateAll((els) => els.map((e) => e.getBoundingClientRect().top));
+    expect(tops).toHaveLength(2);
+    expect(tops[1]).toBeGreaterThan(tops[0]);
   });
 
   test("the tab bar's Create is Claim", async ({ wall, page }) => {

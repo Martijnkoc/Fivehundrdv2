@@ -95,7 +95,6 @@ which were signed off:
     - **Words:** they live in one module, `lib/site/copy.ts`, with one locked vocabulary.
     - **First visit:** the first screen shows:
       - "Find what’s next. Before everyone else does.";
-      - "Explore the Wall" and "Put your work on the Wall";
       - today's real numbers (`public.today_public()` via `/api/today`), or none;
       - the loop in three steps.
     - **Returning visitors** (after a Timeheart, or signed in) start on the wall.
