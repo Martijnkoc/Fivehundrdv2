@@ -70,11 +70,11 @@ test.describe("the rail on desktop", () => {
     await expect(page.locator(".sl-item:visible")).toHaveCount(7);
   });
 
-  test("only the rail's cards are behind glass: wall tiles look as they did", async ({ wall, page }) => {
+  test("only the rail's cards are framed: wall tiles look as they did", async ({ wall, page }) => {
     await wall.goto("", { spotlight: true });
-    const glass = (sel: string) => page.locator(sel).first().evaluate((e) => getComputedStyle(e, "::before").content);
-    expect(await glass(".sl-row .book")).not.toBe("none");
-    expect(await glass("#rack .spot:not(.vacant) .book")).toBe("none");
+    const frame = (sel: string) => page.locator(sel).first().evaluate((e) => getComputedStyle(e, "::before").content);
+    expect(await frame(".sl-row .book")).not.toBe("none");
+    expect(await frame("#rack .spot:not(.vacant) .book")).toBe("none");
   });
 });
 
