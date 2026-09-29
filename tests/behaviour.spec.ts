@@ -843,6 +843,33 @@ for (const ph of PHONES) {
       expect(small).toEqual([]);
     });
 
+    test("an open spot's Timeheart is in reach without scrolling, and settles at the end", async ({ wall, page }) => {
+      appOnly("approved change: the open spot's actions stay in reach on phones");
+      await wall.goto();
+      await wall.openTile(0);
+      await page.waitForTimeout(500);
+      const bar = () =>
+        page.evaluate(() => {
+          const sheet = document.querySelector("#dsheet")!.getBoundingClientRect();
+          const row = [...document.querySelectorAll<HTMLElement>("#dsheet .acts-bar .act")].map((e) => e.getBoundingClientRect());
+          const links = document.querySelector("#dsheet .links")!.getBoundingClientRect();
+          return { sheet: sheet.bottom, top: Math.min(...row.map((r) => r.top)), bottom: Math.max(...row.map((r) => r.bottom)), oneRow: new Set(row.map((r) => Math.round(r.top))).size === 1, links: links.bottom, vh: innerHeight };
+        });
+      /* on open: Share, Timeheart and Next spot in one row, inside the overlay and on screen */
+      let b = await bar();
+      expect(b.oneRow).toBe(true);
+      expect(b.bottom).toBeLessThanOrEqual(Math.min(b.sheet, b.vh));
+      await expect(sheet(page).locator("[data-save]")).toBeInViewport({ ratio: 1 });
+      /* at the end of the story the row sits after the links, covering nothing */
+      await page.locator("#dsheet .dsheet-scroll").evaluate((e) => (e.scrollTop = e.scrollHeight));
+      await page.waitForTimeout(200);
+      b = await bar();
+      expect(b.top).toBeGreaterThanOrEqual(b.links);
+      /* a Timeheart from the row works as before */
+      await sheet(page).locator("[data-save]").click();
+      await expect(sheet(page).locator("[data-save]")).toHaveAttribute("aria-pressed", "true");
+    });
+
     test("Back closes Finds, Create and Share, top one first, and you stay where you were", async ({ wall, page }) => {
       appOnly("approved change: Back closes what's open");
       await wall.goto();

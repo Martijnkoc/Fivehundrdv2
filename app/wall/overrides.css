@@ -706,34 +706,34 @@
 @media (max-width:699px){.vbook .v-h{display:none}}
 
 /*
- * The Hotspots / Newest rail only (approved change): each spot as a printed
- * card behind a thin layer of museum glass. The card underneath is the same;
- * on top: a faint highlight toward the top edge, a thin inner highlight, a
- * restrained outline and a very soft halo off the paper. Hover and focus lift
- * it 3px, light the edge in the lane's colour and move the highlight a little.
- * No blur, no glow, no zoom: the artwork stays the thing. Wall tiles are not
- * touched (everything here is under .sl-row).
+ * The Hotspots / Newest rail only (approved change, 2026-09-29): each spot in
+ * a frame, like a printed museum label. A thin outer line with its top left
+ * corner cut, a margin of paper, and an inner line in the artwork's own colour
+ * (--c1; darker on light paper, lighter on dark). The card keeps its height:
+ * the paper margin takes from the artwork what it adds around it. Hover and
+ * focus lift it 3px and darken the outer line. No glow, no zoom. Wall tiles
+ * are not touched (everything here is under .sl-row).
  */
-.sl-row .book{border-color:color-mix(in oklab,var(--ink),transparent 80%);
-  box-shadow:0 1px 1px rgba(28,27,24,.06),0 12px 24px -16px rgba(28,27,24,.42),0 0 0 4px color-mix(in oklab,var(--paper),transparent 55%);
-  transition:transform .28s cubic-bezier(.2,.8,.2,1),box-shadow .28s,border-color .28s}
-.sl-row .book::before{content:"";position:absolute;inset:0;z-index:3;pointer-events:none;border-radius:inherit;
-  box-shadow:inset 0 0 0 1px rgba(255,255,255,.42),inset 0 1px 0 rgba(255,255,255,.6);
-  background:
-    linear-gradient(112deg,transparent 34%,rgba(255,255,255,.10) 44%,rgba(255,255,255,.02) 50%,transparent 58%) 0 0/260% 100% no-repeat,
-    linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,.05) 14%,transparent 34%);
-  background-position:100% 0,0 0;transition:background-position .6s cubic-bezier(.2,.8,.2,1),box-shadow .28s}
-@media (hover:hover){
-  .sl-item:hover .book{transform:translateY(-3px);border-color:color-mix(in oklab,var(--ink),transparent 55%);
-    box-shadow:0 0 0 1px color-mix(in oklab,var(--pill,#ff7bc3),transparent 40%),0 2px 3px rgba(28,27,24,.08),0 18px 30px -18px rgba(28,27,24,.5),0 0 0 4px color-mix(in oklab,var(--paper),transparent 55%)}
-  .sl-item:hover .book::before{background-position:60% 0,0 0;box-shadow:inset 0 0 0 1px rgba(255,255,255,.55),inset 0 1px 0 rgba(255,255,255,.75)}
-}
-.sl-item:focus-visible .book{transform:translateY(-3px);border-color:var(--ink);
-  box-shadow:0 0 0 2px var(--pill,#ff7bc3),0 18px 30px -18px rgba(28,27,24,.5)}
-.sl-item:focus-visible .book::before{background-position:60% 0,0 0}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .sl-row .book::before{box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),inset 0 1px 0 rgba(255,255,255,.22);opacity:.7}}
-:root[data-theme="dark"] .sl-row .book::before{box-shadow:inset 0 0 0 1px rgba(255,255,255,.14),inset 0 1px 0 rgba(255,255,255,.22);opacity:.7}
-@media (prefers-reduced-motion:reduce){.sl-row .book,.sl-row .book::before{transition:none}}
+.sl-row{--fr-line:color-mix(in oklab,var(--ink),transparent 35%);--fr-cut:15px}
+.sl-row .book{padding:7px;border:1px solid var(--fr-line);border-radius:2px;box-shadow:none;
+  --fr-in:color-mix(in oklab,var(--c1),#000 25%);
+  /* the outer line across the cut corner */
+  background:linear-gradient(to bottom right,transparent calc(50% - .7px),var(--fr-line) calc(50% - .7px) calc(50% + .7px),transparent calc(50% + .7px)) -1px -1px/var(--fr-cut) var(--fr-cut) no-repeat,var(--card);
+  clip-path:polygon(var(--fr-cut) 0,100% 0,100% 100%,0 100%,0 var(--fr-cut));
+  transition:transform .28s cubic-bezier(.2,.8,.2,1),border-color .28s}
+.sl-row .spot.still{filter:drop-shadow(0 1px 1px rgba(28,27,24,.12)) drop-shadow(0 10px 12px rgba(28,27,24,.16))}
+.sl-row .book::before{content:"";position:absolute;inset:3px;z-index:3;pointer-events:none;border:1.5px solid var(--fr-in);border-radius:1px;
+  clip-path:polygon(10px 0,100% 0,100% 100%,0 100%,0 10px);
+  background:linear-gradient(to bottom right,transparent calc(50% - .9px),var(--fr-in) calc(50% - .9px) calc(50% + .9px),transparent calc(50% + .9px)) -1.5px -1.5px/10px 10px no-repeat}
+.sl-row .bk-strip{border-top-color:var(--fr-in)}
+/* the new dot sits on the artwork, as on the wall, clear of the cut corner */
+.sl-row .book .new{left:14px;top:14px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .sl-row .book{--fr-in:color-mix(in oklab,var(--c1),#fff 30%)}}
+:root[data-theme="dark"] .sl-row .book{--fr-in:color-mix(in oklab,var(--c1),#fff 30%)}
+@media (hover:hover){.sl-item:hover .book{transform:translateY(-3px);--fr-line:var(--ink)}}
+.sl-item:focus-visible .book{transform:translateY(-3px);--fr-line:var(--ink)}
+.sl-item:focus-visible{outline:2px solid var(--pink,#ff7bc3);outline-offset:3px;border-radius:3px}
+@media (prefers-reduced-motion:reduce){.sl-row .book{transition:none}}
 
 /* iPhone pass: 44px targets where the look stays smaller (the toggle, the sheet's grabber) */
 @media (max-width:699px){
@@ -745,3 +745,22 @@
   .sheet-handle{position:relative;z-index:2;width:88px;height:44px;margin:-8px auto -15px;background:none;border-radius:0}
   .sheet-handle::after{content:"";position:absolute;left:24px;right:24px;top:12px;height:5px;border-radius:3px;background:var(--line)}
 }
+
+/*
+ * Phones (approved change, 2026-09-29): in an open spot, Share, Timeheart and
+ * Next spot stay in reach. The row sticks to the bottom of the overlay while
+ * the story scrolls under it, and settles into its place at the end. Elsewhere
+ * .acts-bar is not a box of its own, so the row is unchanged.
+ */
+.acts-bar{display:contents}
+@media (max-width:699px){
+  .dsheet .cover{overflow:clip}
+  .dsheet .acts{display:contents}
+  .dsheet .acts-bar{position:sticky;bottom:0;z-index:3;display:flex;gap:8px;margin:0 -16px;padding:10px 16px 12px;
+    background:var(--paper);box-shadow:0 -12px 18px -14px rgba(0,0,0,.28)}
+  .dsheet .acts-bar .act{flex:1 1 auto;min-width:0;padding-inline:10px;justify-content:center;white-space:nowrap}
+  .dsheet .acts-bar .act.th{flex-grow:1.6}
+  .dsheet .act.report{align-self:flex-end}
+  .dsheet-scroll{scroll-padding-bottom:76px}
+}
+@media (max-width:359px){.dsheet .acts-bar{gap:6px}.dsheet .acts-bar .act{padding-inline:7px}.dsheet .acts-bar .act.th{gap:5px}}

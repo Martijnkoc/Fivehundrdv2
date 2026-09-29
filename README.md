@@ -106,6 +106,8 @@ which were signed off:
     - **Create** reads "Put it on the Wall." and "Place it · $9.95".
     - **The header** says "Claim a spot".
     - **Data:** `supabase/migrations/20260928100000_copy.sql`. **Tests:** `tests/copy.spec.ts`.
+17. Phones, approved 2026-09-29: in an open spot, **Share · Timeheart · Next spot** stay in reach. The row sticks to the bottom of the overlay while the story scrolls under it, and settles into its place after the links. Report stays at the end. Desktop and tablets are unchanged; the row is one line down to 320px, every button 44px tall.
+18. The Hotspots / Newest rail, approved 2026-09-29: each card in a frame like a printed museum label. A thin outer line with its top left corner cut, a margin of paper, and an inner line in the artwork's own colour. Cards keep their size; hover and focus lift them 3px. Wall tiles are unchanged.
 
 CSS for these lives in `app/wall/overrides.css`. The visual suite applies it
 to the reference too, so the baselines are "the reference plus the approved
