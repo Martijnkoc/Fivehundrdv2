@@ -73,3 +73,65 @@ test("the home page tells machines what Fivehundrd is", async ({ page }) => {
   for (const t of ["Organization", "WebSite", "WebPage", "DefinedTermSet"]) expect(types).toContain(t);
   expect(await page.locator("link[rel=canonical]").getAttribute("href")).toMatch(/^https?:\/\/[^/]+\/?$/);
 });
+
+/* approved changes, 2026-10-01 */
+for (const vp of [{ width: 1400, height: 900 }, { width: 390, height: 844 }])
+  test(`nothing is open until someone taps (${vp.width}px)`, async ({ page }) => {
+    await page.setViewportSize(vp);
+    await page.goto("/?fixture=1");
+    await page.waitForSelector("#rack[data-complete]");
+    await page.waitForTimeout(400);
+    await expect(page.locator("#rack .panel")).toHaveCount(0);
+    await expect(page.locator("#dsheet")).toBeHidden();
+    await expect(page.locator("#rack .spot.open")).toHaveCount(0);
+    const no = await page.locator("#rack .spot:not(.vacant):not(.filler)").nth(3).getAttribute("data-no");
+    /* a lane or a search opens nothing either */
+    if (vp.width >= 700) {
+      await page.locator('#lanes [data-lane="music"]').click();
+      await page.locator("#q").fill("night");
+      await page.waitForTimeout(400);
+      await expect(page.locator("#rack .panel")).toHaveCount(0);
+    }
+    /* a link to a spot still opens it (a new page load, not just a new #) */
+    await page.goto(`/?fixture=1&from=link#${no}`);
+    await expect(page.locator(vp.width < 700 ? "#dsheet" : "#rack .panel")).toHaveAttribute("data-no", no!);
+  });
+
+test("Report has one place: the footer, by lane and spot number", async ({ page }) => {
+  await page.goto("/?fixture=1");
+  await page.waitForSelector("#rack[data-complete]");
+  await expect(page.locator("[data-report], .act.report")).toHaveCount(0);
+  const foot = page.locator(".site-foot");
+  await foot.getByRole("button", { name: "Report a spot" }).click();
+  const form = foot.locator(".foot-report-form");
+  await expect(form.locator("select option")).toHaveText(["Music", "Books", "Games", "Creators", "Podcasts", "Newsletters"]);
+  await form.getByRole("button", { name: "Send" }).click();
+  await expect(form.locator(".foot-report-err")).toHaveText("Enter a spot number from 1 to 500.");
+  /* the fixture has no database, so the report can't go out: it says so */
+  await form.locator("input").fill("217");
+  await form.getByRole("button", { name: "Send" }).click();
+  await expect(form.locator(".foot-report-err")).toHaveText("That didn't send. Try again.");
+  /* the same footer on the info pages */
+  await page.goto("/rules");
+  await expect(page.locator(".site-foot").getByRole("button", { name: "Report a spot" })).toBeVisible();
+});
+
+test("questions open and close one by one", async ({ page }) => {
+  await page.goto("/faq");
+  const qa = page.locator(".info-main details.qa");
+  expect(await qa.count()).toBeGreaterThan(5);
+  await expect(qa.first().locator("p")).toBeHidden();
+  await qa.first().locator("summary").click();
+  await expect(qa.first().locator("p")).toBeVisible();
+  await expect(qa.nth(1).locator("p")).toBeHidden();
+  await qa.first().locator("summary").click();
+  await expect(qa.first().locator("p")).toBeHidden();
+});
+
+test("the favicon: an F in the brand's colours", async ({ page, request }) => {
+  await page.goto("/faq");
+  const icons = await page.locator('link[rel~="icon"], link[rel="apple-touch-icon"]').evaluateAll((ls) => ls.map((l) => l.getAttribute("href")!));
+  expect(icons.some((h) => h.includes("icon"))).toBe(true);
+  for (const h of icons) expect((await request.get(h)).status(), h).toBe(200);
+  expect((await request.get("/favicon.ico")).status()).toBe(200);
+});

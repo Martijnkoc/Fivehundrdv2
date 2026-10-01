@@ -138,8 +138,8 @@ export const INFO: Record<PageSlug, Info> = {
         </p>
         <h2>Reporting</h2>
         <p>
-          Every live story has a Report button. Three reports, or one report of a child at risk, take a story off the wall until a person has looked at it. Stories that break the
-          rules are removed. Questions about a decision: {mail}.
+          Use Report a spot at the bottom of every page: the story&apos;s lane and spot number are all it takes, and every report reaches the people who look after the wall.
+          Three reports take a story off the wall until a person has looked at it. Stories that break the rules are removed. Questions about a decision: {mail}.
         </p>
         <h2>Fair use of the wall</h2>
         <p>One person can hold at most three spots at once, so nobody can fill a lane.</p>
@@ -151,11 +151,14 @@ export const INFO: Record<PageSlug, Info> = {
     lede: DEFINITION,
     body: (
       <>
+        {/* approved change, 2026-10-01: each question opens and closes (details); the answers stay in the page for search */}
         {FAQ.map((f) => (
-          <section key={f.q} className="qa">
-            <h2>{f.q}</h2>
+          <details key={f.q} className="qa">
+            <summary>
+              <h2>{f.q}</h2>
+            </summary>
             <p>{f.a}</p>
-          </section>
+          </details>
         ))}
       </>
     ),
@@ -187,8 +190,8 @@ export const INFO: Record<PageSlug, Info> = {
 
   contact: {
     lede: CONTACT_EMAIL
-      ? `Email ${CONTACT_EMAIL} for questions, press, partnerships and refunds. To report a story on the wall, use the Report button on the story itself; that reaches us fastest.`
-      : "To report a story on the wall, use the Report button on the story itself; that reaches us fastest.",
+      ? `Email ${CONTACT_EMAIL} for questions, press, partnerships and refunds. To report a story on the wall, use Report a spot at the bottom of the page; that reaches us fastest.`
+      : "To report a story on the wall, use Report a spot at the bottom of the page; that reaches us fastest.",
     body: CONTACT_EMAIL ? (
       <>
         <h2>Email</h2>
@@ -196,12 +199,12 @@ export const INFO: Record<PageSlug, Info> = {
         <h2>About a payment</h2>
         <p>Include the email address you paid with and the spot&apos;s number and lane, so we can find it quickly.</p>
         <h2>About a story</h2>
-        <p>Use Report on the story, or email us with its link.</p>
+        <p>Use Report a spot at the bottom of the page, or email us with its link.</p>
       </>
     ) : (
       <>
         <h2>About a story</h2>
-        <p>Every live story has a Report button. Reports reach the people who look after the wall.</p>
+        <p>Use Report a spot at the bottom of the page: its lane and number are all it takes. Reports reach the people who look after the wall.</p>
       </>
     ),
   },

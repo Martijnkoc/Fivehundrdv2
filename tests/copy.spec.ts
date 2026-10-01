@@ -54,7 +54,8 @@ test.describe("desktop", () => {
     await wall.goto("", { hero: true });
     await page.locator(".proof-cta").click();
     await expect(page.locator("#claimH")).toHaveText("Put it on the Wall.");
-    await expect(page.locator("#claimSheet .sub")).toContainText("72 hours. $9.95. No follower count required.");
+    await expect(page.locator("#claimSheet .sub")).toContainText("72 hours. $9.95.");
+    await expect(page.locator("#claimSheet .sub")).not.toContainText("follower");
     await expect(page.locator("#claimSheet .promise")).toContainText("People come to Fivehundrd to find things they don’t know yet.");
     await expect(page.locator("#fPay")).toHaveText("Place it · $9.95");
     for (const t of ["Name", "Lane", "Artwork", "Links", "One-line story"]) await expect(page.locator("#cf")).toContainText(t);
@@ -65,11 +66,13 @@ test.describe("desktop", () => {
     await expect(page.locator("#claimTop")).toHaveText("Claim a spot");
   });
 
-  test("an Open Spot invites, with its price and time", async ({ wall, page }) => {
+  test("an Open Spot invites; its price is in Create, not under the tile", async ({ wall, page }) => {
     await wall.goto();
     const v = page.locator("#rack .spot.vacant").first();
     await expect(v.locator(".v-cta")).toHaveText("Claim this spot");
-    await expect(v.locator(".v2")).toContainText("$9.95");
+    /* no price or time under the tile (the demo wall has no lanes per number, so no caption at all) */
+    await expect(v.locator(".cap")).not.toContainText("$9.95");
+    await expect(v.locator(".cap")).not.toHaveText(/72 ?h/);
     await expect(v.locator(".vbook")).toHaveAttribute("aria-label", /Open Spot .*Put something worth finding here\. Claim this spot: \$9\.95 for 72 hours/);
     await v.locator(".vbook").click();
     await expect(page.locator("#claimVeil")).toHaveClass(/\bon\b/);
@@ -105,6 +108,8 @@ test.describe("desktop", () => {
 
   test("one vocabulary: no likes, favorites, saved or finds", async ({ wall, page }) => {
     await wall.goto("", { hero: true });
+    /* nothing opens by itself (approved change, 2026-10-01): open the first spot */
+    await wall.openTile(0);
     await wall.openView.locator("[data-save]").click();
     const text = await page.locator("body").innerText();
     expect(text).not.toMatch(/\b(My Finds|Finds|Saved|Likes?|Favou?rites?|Bookmarks?|Trending|Listings?|Campaigns?)\b/);

@@ -190,12 +190,6 @@ export const Cover = memo(function Cover({ s, saved, preview }: { s: FilledSpot;
                 Next spot
               </button>
             </div>
-            {/* live stories only: anyone can flag one for a person to look at */}
-            {s.id && (
-              <button className="act report" data-report="" aria-label={`Report ${s.name}`}>
-                Report
-              </button>
-            )}
           </div>
         )}
         {!preview && <ScoutNudge s={s} />}

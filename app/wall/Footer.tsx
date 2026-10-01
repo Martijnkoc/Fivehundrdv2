@@ -1,5 +1,6 @@
 import { NAV } from "../../lib/wall/model";
 import { CONTACT_EMAIL, DEFINITION, lanePath, PAGES } from "../../lib/site/facts";
+import { ReportSpot } from "./ReportSpot";
 
 /*
  * §9: white footer, tagline, link columns, legal line (approved change: real
@@ -68,6 +69,9 @@ export function Footer() {
               {page("contact")}
               {page("terms")}
               {page("privacy")}
+              <li>
+                <ReportSpot />
+              </li>
               {CONTACT_EMAIL && (
                 <li>
                   <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>

@@ -106,8 +106,14 @@ which were signed off:
     - **Create** reads "Put it on the Wall." and "Place it · $9.95".
     - **The header** says "Claim a spot".
     - **Data:** `supabase/migrations/20260928100000_copy.sql`. **Tests:** `tests/copy.spec.ts`.
-17. Phones, approved 2026-09-29: in an open spot, **Share · Timeheart · Next spot** stay in reach. The row sticks to the bottom of the overlay while the story scrolls under it, and settles into its place after the links. Report stays at the end. Desktop and tablets are unchanged; the row is one line down to 320px, every button 44px tall.
+17. Phones, approved 2026-09-29: in an open spot, **Share · Timeheart · Next spot** stay in reach. The row sticks to the bottom of the overlay while the story scrolls under it, and settles into its place after the links. Desktop and tablets are unchanged; the row is one line down to 320px, every button 44px tall.
 18. The Hotspots / Newest rail, approved 2026-09-29: each card in a frame like a printed museum label. A thin outer line with its top left corner cut, a margin of paper, and an inner line in the artwork's own colour. Cards keep their size; hover and focus lift them 3px. Wall tiles are unchanged.
+19. Approved 2026-10-01, from the founder's review of the site:
+    - **Nothing opens by itself.** The wall starts with every spot closed, on every screen; a lane or a search opens nothing either. A spot opens when someone taps it, or through a link to it (`#217`, a shared `/s/…` link). The reference opened its entry spot; desktop screenshots that showed it are re-approved.
+    - **Less copy:** the card's "The wall is a circle…" line, the price and time under an Open Spot's tile (the live wall keeps its lane name there; Create still says the price), and "No follower count required." in Create are gone.
+    - **Report has one place:** Report a spot, at the bottom of every page (lane and spot number). The Report button on stories and the report sheet are gone.
+    - **Questions** open and close one at a time (`details`); the answers stay in the page and in its FAQ structured data.
+    - **Favicon:** the wordmark's F in Fraunces with its pink dot, cream on charcoal (`app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`).
 
 CSS for these lives in `app/wall/overrides/`, one file per part, joined in order (`app/wall/overrides/index.ts`). The visual suite applies it
 to the reference too, so the baselines are "the reference plus the approved
@@ -243,9 +249,10 @@ rules: [`docs/founder-dashboard.md`](docs/founder-dashboard.md).
   Browsing; the name, texts and images by Claude. Clear violations are
   refused before any money moves; doubtful ones go live and wait on the
   admin screen.
-- **Reports**: a Report button on every live story. Three people reporting
-  it, or one report of a child at risk, takes it off the wall until a person
-  looks.
+- **Reports**: one place, Report a spot at the bottom of every page (approved
+  2026-10-01): a lane and a spot number. Three people reporting a story take
+  it off the wall until a person looks; each report is mailed to
+  `ADMIN_EMAILS` when Resend is set up, and listed on /admin either way.
 - **Limits**: one person holds at most 3 spots at once and starts at most 10
   checkouts an hour; 15 uploads an hour; an invisible robot check before
   paying. Uploads nobody paid for are removed daily.

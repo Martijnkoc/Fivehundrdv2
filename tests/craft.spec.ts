@@ -64,6 +64,8 @@ test.describe("desktop", () => {
 
     test("a Timeheart beats once, fills, and says Kept", async ({ wall, page }) => {
       await wall.goto();
+      /* nothing opens by itself (approved change, 2026-10-01): open the first spot */
+      await wall.openTile(0);
       const heart = page.locator("#rack .panel [data-save]");
       await expect(heart).toHaveText("Timeheart");
       await heart.click();
@@ -96,6 +98,8 @@ test.describe("desktop", () => {
 
   test("Finds read leaving first or as you found them, and remember the choice", async ({ wall, page }) => {
     await wall.goto();
+    /* nothing opens by itself (approved change, 2026-10-01): open the first spot */
+    await wall.openTile(0);
     const names: string[] = [];
     for (let i = 0; i < 3; i++) {
       names.push((await wall.openView.locator(".title").textContent())!);

@@ -236,6 +236,7 @@ test.describe("desktop: a tile opens inline under its row (§6)", () => {
   test("Keep reading expands the excerpt and Show less folds it", async ({ wall, page }) => {
     await wall.goto();
     await page.locator('#lanes [data-lane="writers"]').click();
+    await wall.openTile(0);
     await expect(page.locator("#rack .panel .read")).toBeVisible();
     const more = page.locator("#rack .panel [data-more]");
     await more.click();
@@ -248,6 +249,8 @@ test.describe("desktop: a tile opens inline under its row (§6)", () => {
 
   test("Save lands the story on the card and counts it on the tile", async ({ wall, page }) => {
     await wall.goto();
+    /* nothing opens by itself (approved change, 2026-10-01): open the first spot */
+    await wall.openTile(0);
     const no = (await page.locator("#rack .panel").getAttribute("data-no"))!;
     const saves = page.locator(`#s-${no.padStart(3, "0")} [data-v]`);
     const before = Number(await saves.textContent());
@@ -296,6 +299,8 @@ test.describe("desktop: the Fivehundrd card (§10, §11, §12)", () => {
 
   test("× removes a save and updates the tile's count", async ({ wall, page }) => {
     await wall.goto();
+    /* nothing opens by itself (approved change, 2026-10-01): open the first spot */
+    await wall.openTile(0);
     const no = (await page.locator("#rack .panel").getAttribute("data-no"))!;
     const count = page.locator(`#s-${no.padStart(3, "0")} [data-v]`);
     const before = await count.textContent();
@@ -379,6 +384,8 @@ test.describe("desktop: sharing and Keep my card (§12, §15)", () => {
   test("Share falls back to a sheet with WhatsApp, Telegram, X, Facebook, Email and Copy link", async ({ wall, page }) => {
     appOnly("approved change: the share sheet carries the spot's card; its link list is checked below");
     await wall.goto();
+    /* nothing opens by itself (approved change, 2026-10-01): open the first spot */
+    await wall.openTile(0);
     await page.locator("#rack .panel [data-share]").click();
     await expect(page.locator("#shareVeil")).toHaveClass(/\bon\b/);
     await expect(page.locator("#shareSheet .sharelist > *")).toHaveText(["WhatsApp", "Telegram", "X", "Facebook", "Email"]);
@@ -392,6 +399,8 @@ test.describe("desktop: sharing and Keep my card (§12, §15)", () => {
   test("Copy link copies the spot's link and says so", async ({ wall, page, context }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await wall.goto();
+    /* nothing opens by itself (approved change, 2026-10-01): open the first spot */
+    await wall.openTile(0);
     await page.locator("#rack .panel [data-share]").click();
     await page.locator("#shareSheet [data-copy]").click();
     await expect(page.locator("#toast")).toHaveText("Link copied");
@@ -401,6 +410,8 @@ test.describe("desktop: sharing and Keep my card (§12, §15)", () => {
 
   test("demo links explain themselves instead of leaving", async ({ wall, page }) => {
     await wall.goto();
+    /* nothing opens by itself (approved change, 2026-10-01): open the first spot */
+    await wall.openTile(0);
     await page.locator("#rack .panel .links a").first().click();
     await expect(page.locator("#toast")).toHaveText("Demo spot. Real makers link out to their own pages.");
   });
@@ -566,6 +577,8 @@ test.describe("desktop: index strip, audio, keys, search (§5, §8, §9)", () =>
 
   test("j and k step through the filled spots", async ({ wall, page }) => {
     await wall.goto();
+    /* nothing opens by itself (approved change, 2026-10-01): open the first spot */
+    await wall.openTile(0);
     const first = await page.locator("#rack .panel").getAttribute("data-no");
     await page.keyboard.press("j");
     await expect(page.locator("#rack .panel")).not.toHaveAttribute("data-no", first!);
@@ -575,6 +588,8 @@ test.describe("desktop: index strip, audio, keys, search (§5, §8, §9)", () =>
 
   test("the preview player plays and stops", async ({ wall, page }) => {
     await wall.goto();
+    /* nothing opens by itself (approved change, 2026-10-01): open the first spot */
+    await wall.openTile(0);
     const player = page.locator("#rack .panel [data-player]");
     await expect(player).toBeVisible();
     await player.locator("[data-play]").click();
@@ -679,6 +694,8 @@ test.describe("approved changes on top of the reference", () => {
     test("the open spot's countdown ticks every second", async ({ wall, page }) => {
       appOnly("approved change (§6): the reference's countdown stood still");
       await wall.goto();
+      /* nothing opens by itself (approved change, 2026-10-01): open the first spot */
+      await wall.openTile(0);
       const live = page.locator("#rack .panel [data-live]");
       const before = await live.textContent();
       /* move the frozen fixture clock on by five seconds */
@@ -755,6 +772,8 @@ test.describe("one spot everywhere (approved change)", () => {
   test("share cards are the wall's tile on a social canvas, in three sizes, with the spot's link", async ({ wall, page }) => {
     appOnly("approved change: share cards are built from the wall tile");
     await wall.goto();
+    /* nothing opens by itself (approved change, 2026-10-01): open the first spot */
+    await wall.openTile(0);
     await page.locator("#rack .panel [data-share]").click();
     for (const [label, size] of [
       ["Square", [1080, 1080]],
