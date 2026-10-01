@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, memo, useSyncExternalStore, type CSSProperties } from "react";
+import { Fragment, memo, useLayoutEffect, useSyncExternalStore, type CSSProperties } from "react";
 import { pad, type FilledSpot, type Spot } from "../../lib/wall/model";
 import type { RackItem } from "../../lib/wall/rack";
 import { skey } from "../../lib/wall/saves";
@@ -83,6 +83,11 @@ export function Rack() {
   const { rack, version } = st;
   const open = st.view === "panel" && st.openNo ? (st.wall[st.openNo - 1] as FilledSpot) : null;
   const complete = !!rack && limit >= rack.items.length;
+  /* the wall is in: what sits under it can show (overrides/16-speed.css) */
+  const isIn = !!rack;
+  useLayoutEffect(() => {
+    if (isIn) delete document.documentElement.dataset.wallWait;
+  }, [isIn]);
   return (
     <ol className="rack" id="rack" data-complete={complete ? "" : undefined} data-lane={st.lane}>
       {rack && (

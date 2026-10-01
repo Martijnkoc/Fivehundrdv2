@@ -3,6 +3,8 @@
  * Speed pass (2026-10-01): until the wall is in, what sits under it waits
  * unseen. The Hotspots row and the wall arrive together and push the Scout
  * card and the footer down; while those were already on screen, the whole
- * page jumped. Nothing changes once the wall is there.
+ * page jumped. Nothing changes once the wall is there (html[data-wall-wait]:
+ * set before the first paint by WallPage, cleared by the rack; a :has() rule
+ * on body here made every change re-check the page).
  */
-.stage:has(#rack:empty),body:has(#rack:empty) .site-foot{visibility:hidden}
+html[data-wall-wait] .stage,html[data-wall-wait] .stage~.site-foot{visibility:hidden}
