@@ -221,6 +221,15 @@ and records Stripe's fee for each payment.
   JSON-LD (Organization, WebSite, Service with the $9.95 offer, FAQPage,
   breadcrumbs), `/sitemap.xml` (with live stories' lasting links),
   `/robots.txt` (keeps `/founder`, `/admin` and `/api` out) and `/llms.txt`.
+- A story's lasting link (`/s/music/217/k3f9x2ab`) has its own title,
+  description, preview image, canonical address and CreativeWork JSON-LD.
+  While it's live the page is the wall, which opens the story once its
+  scripts run; the page as sent also carries the story's own words and its
+  maker's links, visually hidden like the page's heading (`StoryText` in
+  `app/wall/WallPage.tsx`), so search engines and screen readers get them
+  straight away.
+- Makers pay for their spot, so their links are paid links:
+  `rel="sponsored"` everywhere they appear (Google's rules for paid links).
 - Terms and Privacy describe what the code does; have them checked by a
   lawyer before launch.
 

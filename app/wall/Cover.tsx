@@ -95,7 +95,7 @@ function Trailer({ s }: { s: FilledSpot }) {
       className="trailer"
       href={s.trailer.url}
       target="_blank"
-      rel="noopener"
+      rel="sponsored noopener"
       data-demo={s.demo ? "" : undefined}
       aria-label={`Watch the ${s.lane === "games" ? "trailer" : "video"} on YouTube`}
     >
@@ -162,8 +162,9 @@ export const Cover = memo(function Cover({ s, saved, preview }: { s: FilledSpot;
         <Extra s={s} />
         {ws(6)}
         <div className="links">
+          {/* a paid placement: the maker's links are sponsored (Google's rules for paid links) */}
           {s.links.map((k, i) => (
-            <a key={i} href={k.url} target="_blank" rel="noopener" data-demo={s.demo ? "" : undefined}>
+            <a key={i} href={k.url} target="_blank" rel="sponsored noopener" data-demo={s.demo ? "" : undefined}>
               {k.label}
               <span>{k.url.replace(/^https?:\/\//, "")}</span>
             </a>
