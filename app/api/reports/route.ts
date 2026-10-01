@@ -20,7 +20,7 @@ export const POST = measured("/api/reports", async (req: Request) => {
     const feed = await rpc<Feed>("wall_public", {}, false);
     const story = feed.stories.find((s) => s.lane === lane && s.no === no);
     if (!story || !isUuid(story.id)) return json({ ok: false, error: "not found" }, { status: 404 });
-    const r = await rpc<{ ok: boolean; hidden: boolean }>("report_story", {
+    const r = await rpc<{ ok: boolean; hidden: boolean; new?: boolean }>("report_story", {
       p_story: story.id,
       p_reason: "other",
       p_note: "",
@@ -28,8 +28,9 @@ export const POST = measured("/api/reports", async (req: Request) => {
       p_visitor: isVisitor(b.visitor) ? b.visitor : "",
       p_ip_hash: ipHash(req),
     });
-    if (r.ok) await tellTeam(`${LANE[lane]} No. ${pad(no)}`, story.name, r.hidden).catch(() => {});
-    return json(r);
+    /* only a new report is mailed: the same person again is ignored, and must not mail again */
+    if (r.ok && r.new === true) await tellTeam(`${LANE[lane]} No. ${pad(no)}`, story.name, r.hidden).catch(() => {});
+    return json({ ok: r.ok, hidden: r.hidden });
   } catch {
     return json({ error: "unavailable" }, { status: 502 });
   }
