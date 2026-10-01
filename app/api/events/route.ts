@@ -1,10 +1,9 @@
 import { isBot } from "../../../lib/founder/attribution";
 import { hasDatabase, ipHash, json, rpc, userFrom } from "../../../lib/server/backend";
 import { measured } from "../../../lib/server/ops";
+import { isUuid, isVisitor } from "../../../lib/server/ids";
 
 const KINDS = new Set(["open", "save", "unsave", "link_click", "share", "entry"]);
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-const VISITOR = /^[A-Za-z0-9_-]{8,64}$/;
 
 /** §15: opens, saves, shares, link clicks and entries, counted per story. */
 export const POST = measured("/api/events", async (req: Request) => {
@@ -12,7 +11,7 @@ export const POST = measured("/api/events", async (req: Request) => {
   /* crawlers and link previewers don't count (they'd skew the counts and Hotspots) */
   if (isBot(req.headers.get("user-agent"))) return new Response(null, { status: 204 });
   const b = (await req.json().catch(() => ({}))) as { story?: string; kind?: string; visitor?: string };
-  if (!b.story || !UUID.test(b.story) || !b.kind || !KINDS.has(b.kind) || !b.visitor || !VISITOR.test(b.visitor))
+  if (!b.story || !isUuid(b.story) || !b.kind || !KINDS.has(b.kind) || !b.visitor || !isVisitor(b.visitor))
     return json({ error: "bad request" }, { status: 400 });
   /* Scout: a signed-in Timeheart is the account's call (only saves carry the account) */
   const user = b.kind === "save" || b.kind === "unsave" ? await userFrom(req) : null;

@@ -172,7 +172,7 @@ export const Cover = memo(function Cover({ s, saved, preview }: { s: FilledSpot;
         {ws(6)}
         {!preview && (
           <div className="acts">
-            {/* one row that stays in reach on phones (overrides.css); a plain part of the row elsewhere */}
+            {/* one row that stays in reach on phones (overrides/15-phone-actions.css); a plain part of the row elsewhere */}
             <div className="acts-bar">
               <button className="act solid" data-share="">
                 Share

@@ -1,12 +1,11 @@
 import { hasDatabase, hasPayments, json, rpc, stripe } from "../../../../lib/server/backend";
 import { measured } from "../../../../lib/server/ops";
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+import { isUuid } from "../../../../lib/server/ids";
 
 /** The maker backed out of Checkout: end the session and free the number straight away. */
 export const POST = measured("/api/checkout/cancel", async (req: Request) => {
   const { id } = (await req.json().catch(() => ({}))) as { id?: string };
-  if (!id || !UUID.test(id)) return json({ error: "id" }, { status: 400 });
+  if (!id || !isUuid(id)) return json({ error: "id" }, { status: 400 });
   if (!hasDatabase() || !hasPayments()) return json({ error: "offline" }, { status: 503 });
   try {
     const st = await rpc<{ status: string; session: string | null } | null>("checkout_status", { p_story: id });

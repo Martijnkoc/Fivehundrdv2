@@ -170,6 +170,12 @@ export function watchTiles(root: ParentNode, selector: string, idOf: (el: Elemen
   });
 }
 
+/** Stops watching (the wall's run ends): the next run's watchTiles starts a new observer with its own `idOf`. */
+export function unwatchTiles() {
+  io?.disconnect();
+  io = null;
+}
+
 /* ---------- the band above the wall ---------- */
 
 /** What "since your last visit" showed, taps on Hotspots, Newest and it (docs/retention.md), and the Scout loop (docs/scout.md). */

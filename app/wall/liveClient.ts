@@ -7,7 +7,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { PAL } from "../../lib/wall/demo";
 import type { Feed } from "../../lib/wall/live";
 import type { Draft } from "./Claim";
-import type { CallResult, FindStatus } from "../../lib/wall/retention";
+import type { FindStatus } from "../../lib/wall/retention";
 import type { ScoutMe } from "../../lib/wall/scout";
 import type { MakerNumbers } from "../../lib/site/reminderEmail";
 
@@ -76,14 +76,6 @@ export function sendEvent(story: string, kind: EventKind, token?: string | null)
 
 /* ---------- retention: Call it and the Finds' history (docs/retention.md) ---------- */
 
-export async function callStory(story: string): Promise<CallResult | null> {
-  try {
-    const r = await fetch("/api/call", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ story, visitor: visitorId() }) });
-    return r.ok ? r.json() : null;
-  } catch {
-    return null;
-  }
-}
 export async function makerStats(ids: string[]): Promise<(MakerNumbers & { id: string })[] | null> {
   try {
     const r = await fetch("/api/mine", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ visitor: visitorId(), ids }) });

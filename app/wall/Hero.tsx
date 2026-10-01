@@ -44,7 +44,7 @@ function Proof() {
       )}
       <p className="proof-line">{PROOF.line}</p>
       {t && !real && <p className="proof-sub">{BRAND.creator}</p>}
-      <button type="button" className="proof-cta" onClick={() => bridge.actions.heroCta("proof")}>
+      <button type="button" className="proof-cta" onClick={() => bridge.actions.heroCta()}>
         {PROOF.cta}
       </button>
     </aside>

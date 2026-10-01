@@ -24,10 +24,3 @@ export const LANE_ICON_PATHS: Record<LaneId, string> = {
   podcasts: '<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"/>',
   letters: '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
 };
-
-export const LICON = Object.fromEntries(
-  Object.entries(LANE_ICON_PATHS).map(([k, d]) => [
-    k,
-    `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`,
-  ]),
-) as Record<LaneId, string>;

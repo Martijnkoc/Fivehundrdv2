@@ -2,9 +2,8 @@ import { after } from "next/server";
 import { countryOf, deviceOf, isBot, sourceOf } from "../../../lib/founder/attribution";
 import { hasDatabase, rpc } from "../../../lib/server/backend";
 import { measured } from "../../../lib/server/ops";
+import { isUuid, isVisitor } from "../../../lib/server/ids";
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
-const VISITOR = /^[A-Za-z0-9_-]{8,64}$/;
 const str = (v: unknown, n: number) => (typeof v === "string" && v ? v.slice(0, n) : undefined);
 
 type Item = {
@@ -48,7 +47,7 @@ export const POST = measured("/api/track", async (req: Request) => {
   const ua = req.headers.get("user-agent");
   if (isBot(ua)) return ok;
   const b = (await req.json().catch(() => null)) as { visitor?: string; clientAt?: string; items?: Item[] } | null;
-  if (!b || !b.visitor || !VISITOR.test(b.visitor) || !Array.isArray(b.items)) return new Response(null, { status: 400 });
+  if (!b || !b.visitor || !isVisitor(b.visitor) || !Array.isArray(b.items)) return new Response(null, { status: 400 });
   const visitor = b.visitor;
   const clientAt = str(b.clientAt, 40) && !Number.isNaN(Date.parse(b.clientAt!)) ? b.clientAt : undefined;
   const items = b.items.slice(0, 10);
@@ -75,7 +74,7 @@ export const POST = measured("/api/track", async (req: Request) => {
             },
           });
         } else if (it.t === "imp" && Array.isArray(it.stories)) {
-          const ids = [...new Set(it.stories.filter((s): s is string => typeof s === "string" && UUID.test(s)))].slice(0, 200);
+          const ids = [...new Set(it.stories.filter((s): s is string => typeof s === "string" && isUuid(s)))].slice(0, 200);
           if (ids.length) await rpc("track_impressions", { p_visitor: visitor, p_stories: ids });
         } else if (it.t === "create") {
           const step = Number.isInteger(it.step) && it.step! > 0 && it.step! < 20 ? it.step : null;
@@ -91,7 +90,7 @@ export const POST = measured("/api/track", async (req: Request) => {
           await rpc("track_surface", {
             p_visitor: visitor,
             p_kind: it.kind,
-            p_story: it.story && UUID.test(it.story) ? it.story : null,
+            p_story: it.story && isUuid(it.story) ? it.story : null,
             p_props: !it.kind.startsWith("since_") ? plainProps(it.props) : { item: str(it.props?.item, 20) ?? null, holdout: it.props?.holdout === true },
           });
         } else if (it.t === "error") {

@@ -6,11 +6,9 @@ Approved 2026-09-27. Three visible layers; everything else is data.
    by priority: something you called became a Hotspot → a Find ends within 6h → Finds
    gaining saves (≥ max(5, 50%) since your last visit) → a maker you found is back.
    10% of live visitors (fixed by visitor id) don't see it: the control group.
-2. **Call it** on an opened spot (`app/wall/Cover.tsx`): after Next spot; one inline
-   question; also saves. Shows which caller you were ("Called 3rd · Sep 27"), derived
-   from the order of calls and shown only to you. Three a day (UTC). Not on current top-5 Hotspots, stories that
-   have ever been one, your own spot or ended spots. Private: never shown, never counted
-   in Hotspots.
+2. **Call it** was replaced by Scout on 2026-09-28 (docs/scout.md): the Timeheart is the
+   call. Its button and `/api/call` are gone; `public.call_story` and the `calls` rows it
+   made stay, so the Finds of people who called before still show it ("Called 3rd · Sep 27").
 3. **Finds** (`app/wall/Card.tsx`): one line each, by priority: call became a Hotspot
    ("Called 3rd · 14h early") → call moved ("Called at 12 · now 380") → maker is back →
    found early ("Found at 23 · now 1,284") → open call ("Called Sep 27") → ended

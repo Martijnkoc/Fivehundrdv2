@@ -179,36 +179,6 @@ export function inHoldout(visitor: string) {
   return h % 10 === 0;
 }
 
-/* ---------- Call it ---------- */
-
-export const CALLS_PER_DAY = 3;
-/** What /api/call answers (call_story): called, or why not. */
-export type CallResult = { status: "called" | "own" | "hot" | "limit" | "unavailable"; calledAt?: string; rank?: number; left?: number };
-/** This browser's calls: story key → when, and which caller you were (live wall). */
-export type Call = { at: number; rank?: number };
-export type Calls = Record<string, Call>;
-/** Reads stored calls (early ones were only a time). */
-export function readCalls(raw: unknown): Calls {
-  const out: Calls = {};
-  if (raw && typeof raw === "object")
-    for (const [k, v] of Object.entries(raw as Record<string, unknown>)) {
-      if (typeof v === "number") out[k] = { at: v };
-      else if (v && typeof v === "object" && typeof (v as Call).at === "number") out[k] = { at: (v as Call).at, ...(typeof (v as Call).rank === "number" && { rank: (v as Call).rank }) };
-    }
-  return out;
-}
-const utcDay = (t: number) => new Date(t).toISOString().slice(0, 10);
-export const callsToday = (calls: Calls, now: number) => Object.values(calls).filter((c) => utcDay(c.at) === utcDay(now)).length;
-/** "Called 3rd · Sep 27" on the spot. */
-export const calledLabel = (c: Call) => `Called${c.rank ? ` ${ordinal(c.rank)}` : ""} · ${day(c.at)}`;
-
-/** Whether Call it is offered on a spot: live, not your own, and not (yet) a Hotspot. */
-export function callable(s: FilledSpot, hotIds: Set<string>) {
-  return left(s) > 0 && !s.mine && !(s.id && hotIds.has(s.id));
-}
-
-export const callKey = skey;
-
 /** A Scout that clearly gained Timehearts since the last visit (as `prior` left it): at least 5, and half again. */
 const isMoving = (prior: Map<string, number | undefined>) => (x: OrderedSave) => {
   if (!x.liveNow) return false;

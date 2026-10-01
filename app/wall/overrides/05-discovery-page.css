@@ -1,0 +1,15 @@
+/* a story's lasting link after its 72 hours (app/s/[lane]/[no]/[slug]) */
+.disc{min-height:100dvh}
+.disc-top{display:flex;justify-content:space-between;align-items:center;gap:12px;max-width:1080px;margin:0 auto;padding:18px clamp(16px,2.6vw,36px) 10px}
+.disc-main{max-width:1080px;margin:0 auto;padding:8px clamp(16px,2.6vw,36px) 60px}
+.disc-note{font-size:15px;line-height:1.45;max-width:62ch;margin:0 0 18px;color:var(--ink2)}
+.disc-note b{color:var(--ink)}
+.disc-spot::before{display:none}
+.disc-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.disc-acts .act{text-decoration:none;display:inline-flex;align-items:center}
+.disc-gone{text-align:center;padding-top:14vh}
+.disc-gone h1{font-size:clamp(30px,6vw,48px);letter-spacing:-.04em;line-height:1;margin:0 0 12px}
+.disc-gone p{color:var(--ink2);margin:0 0 24px}
+.disc-cta{display:inline-block;width:auto;padding:14px 26px;text-decoration:none}
+.disc .btn-create{text-decoration:none}
+

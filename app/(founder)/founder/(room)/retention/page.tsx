@@ -79,14 +79,12 @@ const vs = (a: number | null, b: number | null) => (a == null || b == null ? "no
 function LoopCards({ l }: { l: Loop }) {
   const s = l.since,
     t = l.taps,
-    c = l.calls,
     r = l.returns;
-  const came = c.hotspot + c.moved;
   return (
     <div className="section">
       <Card
         title="The retention loop"
-        desc="Each number answers one question about why people come back. Calls, Found Early and the since line are private to each visitor; nothing here is shown on the wall."
+        desc="Each number answers one question about why people come back. Found Early and the since line are private to each visitor; nothing here is shown on the wall. (Call it was replaced by Scout on 2026-09-28; its numbers are no longer shown.)"
       >
         <div className="stats">
           <Stat
@@ -102,27 +100,11 @@ function LoopCards({ l }: { l: Loop }) {
             sub={`saved or shared after a Hotspot tap (${fmt("int", t.hot)}); the wall: ${pct(rate(t.wallKept, t.wallOpens))} of opens`}
           />
           <Stat label="Does Newest?" value={pct(rate(t.newKept, t.new))} sub={`saved or shared after a Newest tap (${fmt("int", t.new)})`} />
-          <Stat label="Is Call it used?" value={fmt("int", c.made)} sub={`calls, by ${fmt("int", c.callers)} people`} />
-          <Stat
-            label="Do calls mean something?"
-            value={pct(rate(came, c.made))}
-            sub={`${fmt("int", c.hotspot)} became a Hotspot, ${fmt("int", c.moved)} moved, of ${fmt("int", c.made)} calls (${fmt("int", c.made - c.settled)} still open)`}
-          />
-          <Stat
-            label="How early are good calls?"
-            value={c.hoursToHotspot == null ? "—" : `${c.hoursToHotspot.toFixed(1)}h`}
-            sub="median time from a call to its Hotspot"
-          />
           <Stat label="Is Found Early rare and real?" value={pct(rate(l.early.early, l.early.saves))} sub={`of ${fmt("int", l.early.saves)} saves on stories that ended in the period`} />
           <Stat
             label="Do people with Finds return more?"
             value={vs(rate(r.savedBack, r.saved), rate(r.notSavedBack, r.notSaved))}
             sub={`7-day return, saved on day one or not (${fmt("int", r.visitors)} new visitors); a correlation, not proof`}
-          />
-          <Stat
-            label="Do people who call return more?"
-            value={vs(rate(r.calledBack, r.called), rate(r.notCalledBack, r.notCalled))}
-            sub={`7-day return, called on day one or not (${fmt("int", r.called)} callers); a correlation, not proof`}
           />
         </div>
       </Card>

@@ -1,8 +1,8 @@
 import { adminFrom, hasDatabase, hasPayments, json, rpc, stripe } from "../../../lib/server/backend";
 import { refundStory } from "../../../lib/server/refunds";
 import { measured } from "../../../lib/server/ops";
+import { isUuid } from "../../../lib/server/ids";
 
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const FILTERS = new Set(["attention", "live", "removed", "all"]);
 
 /*
@@ -32,7 +32,7 @@ export const GET = measured("/api/admin", async (req: Request) => {
       }
       case "reports": {
         const id = q.get("id") ?? "";
-        if (!UUID.test(id)) return json({ error: "id" }, { status: 400 });
+        if (!isUuid(id)) return json({ error: "id" }, { status: 400 });
         return json(await rpc("admin_reports", { p_story: id }));
       }
     }
@@ -50,7 +50,7 @@ export const POST = measured("/api/admin", async (req: Request) => {
   const admin = await adminFrom(req);
   if (!admin) return json({ error: "not allowed" }, { status: 403 });
   const b = (await req.json().catch(() => ({}))) as { action?: string; id?: string; reason?: string; refund?: boolean };
-  if (!b.id || !UUID.test(b.id)) return json({ error: "id" }, { status: 400 });
+  if (!b.id || !isUuid(b.id)) return json({ error: "id" }, { status: 400 });
   const reason = String(b.reason ?? "").slice(0, 200) || null;
   try {
     switch (b.action) {

@@ -1,0 +1,62 @@
+/* above the wall (approved change): its own band, over the card and the wall,
+   a few shades off the page; Hotspots / Newest and what changed since your last visit */
+.spotlight{background:color-mix(in oklab,var(--bg),#1c1b18 5.5%);border-bottom:1px solid var(--line)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .spotlight{background:color-mix(in oklab,var(--bg),#fff 4%)}}
+:root[data-theme="dark"] .spotlight{background:color-mix(in oklab,var(--bg),#fff 4%)}
+.sl-in{max-width:1240px;margin:0 auto;padding:16px max(12px,env(safe-area-inset-right,0px)) 18px max(12px,env(safe-area-inset-left,0px));display:grid;gap:12px}
+.sl-head{display:flex;align-items:center;justify-content:space-between;gap:8px 12px;flex-wrap:wrap}
+/* one segmented control: two equal capsules, same height, padding and baseline; only the fill says which is on */
+.sl-tabs{display:inline-grid;grid-template-columns:1fr 1fr;gap:2px;padding:3px;border:1px solid var(--line);border-radius:999px;background:var(--paper)}
+.sl-tabs button{box-sizing:border-box;height:32px;min-width:84px;padding:0 14px;border:1px solid transparent;border-radius:999px;background:transparent;
+  font:inherit;font-size:13px;font-weight:800;line-height:1;letter-spacing:-.01em;color:var(--ink);cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;transition:background-color .18s,color .18s}
+.sl-tabs button.on{background:var(--ink);color:var(--paper)}
+.sl-tabs button:not(.on):not(:disabled):hover{background:color-mix(in oklab,var(--ink),transparent 93%)}
+.sl-tabs button:focus-visible{outline:2px solid var(--pink);outline-offset:2px}
+.sl-tabs button:disabled{opacity:.45;cursor:default}
+.sl-since{margin:0;font-size:13px;color:var(--ink2)}
+.sl-since b{color:var(--ink);font-weight:800}
+.sl-note{display:none;margin:0;font-size:13px;line-height:1.4;color:var(--ink2)}
+.sl-row{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
+.sl-item{display:flex;flex-direction:column;gap:6px;width:100%;padding:0;border:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.sl-item .spot.still{pointer-events:none;width:100%}
+.sl-item:focus-visible{outline:none}
+/* in the rail every time label takes the countdown pill's height, so a card in its last hours doesn't make the row 1px taller */
+.sl-row .cap-l .t{padding-top:1px;padding-bottom:1px}
+.sl-why{display:block;height:1.3em;font-size:11.5px;line-height:1.3;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* the one thing that changed for you: a quiet link in the since line */
+.sl-mine{display:inline;padding:0;border:0;background:none;font:inherit;font-weight:800;color:var(--ink);text-align:left;text-decoration:underline;text-decoration-thickness:2px;text-decoration-color:var(--pink);text-underline-offset:3px;cursor:pointer}
+.sl-mine:hover{text-decoration-color:var(--ink)}
+/* Call it on an opened spot: as quiet as the other actions; its question inline */
+.act.call.done{border-style:dashed;color:var(--ink2);cursor:default}
+.act.call.done:hover{border-color:var(--ink)}
+.call-q{display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:14px;font-weight:700}
+.call-x{display:inline-flex;align-items:center;min-height:44px;padding:0 4px;border:0;background:none;font:inherit;font-weight:700;color:var(--ink2);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.call-note{display:inline-flex;align-items:center;min-height:40px;font-size:13.5px;font-weight:700;color:var(--ink2)}
+/* approved change: the maker's own numbers under "Your story" */
+.lc-row.mine .mine-nums{grid-column:1/3;margin-top:4px;font-size:11.5px;font-weight:700;line-height:1.35;color:rgba(20,18,16,.8);white-space:normal}
+/* desktop: the controls and their line on top, then seven spots across the page (the card's and the wall's width together) */
+@media (min-width:980px){
+  .sl-in{grid-template-columns:minmax(0,1184px);gap:14px;padding:20px 24px 24px;justify-content:center}
+  .sl-head{justify-content:flex-start;gap:8px 16px}
+  .sl-note{display:block;white-space:nowrap}
+  .sl-since{margin-left:auto}
+  .sl-row{grid-template-columns:repeat(7,minmax(0,1fr));gap:14px}
+}
+/* one footprint below desktop, set by the taller state: the rail and its placeholder (while the wall
+   loads) take the same room, so neither loading nor switching Hotspots / Newest moves the wall */
+.sl-wait{display:none}
+@media (max-width:699px){.sl-wait{display:block}.spotlight{min-height:282px}}
+@media (max-width:453px){.spotlight{min-height:298px}}
+/* below desktop: five, as before */
+@media (max-width:979px){.sl-row li:nth-child(n+6){display:none}}
+/* phones: a strip to swipe */
+@media (max-width:699px){
+  .sl-in{padding:12px 0 14px;gap:10px}
+  .sl-head{padding:0 16px}
+  .sl-row{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:104px;overflow-x:auto;scroll-snap-type:x mandatory;padding:0 16px 2px;scroll-padding:0 16px;scrollbar-width:none}
+  .sl-row::-webkit-scrollbar{display:none}
+  .sl-row li{scroll-snap-align:start}
+}
+.sq-r{display:block;font-size:10px;font-weight:700;color:var(--ink2);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
