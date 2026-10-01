@@ -1330,7 +1330,8 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
     /* "Get your own spot" from a story's lasting link */
     if (q.get("create") === "1") {
       history.replaceState(null, "", "/");
-      openClaim();
+      /* in the next frame, once the wall's start is rendered: the form sizes its preview from a wall tile */
+      requestAnimationFrame(() => alive() && openClaim());
     }
     if (cancelled)
       liveApi.cancelCheckout(cancelled).then(() => {
