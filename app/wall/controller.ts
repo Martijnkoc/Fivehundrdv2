@@ -235,7 +235,7 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
    * Phones build the wall a few rows at a time: the first screens at once,
    * the rest while the phone is idle, so the wall is there and scrolls
    * straight away. Rows out of view aren't laid out or painted either
-   * (content-visibility, overrides.css), sized from the first row.
+   * (content-visibility, overrides/06-mobile-audit.css), sized from the first row.
    */
   const compactNow = () => matchMedia("(max-width:699px)").matches;
   const FIRST_ROWS = 10,
@@ -400,7 +400,7 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
   /**
    * The Timeheart (craft pass): keeping a find beats once. The heart fills,
    * its clock hands sweep round, one ring goes out, and the time left on the
-   * open spot and on its tile answers. CSS does the motion (overrides.css);
+   * open spot and on its tile answers. CSS does the motion (overrides/10-craft.css);
    * reduced motion shows only the new state.
    */
   let beatT = 0;

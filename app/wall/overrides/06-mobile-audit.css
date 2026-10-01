@@ -1,0 +1,80 @@
+/*
+ * Phones and tablets (approved change, mobile audit): sheets open above the
+ * tab bar and above an open spot; the tab bar is in the paper look (light
+ * and dark) and keeps clear of the iPhone home indicator.
+ */
+@media (max-width:979px){
+  .veil{z-index:96;touch-action:none}
+  .veil .sheet{touch-action:pan-y;padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))}
+  .tabbar{background:var(--bg);color:var(--ink);border-top-color:var(--line);box-shadow:0 -8px 20px -16px rgba(28,27,24,.35)}
+  .tabbar button{color:color-mix(in oklab,var(--ink),transparent 45%);min-height:48px}
+  .tabbar button.on{color:var(--ink)}
+  .tabbar .tb-create{background:#d8ff45;color:#1c1b18}
+  .tb-n{box-shadow:0 0 0 2px var(--bg)}
+  .card-veil,.dveil{touch-action:none}
+}
+
+/*
+ * Phones (approved change, mobile audit): a compact header. One line with
+ * the brand and a search button, then the lanes with thumb-sized tabs. The
+ * avatar was a desktop decoration; search opens in place of the brand.
+ */
+.search-toggle{display:none}
+@media (max-width:699px){
+  .site{padding-block:8px 0;column-gap:10px;row-gap:0}
+  #brand{gap:2px}
+  #brand .slogan{font-size:11px}
+  .who{display:none}
+  .header-actions{gap:0}
+  .search-toggle{all:unset;box-sizing:border-box;display:grid;place-items:center;width:44px;height:44px;margin-right:-10px;border-radius:999px;color:var(--ink);cursor:pointer}
+  .search-toggle svg{width:21px;height:21px}
+  .search-toggle .st-close,.top.searching .search-toggle .st-open{display:none}
+  .top.searching .search-toggle .st-close{display:block}
+  .searchbox{display:none}
+  .top.searching #brand{display:none}
+  .top.searching .searchbox{display:flex;order:1;flex:1 1 0;min-width:0;max-width:none;height:42px;margin:1px 0}
+  .top.searching .header-actions{order:2}
+  nav.primary{gap:22px;margin:0 calc(-1 * clamp(16px,2.6vw,36px));padding:0 clamp(16px,2.6vw,36px);
+    -webkit-mask-image:linear-gradient(90deg,#000 86%,transparent);mask-image:linear-gradient(90deg,#000 86%,transparent)}
+  nav.primary a{padding:13px 0 11px;font-size:15px}
+  /* iPhone pass: short lane names still get a 44px-wide target (half the gap on each side) */
+  nav.primary a{position:relative}
+  nav.primary a::before{content:"";position:absolute;inset:0 -11px -2px}
+
+  /* thumb-sized controls: 44px or more */
+  .dsheet .act{min-height:44px;padding:11px 18px}
+  .dclose{width:44px;height:44px}
+  .player .pp{width:44px;height:44px}
+  .claim-grid .chip,.sheet .chip{min-height:44px;padding:10px 14px}
+  .sv-x::before{content:"";position:absolute;inset:-12px}
+  .links a{min-height:48px}
+}
+/* the smallest phones: the price label fits its column */
+@media (max-width:359px){
+  .vacant .v2{font-size:10px;padding:3px 7px}
+  .vacant .vno{font-size:11px}
+}
+@media (max-width:699px){
+  #q::-webkit-search-cancel-button{display:none}
+}
+
+/*
+ * Phones (mobile audit): the wall scrolls on the compositor. Rows out of view
+ * skip layout and paint (sized from the first row, so nothing jumps), with a
+ * few pixels of room so an open tile's ring isn't clipped. Grain and halftone
+ * are plain see-through layers instead of blend modes, and the backdrop is a
+ * tint instead of a blur, which costs every frame of the overlay's motion.
+ */
+@media (max-width:699px){
+  .shelf-row{content-visibility:auto;contain-intrinsic-size:auto var(--row-est,240px);padding:4px 3px;margin:-4px -3px 10px}
+  .book::after,.lc::after,.art::before{mix-blend-mode:normal;background-image:var(--grain-a);opacity:.06}
+  .bk-art::after,.art::after{mix-blend-mode:normal;opacity:.09}
+  .dveil{-webkit-backdrop-filter:none;backdrop-filter:none;background:rgba(20,18,15,.55)}
+  .dsheet{will-change:transform,opacity}
+}
+:root{--grain-a:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='g'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  -1.2 0 0 0 1.1'/></filter><rect width='100%' height='100%' filter='url(%23g)'/></svg>")}
+@media (max-width:699px){
+  /* the wall holds a screen's height from the first paint, so nothing below it jumps when it fills */
+  .rack{min-height:100dvh}
+}
+

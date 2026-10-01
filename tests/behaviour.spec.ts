@@ -6,7 +6,7 @@ import { expect, test, viewports } from "./wall";
  * test runs on the reference and on the app; both must pass.
  */
 
-/** For approved changes the reference deliberately doesn't have (see app/wall/overrides.css, README). */
+/** For approved changes the reference deliberately doesn't have (see app/wall/overrides/, README). */
 const appOnly = (reason: string) => test.skip(test.info().project.name === "reference", reason);
 
 const phone = viewports[0];

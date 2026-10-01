@@ -1,0 +1,11 @@
+/* iPhone pass: 44px targets where the look stays smaller (the toggle, the sheet's grabber) */
+@media (max-width:699px){
+  .sl-tabs button{position:relative}
+  .sl-tabs button::before{content:"";position:absolute;inset:-7px -1px}
+}
+/* the grabber: an 88x44 button with the same 40x5 bar at the same place; the card below doesn't move */
+@media (max-width:979px){
+  .sheet-handle{position:relative;z-index:2;width:88px;height:44px;margin:-8px auto -15px;background:none;border-radius:0}
+  .sheet-handle::after{content:"";position:absolute;left:24px;right:24px;top:12px;height:5px;border-radius:3px;background:var(--line)}
+}
+

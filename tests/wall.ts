@@ -1,4 +1,5 @@
 import { test as base, expect, type Page } from "@playwright/test";
+import { overridesCss } from "../app/wall/overrides";
 
 export type WallOptions = { wallPath: string };
 
@@ -49,7 +50,7 @@ export class Wall {
       }, hide);
     await this.page.goto(`${this.path}?fixture=1${hash}`);
     /* the baselines are the reference plus the approved changes */
-    if (this.isReference) await this.page.addStyleTag({ path: "app/wall/overrides.css" });
+    if (this.isReference) await this.page.addStyleTag({ content: await overridesCss() });
     await this.page.waitForSelector("#rack .spot");
     /* phones build the wall a few rows at a time */
     if (!this.isReference) await this.page.waitForSelector("#rack[data-complete]");

@@ -1,0 +1,30 @@
+/*
+ * The Hotspots / Newest rail only (approved change, 2026-09-29): each spot in
+ * a frame, like a printed museum label. A thin outer line with its top left
+ * corner cut, a margin of paper, and an inner line in the artwork's own colour
+ * (--c1; darker on light paper, lighter on dark). The card keeps its height:
+ * the paper margin takes from the artwork what it adds around it. Hover and
+ * focus lift it 3px and darken the outer line. No glow, no zoom. Wall tiles
+ * are not touched (everything here is under .sl-row).
+ */
+.sl-row{--fr-line:color-mix(in oklab,var(--ink),transparent 35%);--fr-cut:15px}
+.sl-row .book{padding:7px;border:1px solid var(--fr-line);border-radius:2px;box-shadow:none;
+  --fr-in:color-mix(in oklab,var(--c1),#000 25%);
+  /* the outer line across the cut corner */
+  background:linear-gradient(to bottom right,transparent calc(50% - .7px),var(--fr-line) calc(50% - .7px) calc(50% + .7px),transparent calc(50% + .7px)) -1px -1px/var(--fr-cut) var(--fr-cut) no-repeat,var(--card);
+  clip-path:polygon(var(--fr-cut) 0,100% 0,100% 100%,0 100%,0 var(--fr-cut));
+  transition:transform .28s cubic-bezier(.2,.8,.2,1),border-color .28s}
+.sl-row .spot.still{filter:drop-shadow(0 1px 1px rgba(28,27,24,.12)) drop-shadow(0 10px 12px rgba(28,27,24,.16))}
+.sl-row .book::before{content:"";position:absolute;inset:3px;z-index:3;pointer-events:none;border:1.5px solid var(--fr-in);border-radius:1px;
+  clip-path:polygon(10px 0,100% 0,100% 100%,0 100%,0 10px);
+  background:linear-gradient(to bottom right,transparent calc(50% - .9px),var(--fr-in) calc(50% - .9px) calc(50% + .9px),transparent calc(50% + .9px)) -1.5px -1.5px/10px 10px no-repeat}
+.sl-row .bk-strip{border-top-color:var(--fr-in)}
+/* the new dot sits on the artwork, as on the wall, clear of the cut corner */
+.sl-row .book .new{left:14px;top:14px}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .sl-row .book{--fr-in:color-mix(in oklab,var(--c1),#fff 30%)}}
+:root[data-theme="dark"] .sl-row .book{--fr-in:color-mix(in oklab,var(--c1),#fff 30%)}
+@media (hover:hover){.sl-item:hover .book{transform:translateY(-3px);--fr-line:var(--ink)}}
+.sl-item:focus-visible .book{transform:translateY(-3px);--fr-line:var(--ink)}
+.sl-item:focus-visible{outline:2px solid var(--pink,#ff7bc3);outline-offset:3px;border-radius:3px}
+@media (prefers-reduced-motion:reduce){.sl-row .book{transition:none}}
+

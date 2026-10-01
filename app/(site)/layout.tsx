@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { NAME, orgJsonLd, POSITIONING, SITE_URL, TAGLINE } from "../../lib/site/facts";
+import { overridesCss } from "../wall/overrides";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -44,15 +45,15 @@ export const viewport: Viewport = {
  */
 const css = (file: string) => readFile(path.join(process.cwd(), "app", "wall", file), "utf8");
 const wallCss = css("wall.css");
-/* Approved changes on top of the reference (see the file's header). */
-const overridesCss = css("overrides.css");
+/* Approved changes on top of the reference (app/wall/overrides/, read in order). */
+const overrides = overridesCss();
 
 export default async function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <head>
         <style dangerouslySetInnerHTML={{ __html: await wallCss }} />
-        <style dangerouslySetInnerHTML={{ __html: await overridesCss }} />
+        <style dangerouslySetInnerHTML={{ __html: await overrides }} />
       </head>
       <body>
         {/* Inter and Fraunces, self-hosted (BUILD_BRIEF §1.2); see scripts/prepare-reference.mjs */}

@@ -19,5 +19,5 @@ These hold for every change, whoever asks for it; raise it before building anyth
 - **Hotspot weights are a hypothesis.** They live in `private.hotspot_cfg()` and are tuned
   from real data, not presented as proven.
 - **The UI is frozen unless a change is approved.** Approved changes go in
-  `app/wall/overrides.css` and get their own approved screenshots; the rest of the wall
+  `app/wall/overrides/` and get their own approved screenshots; the rest of the wall
   stays pixel-identical to `reference.html`.
