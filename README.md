@@ -27,7 +27,7 @@ visual suite must still match the reference after every change.
 
 | Part | Where it lives |
 |---|---|
-| CSS | `app/wall/wall.css`, copied verbatim from `reference.html` and inlined as-is (not through the CSS pipeline, which rewrites values) |
+| CSS | `app/wall/wall.css`, copied verbatim from `reference.html`, plus `app/wall/overrides/`, served as-is as one cacheable file (`/wall.css?v=<hash>`, `app/wall/styles.ts`; not through the CSS pipeline, which rewrites values) |
 | Demo data, lanes, time, artwork, icons, links, images, social card | `lib/wall/*` (typed) |
 | Wall order: lanes, search, ring, rows | `lib/wall/rack.ts` |
 | Header, footer, tab bar, overlays | `app/wall/Chrome.tsx` |
@@ -115,6 +115,11 @@ which were signed off:
     - **Questions** open and close one at a time (`details`); the answers stay in the page and in its FAQ structured data.
     - **Favicon:** the wordmark's F in Fraunces with its pink dot, cream on charcoal (`app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`).
 20. Audit fixes, 2026-10-01: the phone tab bar's inactive tabs are darker (they failed contrast), and the footer's lane list is called "All lanes" for screen readers (two navigations were both "Lanes").
+21. Speed pass, 2026-10-01 (no pixel changes once the wall is in):
+    - **Every screen** builds the wall a few rows at a time while the browser is idle, as phones did (two rows a step on phones). Each step renders only the rack (the row limit has its own store), rows already built don't render again, and the wall's start renders once instead of about ten times. Desktop keeps its inline tile patterns: as images (like phones) they'd halve its elements, but their edges anti-alias a little differently, so that is a visual change to approve first.
+    - **Nothing jumps while it loads**: until the wall is in, the Scout card and the footer under it wait unseen (`overrides/16-speed.css`), and the first screen's fonts are fetched with the page.
+    - **Lighter page**: the CSS is one cacheable file instead of inline (it was in every page twice, in the HTML and in React's payload: 57 → 9 KB compressed HTML), and the wall's scripts come with the page instead of a round trip later.
+    - Measured on a production build without a database (the demo wall), compressed as Vercel serves it, phone on slow 4G with a 4× slower CPU: the wall in 3.6 s instead of 4.1, blocked time 0.85 s instead of 2.8, layout shift 0.17 instead of 0.29. Desktop: the wall in 0.46 s instead of 1.3, blocked 0.1 s instead of 0.9, layout shift 0.03 instead of 0.68. What still shifts is the first screen's "today" block giving up its numbers' room when there is no database; with one, the numbers fill that room.
 
 CSS for these lives in `app/wall/overrides/`, one file per part, joined in order (`app/wall/overrides/index.ts`). The visual suite applies it
 to the reference too, so the baselines are "the reference plus the approved

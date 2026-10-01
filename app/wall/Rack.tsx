@@ -1,12 +1,12 @@
 "use client";
 
-import { Fragment, useSyncExternalStore, type CSSProperties } from "react";
+import { Fragment, memo, useSyncExternalStore, type CSSProperties } from "react";
 import { pad, type FilledSpot, type Spot } from "../../lib/wall/model";
 import type { RackItem } from "../../lib/wall/rack";
 import { skey } from "../../lib/wall/saves";
 import { styleFor } from "../../lib/wall/time";
 import { Cover } from "./Cover";
-import { wallStore, type WallState } from "./store";
+import { limitStore, wallStore } from "./store";
 import { Filler, Tile, cssVars } from "./Tile";
 
 function clearSearch() {
@@ -24,7 +24,21 @@ function Panel({ s, saved }: { s: FilledSpot; saved: boolean }) {
   );
 }
 
-function Item({ item, st, runs }: { item: RackItem; st: WallState; runs: Record<number, Spot[]> }) {
+type ItemProps = {
+  item: RackItem;
+  /** the open spot, only when it's in this row: opening one spot doesn't re-render every row */
+  openNo: number | null;
+  minute: number;
+  /** phones: tile patterns as images */
+  compact: boolean;
+  since?: number;
+  /** bumped when the controller changed spot counters (the spots are mutated in place) */
+  rev: number;
+  runs: Record<number, Spot[]>;
+};
+
+/* Memoised: the wall is built a few rows at a time, and each step only renders its new rows. */
+const Item = memo(function Item({ item, openNo, minute, compact, since, runs }: ItemProps) {
   if (item.kind === "wrap")
     return (
       <li className="ring-wrap">
@@ -44,12 +58,12 @@ function Item({ item, st, runs }: { item: RackItem; st: WallState; runs: Record<
           <Tile
             key={s.no}
             s={s}
-            open={s.no === st.openNo}
+            open={s.no === openNo}
             opens={s.vacant ? undefined : s.opens}
             saves={s.vacant ? undefined : s.saves}
-            minute={st.minute}
-            compact={st.compact}
-            since={st.since?.at}
+            minute={minute}
+            compact={compact}
+            since={since}
             big={s.no === item.big}
             run={runs[s.no]}
           />
@@ -60,14 +74,15 @@ function Item({ item, st, runs }: { item: RackItem; st: WallState; runs: Record<
       </div>
     </li>
   );
-}
+});
 
 /** The wall (§5, §6): rows of tiles round the circle from this visitor's entry. */
 export function Rack() {
   const st = useSyncExternalStore(wallStore.subscribe, wallStore.get, wallStore.getServer);
+  const limit = useSyncExternalStore(limitStore.subscribe, limitStore.get, limitStore.getServer);
   const { rack, version } = st;
   const open = st.view === "panel" && st.openNo ? (st.wall[st.openNo - 1] as FilledSpot) : null;
-  const complete = !!rack && st.limit >= rack.items.length;
+  const complete = !!rack && limit >= rack.items.length;
   return (
     <ol className="rack" id="rack" data-complete={complete ? "" : undefined} data-lane={st.lane}>
       {rack && (
@@ -83,9 +98,17 @@ export function Rack() {
               </button>
             </li>
           )}
-          {rack.items.slice(0, st.limit).map((item, i) => (
+          {rack.items.slice(0, limit).map((item, i) => (
             <Fragment key={i}>
-              <Item item={item} st={st} runs={rack.runs} />
+              <Item
+                item={item}
+                openNo={item.kind === "row" && item.spots.some((s) => s.no === st.openNo) ? st.openNo : null}
+                minute={st.minute}
+                compact={st.compact}
+                since={st.since?.at}
+                rev={st.rev}
+                runs={rack.runs}
+              />
               {open && item.kind === "row" && item.spots.some((s) => s.no === open.no) && (
                 <Panel key={`panel-${open.no}`} s={open} saved={st.saved.has(skey(open))} />
               )}

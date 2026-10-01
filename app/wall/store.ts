@@ -41,14 +41,12 @@ export type WallState = {
   /** What #claimSheet shows (§13 form, then the success screen). */
   claim: ClaimView | null;
   claimVersion: number;
-  /** Phones: tile patterns as images, and the rack built a few rows at a time. */
+  /** Phones: tile patterns as images. */
   compact: boolean;
   /** The live wall: accounts are real (not the demo's prototype sheet). */
   live: boolean;
   /** Reminders are actually sent (the demo wall shows the reference's promise; the live wall only once email is set up). */
   reminders: boolean;
-  /** How many rack items are rendered (phones build the rest when idle). */
-  limit: number;
   /** Above the wall: what has traction right now (live wall; null on the demo wall), and what changed since the last visit. */
   hot: HotEntry[] | null;
   since: { at: number; fresh: number; gone: number } | null;
@@ -80,7 +78,6 @@ const initial: WallState = {
   compact: false,
   live: false,
   reminders: true,
-  limit: Infinity,
   hot: null,
   since: null,
   sinceItem: null,
@@ -88,6 +85,28 @@ const initial: WallState = {
 };
 let state = initial;
 const listeners = new Set<() => void>();
+/*
+ * How many rack items are rendered: the wall is built a few rows at a time
+ * (the rest when the browser is idle). Its own store, so each step renders
+ * only the rack, not everything else that reads the wall (speed pass).
+ */
+let limit = Infinity;
+const limitListeners = new Set<() => void>();
+export const limitStore = {
+  get: () => limit,
+  getServer: () => Infinity,
+  subscribe(listener: () => void) {
+    limitListeners.add(listener);
+    return () => limitListeners.delete(listener);
+  },
+};
+function setLimitNow(n: number) {
+  if (n === limit) return;
+  flushSync(() => {
+    limit = n;
+    limitListeners.forEach((l) => l());
+  });
+}
 let toastTimer: ReturnType<typeof setTimeout>;
 
 export const wallStore = {
@@ -99,7 +118,15 @@ export const wallStore = {
   },
 };
 
+/* inside batch(): changes are kept and rendered once, at the end */
+let batching = 0,
+  dirty = false;
 function set(patch: Partial<WallState>) {
+  if (batching) {
+    state = { ...state, ...patch };
+    dirty = true;
+    return;
+  }
   flushSync(() => {
     state = { ...state, ...patch };
     listeners.forEach((l) => l());
@@ -107,9 +134,29 @@ function set(patch: Partial<WallState>) {
 }
 
 export const bridge = {
+  /**
+   * Runs `f` with every change it makes rendered once, when it returns (the
+   * wall's start: about ten changes, each a render of everything, were most of
+   * a slow phone's first second). Inside, the DOM doesn't show the changes yet.
+   */
+  batch<T>(f: () => T): T {
+    batching++;
+    try {
+      return f();
+    } finally {
+      if (!--batching && dirty) {
+        dirty = false;
+        flushSync(() => {
+          listeners.forEach((l) => l());
+          limitListeners.forEach((l) => l());
+        });
+      }
+    }
+  },
   /** A fresh start: nothing of a previous run of the wall (left by a link, then back) is left over. */
   reset() {
     clearTimeout(toastTimer);
+    setLimitNow(Infinity);
     set(initial);
   },
   setWall(wall: Spot[]) {
@@ -120,12 +167,14 @@ export const bridge = {
     set({ lane, laneVersion: state.laneVersion + 1 });
   },
   /** Replaces the whole rack, like the reference's innerHTML did; nothing is open after. */
-  renderRack(rack: Rack, limit = Infinity) {
-    set({ rack, version: state.version + 1, openNo: null, view: null, limit });
+  renderRack(rack: Rack, n = Infinity) {
+    /* one render: the new rack with its first rows (the rack reads the limit as it renders) */
+    limit = n;
+    set({ rack, version: state.version + 1, openNo: null, view: null });
   },
-  /** Renders more of the rack (phones build it a few rows at a time). */
-  setLimit(limit: number) {
-    if (limit !== state.limit) set({ limit });
+  /** Renders more of the rack (built a few rows at a time). */
+  setLimit(n: number) {
+    setLimitNow(n);
   },
   setMode(live: boolean, reminders: boolean) {
     set({ live, reminders });
