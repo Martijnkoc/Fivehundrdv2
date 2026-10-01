@@ -36,7 +36,7 @@ export function Footer() {
           </p>
         </div>
         <div className="cols">
-          <nav aria-label="Lanes">
+          <nav aria-label="All lanes">
             <h2>The wall</h2>
             <ul id="footLanes">
               {NAV.map(([k, v]) => (

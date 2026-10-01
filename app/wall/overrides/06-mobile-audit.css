@@ -7,7 +7,7 @@
   .veil{z-index:96;touch-action:none}
   .veil .sheet{touch-action:pan-y;padding-bottom:calc(22px + env(safe-area-inset-bottom,0px))}
   .tabbar{background:var(--bg);color:var(--ink);border-top-color:var(--line);box-shadow:0 -8px 20px -16px rgba(28,27,24,.35)}
-  .tabbar button{color:color-mix(in oklab,var(--ink),transparent 45%);min-height:48px}
+  .tabbar button{color:color-mix(in oklab,var(--ink),transparent 30%);min-height:48px}
   .tabbar button.on{color:var(--ink)}
   .tabbar .tb-create{background:#d8ff45;color:#1c1b18}
   .tb-n{box-shadow:0 0 0 2px var(--bg)}

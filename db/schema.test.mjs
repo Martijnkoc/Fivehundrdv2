@@ -9,7 +9,7 @@ import { PGlite } from "@electric-sql/pglite";
  * the wall does goes through the same functions the app calls.
  */
 /* every migration but the platform one (pg_cron, Storage: Supabase only) */
-const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links", "20260926090600_founder_data", "20260926090700_indexable_stories", "20260927090000_hotspots", "20260927100000_retention", "20260927110000_call_rank", "20260927120000_hotspot_cfg", "20260927130000_reminders", "20260927140000_hotspot_not_own", "20260927150000_makers", "20260928090000_scout", "20260928095000_scout_unsave", "20260928100000_copy", "20260928110000_scout_flags_at", "20260928120000_scout_shared_ip", "20261001090000_report_new"];
+const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links", "20260926090600_founder_data", "20260926090700_indexable_stories", "20260927090000_hotspots", "20260927100000_retention", "20260927110000_call_rank", "20260927120000_hotspot_cfg", "20260927130000_reminders", "20260927140000_hotspot_not_own", "20260927150000_makers", "20260928090000_scout", "20260928095000_scout_unsave", "20260928100000_copy", "20260928110000_scout_flags_at", "20260928120000_scout_shared_ip", "20261001090000_report_new", "20261001100000_hotspot_per_ip"];
 const schema = (
   await Promise.all(MIGRATIONS.map((m) => readFile(new URL(`../supabase/migrations/${m}.sql`, import.meta.url), "utf8")))
 ).join("\n");
@@ -647,6 +647,46 @@ describe("hotspots", () => {
     await ev(a.id, "open", "fan-3");
     await db.query("select private.refresh_hotspots()");
     assert.equal((await hot())[0].opens, 3);
+  });
+
+  test("one address can't pose as a crowd: at most three people per address, none from the maker's", async () => {
+    const evIp = (id, kind, visitor, ip) =>
+      db.query("insert into public.events (story_id, kind, visitor, ip_hash) values ($1, $2, $3, $4)", [id, kind, visitor, ip]);
+    /* a script on one connection makes 50 visitor ids that all save */
+    const a = await reserve(story({ no: 34, visitor: "maker-a", ipHash: "maker-ip" }));
+    await complete(a.id);
+    for (let i = 0; i < 50; i++) await evIp(a.id, "save", "bot" + i, "one-ip");
+    /* and 20 more from the maker's own address */
+    for (let i = 0; i < 20; i++) await evIp(a.id, "save", "alt" + i, "maker-ip");
+    await db.query("select private.refresh_hotspots()");
+    assert.equal((await one("select saves from public.hotspots where story_id = $1", [a.id])).saves, 3);
+    /* three real people on three addresses count as three */
+    const b = await reserve(story({ no: 35, visitor: "maker-b" }));
+    await complete(b.id);
+    for (let i = 0; i < 3; i++) await evIp(b.id, "save", "fan" + i, "home" + i);
+    await db.query("select private.refresh_hotspots()");
+    assert.equal((await one("select saves from public.hotspots where story_id = $1", [b.id])).saves, 3);
+    /* people first seen at home count there, not for what they then do from one office */
+    const c = await reserve(story({ no: 37, visitor: "maker-c" }));
+    await complete(c.id);
+    for (let i = 0; i < 10; i++) {
+      await evIp(c.id, "open", "w" + i, "home-w" + i);
+      await evIp(c.id, "save", "w" + i, "office");
+    }
+    await db.query("select private.refresh_hotspots()");
+    const h = await one("select opens, saves from public.hotspots where story_id = $1", [c.id]);
+    assert.deepEqual([h.opens, h.saves], [10, 3]);
+  });
+
+  test("one address records at most ipPerHour events an hour", async () => {
+    const a = await reserve(story({ no: 36 }));
+    await complete(a.id);
+    await db.query(
+      "insert into public.events (story_id, kind, visitor, ip_hash) select $1, 'link_click', 'x' || g, 'busy' from generate_series(1, 1500) g",
+      [a.id],
+    );
+    assert.equal((await one("select public.record_event($1, $2, 'open', 'new-one', 'busy') r", [KEY, a.id])).r, false);
+    assert.equal((await one("select public.record_event($1, $2, 'open', 'new-one', 'other') r", [KEY, a.id])).r, true);
   });
 
   test("the spotlight moves on: a top-5 spot's score halves every 6 hours", async () => {
