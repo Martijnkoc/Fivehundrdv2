@@ -225,14 +225,17 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
     }
   }, sig);
   /*
-   * Phones build the wall a few rows at a time: the first screens at once,
-   * the rest while the phone is idle, so the wall is there and scrolls
-   * straight away. Rows out of view aren't laid out or painted either
-   * (content-visibility, overrides/06-mobile-audit.css), sized from the first row.
+   * The wall is built a few rows at a time: the first screens at once, the
+   * rest while the browser is idle, so the wall is there and scrolls straight
+   * away (phones since the mobile audit, every screen since the speed pass;
+   * a desktop wall at once was a second of blocked page). Rows out of view
+   * aren't laid out or painted either (content-visibility, overrides/), sized
+   * from the first row. Steps are small on phones (a phone row is two or
+   * three tiles, and six rows were a 100ms stall on a mid-range phone).
    */
+  const FIRST_ROWS = 4;
   const compactNow = () => matchMedia("(max-width:699px)").matches;
-  const FIRST_ROWS = 10,
-    MORE_ROWS = 8;
+  const rowsPerStep = () => (compactNow() ? 2 : 6);
   let built = Infinity,
     total = 0,
     buildT = 0;
@@ -243,7 +246,7 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
     unidle(buildT);
     if (built >= total) return;
     buildT = idle(() => {
-      built += MORE_ROWS;
+      built += rowsPerStep();
       bridge.setLimit(built >= total ? Infinity : built);
       buildRest();
     });
@@ -270,10 +273,15 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
     entryNo = r.entryNo;
     bridge.setCompact(compactNow());
     total = r.items.length;
-    built = compactNow() ? FIRST_ROWS : Infinity;
+    built = FIRST_ROWS;
     bridge.renderRack(r, built >= total ? Infinity : built);
-    const row = rack.querySelector<HTMLElement>(".shelf-row");
-    if (row) rack.style.setProperty("--row-est", row.offsetHeight + "px");
+    /* rows out of view are sized from the first (at the wall's start it is rendered a moment later) */
+    const measure = () => {
+      const row = rack.querySelector<HTMLElement>(".shelf-row");
+      if (row) rack.style.setProperty("--row-est", row.offsetHeight + "px");
+      return !!row;
+    };
+    if (!measure()) requestAnimationFrame(() => alive() && measure());
     buildRest();
     renderCard();
   }
@@ -1266,7 +1274,8 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
   if (live) bridge.setHot(live.feed.hot ?? []);
   renderLanes();
   renderRack();
-  setHead();
+  /* read in the next frame, when the page is laid out anyway: reading it now forced a layout of the whole page, a fifth of a second on a slow phone */
+  requestAnimationFrame(setHead);
   /* "Claim a spot" from another page */
   if (new URLSearchParams(location.search).get("create") === "1") {
     try {
@@ -1287,8 +1296,12 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
   if (ACCOUNT) void loadScout();
   /* a link to a spot (#217) opens it; otherwise the wall starts with nothing open */
   const h = location.hash.replace("#", "");
-  const linked = /^\d{1,3}$/.test(h) ? spotEl(+h) : null;
-  if (linked) requestAnimationFrame(() => alive() && openSpot(linked, { align: true }));
+  /* in the next frame: the wall's start is rendered in one go when this returns */
+  if (/^\d{1,3}$/.test(h))
+    requestAnimationFrame(() => {
+      const linked = alive() && spotEl(+h);
+      if (linked) openSpot(linked, { align: true });
+    });
   return stop;
 
   /* ---------- the live wall: shared links, and coming back from Checkout ---------- */
@@ -1317,7 +1330,8 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
     /* "Get your own spot" from a story's lasting link */
     if (q.get("create") === "1") {
       history.replaceState(null, "", "/");
-      openClaim();
+      /* in the next frame, once the wall's start is rendered: the form sizes its preview from a wall tile */
+      requestAnimationFrame(() => alive() && openClaim());
     }
     if (cancelled)
       liveApi.cancelCheckout(cancelled).then(() => {

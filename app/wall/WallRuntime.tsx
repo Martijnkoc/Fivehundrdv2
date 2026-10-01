@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
+/* loaded with the page, not after it: on a slow phone that was a second round trip before the wall */
+import { startWall } from "./controller";
+import { fetchFeed, liveWanted, supabase, SUPABASE_URL } from "./liveClient";
 import { bridge } from "./store";
 
 /**
@@ -8,7 +11,7 @@ import { bridge } from "./store";
  * (it patches the clock and Math.random), then the controller, on the live
  * wall when Supabase is configured (the demo wall with ?demo=1 or ?fixture=1).
  * On the live wall the feed (preloaded by the page), the controller and the
- * live client all load at once, so the wall appears as soon as the slowest is in.
+ * live client come with the page's own scripts, so the wall appears as soon as the feed is in.
  *
  * Every mount starts a run and every unmount stops it: leaving the wall by a
  * link inside the app and coming back gets a working wall, and React's
@@ -21,13 +24,9 @@ export function WallRuntime() {
     const run = (f: () => void) => (gone ? f() : (stop = f));
     (async () => {
       if (new URLSearchParams(location.search).get("fixture") === "1") await import("../../scripts/fixture.js");
-      const client = import("./liveClient");
-      const controller = import("./controller");
-      const { fetchFeed, liveWanted, supabase, SUPABASE_URL } = await client;
       if (!liveWanted()) {
-        const { startWall } = await controller;
-        /* unmounted while the controller loaded (Back can mount the page twice): no run on a page that's gone */
-        if (!gone) run(startWall(bridge));
+        /* unmounted while the fixture loaded (Back can mount the page twice): no run on a page that's gone */
+        if (!gone) run(bridge.batch(() => startWall(bridge)));
         return;
       }
       const feed = fetchFeed(true).catch(() => ({ now: "", stories: [], held: [] }));
@@ -35,9 +34,9 @@ export function WallRuntime() {
       if (/access_token|error_description/.test(location.hash)) await (await supabase()).auth.getSession();
       /* the live wall (open spots only if the database can't be reached; it catches up each minute) */
       document.documentElement.dataset.live = "1";
-      const [{ startWall }, f] = await Promise.all([controller, feed]);
+      const f = await feed;
       if (gone) return;
-      run(startWall(bridge, { feed: f, base: SUPABASE_URL }));
+      run(bridge.batch(() => startWall(bridge, { feed: f, base: SUPABASE_URL })));
     })();
     return () => {
       gone = true;
