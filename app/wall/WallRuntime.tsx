@@ -24,8 +24,12 @@ export function WallRuntime() {
       const client = import("./liveClient");
       const controller = import("./controller");
       const { fetchFeed, liveWanted, supabase, SUPABASE_URL } = await client;
-      if (gone) return;
-      if (!liveWanted()) return run((await controller).startWall(bridge));
+      if (!liveWanted()) {
+        const { startWall } = await controller;
+        /* unmounted while the controller loaded (Back can mount the page twice): no run on a page that's gone */
+        if (!gone) run(startWall(bridge));
+        return;
+      }
       const feed = fetchFeed(true).catch(() => ({ now: "", stories: [], held: [] }));
       /* back from a login link: let Supabase read it before the wall rewrites the address */
       if (/access_token|error_description/.test(location.hash)) await (await supabase()).auth.getSession();
