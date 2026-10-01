@@ -116,7 +116,7 @@ function SaveTile({ x, f, call }: { x: OrderedSave; f?: FindStatus; call?: Scout
       {inner}
     </button>
   ) : x.link ? (
-    <a className="sq" href={x.link.url} target="_blank" rel="noopener" title={`${label}. Find them on ${x.link.label}`} aria-label={label}>
+    <a className="sq" href={x.link.url} target="_blank" rel="sponsored noopener" title={`${label}. Find them on ${x.link.label}`} aria-label={label}>
       {inner}
     </a>
   ) : (

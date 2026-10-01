@@ -38,7 +38,7 @@ export default async function StoryPage({ params }: Props) {
   const base = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
   const ld = storyLd(s, base);
   const laneLabel = storyMeta(s).lane;
-  if (s.state === "live") return <WallPage heading={`${s.name}: ${laneLabel}, No. ${s.no} on The Wall`} ld={ld} />;
+  if (s.state === "live") return <WallPage heading={`${s.name}: ${laneLabel}, No. ${s.no} on The Wall`} ld={ld} story={s} />;
   return (
     <>
       <Discovery story={s} base={base} />

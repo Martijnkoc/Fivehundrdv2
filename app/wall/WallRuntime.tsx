@@ -19,6 +19,8 @@ import { bridge } from "./store";
  */
 export function WallRuntime() {
   useEffect(() => {
+    /* the story's words for before the wall ran (StoryText): the wall shows the story itself now */
+    document.querySelector("[data-story-text]")?.setAttribute("hidden", "");
     let stop: (() => void) | undefined,
       gone = false;
     const run = (f: () => void) => (gone ? f() : (stop = f));
