@@ -118,7 +118,7 @@ export const OPEN_SPOT = {
 
 export const CREATE = {
   head: "Put it on the Wall.",
-  sub: `72 hours. ${PRICE}. No follower count required.`,
+  sub: `72 hours. ${PRICE}.`,
   body: "People come to Fivehundrd to find things they don’t know yet. Give them something worth finding.",
   fair: "There’s no front row: every visitor starts somewhere else on the Wall.",
   nav: "Claim a spot",

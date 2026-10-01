@@ -35,7 +35,7 @@ import * as liveApi from "./liveClient";
 import { laneBySlug, lanePath } from "../../lib/site/facts";
 import { createMoment, startTracking, surface, unwatchTiles, visitorId, watchTiles } from "./track";
 
-type Opts = { align: boolean; auto?: boolean };
+type Opts = { align: boolean };
 /** The live wall (Supabase): the feed it was built from and the storage base URL. */
 export type Live = { feed: Feed; base: string };
 
@@ -121,11 +121,6 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
     renderLanes();
     renderRack();
     window.scrollTo({ top: 0 });
-    requestAnimationFrame(() => {
-      if (!alive()) return;
-      const f = $("#rack").querySelector(".spot:not(.vacant):not(.filler)");
-      if (f) openSpot(f as HTMLElement, { align: false, auto: true });
-    });
   }
   document.addEventListener("click", (e) => {
     const t = e.target as Element;
@@ -178,8 +173,6 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
       query = (e.target as HTMLInputElement).value.trim().toLowerCase();
       renderRack();
       window.scrollTo({ top: 0 });
-      const f = $("#rack").querySelector(".spot:not(.vacant):not(.filler)");
-      if (query && f) openSpot(f as HTMLElement, { align: false, auto: true });
     }, 140);
   }, sig);
 
@@ -525,21 +518,16 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
     } catch {}
     renderCard();
   }
-  function openSpot(el: HTMLElement | null, { align, auto }: Opts) {
+  /** Opens a spot the visitor chose: a tap, Next spot, a Hotspot, a find, or a link to it. Nothing opens by itself. */
+  function openSpot(el: HTMLElement | null, { align }: Opts) {
     if (!el || el.classList.contains("vacant") || el.classList.contains("filler")) return;
-    /* the live wall never opens a spot by itself: people choose what to open */
-    if (auto && live) return;
-    if (phoneSheet()) {
-      if (auto) return;
-      return showSheet(el);
-    }
+    if (phoneSheet()) return showSheet(el);
     if (el === open) {
       if (align) glide.to(alignY(el));
       return;
     }
     if (!align) {
-      /* opened by itself (first load, search): no flight */
-      swapTo(el, !auto);
+      swapTo(el);
       return;
     }
     glide.to(alignY(el), () => swapTo(el));
@@ -580,19 +568,15 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
       history.replaceState(null, "", homeAddress());
     } catch {}
   }
-  /** A click inside an open spot (panel or sheet): its player and links, Timeheart, Share, Next spot, Report. */
-  function coverAction(e: MouseEvent, el: HTMLElement, beforeReport?: () => void) {
+  /** A click inside an open spot (panel or sheet): its player and links, Timeheart, Share, Next spot. */
+  function coverAction(e: MouseEvent, el: HTMLElement) {
     const t = e.target as Element;
     const s = filledOf(el);
     if (coverClick(e, s)) return;
     const sv = t.closest<HTMLElement>("[data-save]");
     if (sv) return toggleSave(el, s, sv);
     if (t.closest("[data-share]")) return shareSpot(s);
-    if (t.closest("[data-next]")) return step(1);
-    if (t.closest("[data-report]")) {
-      beforeReport?.();
-      openReport(s);
-    }
+    if (t.closest("[data-next]")) step(1);
   }
   function step(d: number) {
     let list = [...rack.querySelectorAll<HTMLElement>(".spot:not(.vacant):not(.filler)")];
@@ -888,7 +872,7 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
     const t = e.target as Element;
     if (t.closest(".dclose")) return hideSheet();
     const el = spotEl(+dsheet.dataset.no!);
-    if (el) coverAction(e, el, hideSheet);
+    if (el) coverAction(e, el);
   }, sig);
   installSheetDrag(dsheet, dscroll, dveil, () => hideSheet(), ac.signal);
   /* rotating keeps the open spot open in the form that fits: phone → wide
@@ -1000,11 +984,6 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
        login sheet opened behind it; close the card first, as Create does */
     if (cardOpen) setCard(false);
     bridge.openShare({ kind: "keep" });
-    showVeil("shareVeil");
-  }
-  function openReport(s: FilledSpot) {
-    if (!s.id) return;
-    bridge.openShare({ kind: "report", id: s.id, name: s.name });
     showVeil("shareVeil");
   }
   /** Shows #claimVeil or #shareVeil (with its own history entry on phones). */
@@ -1143,12 +1122,6 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
   }
 
   Object.assign(bridge.actions, {
-    async report(id: string, reason: string, note: string, email: string) {
-      if (!(await liveApi.report(id, reason as liveApi.ReportReason, note, email))) return "That didn't send. Try again.";
-      closeVeils();
-      toast("Thanks. A person will look at it.");
-      return null;
-    },
     keepCard(via: string, remind: boolean, byEmail: boolean) {
       if (live) {
         liveApi.signIn(via, REMINDERS && remind).then((err) => {
@@ -1312,15 +1285,10 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
     return stop;
   }
   if (ACCOUNT) void loadScout();
+  /* a link to a spot (#217) opens it; otherwise the wall starts with nothing open */
   const h = location.hash.replace("#", "");
-  const start = (h && /^\d{1,3}$/.test(h) && spotEl(+h)) || rack.querySelector<HTMLElement>(".spot:not(.vacant):not(.filler)")!;
-  requestAnimationFrame(() => {
-    if (!alive()) return;
-    openSpot(start.classList.contains("vacant") ? rack.querySelector<HTMLElement>(".spot:not(.vacant):not(.filler)") : start, {
-      align: !!h,
-      auto: !h,
-    });
-  });
+  const linked = /^\d{1,3}$/.test(h) ? spotEl(+h) : null;
+  if (linked) requestAnimationFrame(() => alive() && openSpot(linked, { align: true }));
   return stop;
 
   /* ---------- the live wall: shared links, and coming back from Checkout ---------- */
@@ -1338,13 +1306,13 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
       history.replaceState(null, "", "/");
     }
     if (claimed || cancelled) history.replaceState(null, "", "/");
-    const first = rack.querySelector<HTMLElement>(".spot:not(.vacant):not(.filler)");
-    const start = shared ? spotEl(shared.no) : first;
-    requestAnimationFrame(() => {
-      if (!alive()) return;
-      if (start) openSpot(start, { align: !!shared, auto: !shared });
-      if (shared) ev(shared.id, "entry");
-    });
+    /* a shared link opens its story; otherwise nothing opens until someone taps */
+    if (shared)
+      requestAnimationFrame(() => {
+        if (!alive()) return;
+        openSpot(spotEl(shared.no), { align: true });
+        ev(shared.id, "entry");
+      });
     if (claimed) afterCheckout(claimed);
     /* "Get your own spot" from a story's lasting link */
     if (q.get("create") === "1") {

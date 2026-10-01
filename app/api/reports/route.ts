@@ -1,26 +1,49 @@
-import { hasDatabase, ipHash, json, rpc } from "../../../lib/server/backend";
+import { env, hasDatabase, ipHash, json, rpc } from "../../../lib/server/backend";
+import { isUuid, isVisitor } from "../../../lib/server/ids";
 import { measured } from "../../../lib/server/ops";
-import { isUuid } from "../../../lib/server/ids";
+import { hasReminders, reminderConfig } from "../../../lib/server/reminders";
+import type { Feed } from "../../../lib/wall/live";
+import { LANE, pad, type LaneId } from "../../../lib/wall/model";
 
-const REASONS = ["sexual", "child", "scam", "hate", "violence", "illegal", "copyright", "spam", "other"] as const;
-
-/** A visitor reports a story. Three reports (or one about a child) take it off the wall until someone looks. */
+/**
+ * A visitor reports a story (approved change, 2026-10-01): from the footer,
+ * by lane and spot number. Three reports take it off the wall until someone
+ * looks; every report is mailed to the people who look after the wall.
+ */
 export const POST = measured("/api/reports", async (req: Request) => {
   if (!hasDatabase()) return json({ error: "offline" }, { status: 503 });
-  const b = (await req.json().catch(() => ({}))) as { story?: string; reason?: string; note?: string; email?: string; visitor?: string };
-  if (!b.story || !isUuid(b.story) || !REASONS.includes(b.reason as (typeof REASONS)[number]))
-    return json({ error: "bad request" }, { status: 400 });
+  const b = (await req.json().catch(() => ({}))) as { lane?: string; no?: unknown; visitor?: string };
+  const no = Number(b.no);
+  if (!b.lane || !(b.lane in LANE) || !Number.isInteger(no) || no < 1 || no > 500) return json({ error: "bad request" }, { status: 400 });
+  const lane = b.lane as LaneId;
   try {
-    const r = await rpc<{ ok: boolean; hidden: boolean }>("report_story", {
-      p_story: b.story,
-      p_reason: b.reason,
-      p_note: String(b.note ?? "").slice(0, 500),
-      p_email: String(b.email ?? "").slice(0, 200),
-      p_visitor: String(b.visitor ?? "").slice(0, 64),
+    const feed = await rpc<Feed>("wall_public", {}, false);
+    const story = feed.stories.find((s) => s.lane === lane && s.no === no);
+    if (!story || !isUuid(story.id)) return json({ ok: false, error: "not found" }, { status: 404 });
+    const r = await rpc<{ ok: boolean; hidden: boolean; new?: boolean }>("report_story", {
+      p_story: story.id,
+      p_reason: "other",
+      p_note: "",
+      p_email: "",
+      p_visitor: isVisitor(b.visitor) ? b.visitor : "",
       p_ip_hash: ipHash(req),
     });
-    return json(r);
+    /* only a new report is mailed: the same person again is ignored, and must not mail again */
+    if (r.ok && r.new === true) await tellTeam(`${LANE[lane]} No. ${pad(no)}`, story.name, r.hidden).catch(() => {});
+    return json({ ok: r.ok, hidden: r.hidden });
   } catch {
     return json({ error: "unavailable" }, { status: 502 });
   }
 });
+
+/** One email per report to ADMIN_EMAILS, through the reminders' provider; without it, /admin still lists every report. */
+async function tellTeam(spot: string, name: string, hidden: boolean) {
+  if (!hasReminders() || !env.adminEmails.length) return;
+  const { key, from } = reminderConfig();
+  const text = `${spot}, "${name}", was reported on Fivehundrd.${hidden ? " It has been taken off the wall until someone looks at it." : ""}\n\nSee it in /admin.`;
+  await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ from, to: env.adminEmails, subject: `Report: ${spot}, ${name}`, text }),
+  });
+}

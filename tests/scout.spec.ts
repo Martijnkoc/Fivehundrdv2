@@ -36,6 +36,7 @@ test.describe("desktop", () => {
     await wall.goto();
     await expect(page.locator("#card .sc-out .lc-h")).toHaveText("Think you know what’s next? Prove it.");
     await expect(page.locator("#card [data-keep]")).toHaveText("Start Scouting");
+    await wall.openTile(0);
     await wall.openView.locator("[data-save]").click();
     await expect(wall.openView.locator("[data-save]")).toHaveText("Kept");
     const nudge = wall.openView.locator(".scout-nudge");
@@ -55,6 +56,8 @@ test.describe("desktop", () => {
 
   test("from the line to signing in, and you're a Scout: building, nothing invented", async ({ wall, page }) => {
     await wall.goto();
+    /* nothing opens by itself (approved change, 2026-10-01): open the first spot */
+    await wall.openTile(0);
     await wall.openView.locator("[data-save]").click();
     await wall.openView.locator(".scout-in").click();
     await expect(page.locator("#shareSheet h2")).toHaveText("Sign in to Scout");

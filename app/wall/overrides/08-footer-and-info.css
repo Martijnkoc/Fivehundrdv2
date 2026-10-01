@@ -22,9 +22,32 @@
 .info-main ol,.info-main ul{padding-left:1.2em;margin:0 0 8px;display:flex;flex-direction:column;gap:8px}
 .info-main article a{color:var(--ink);text-decoration:underline;text-underline-offset:3px}
 .info-main .muted{color:var(--ink2);font-size:14px}
-.info-main .qa h2{font-size:18px;margin-top:28px}
+.info-main .qa{border-bottom:1px solid var(--line)}
+.info-main .qa:first-of-type{border-top:1px solid var(--line);margin-top:20px}
+.info-main .qa summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:48px;padding:12px 2px;cursor:pointer}
+.info-main .qa summary::-webkit-details-marker{display:none}
+.info-main .qa summary::after{content:"";flex:none;width:9px;height:9px;margin-right:4px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:translateY(-3px) rotate(45deg);transition:transform .2s}
+.info-main .qa[open] summary::after{transform:translateY(2px) rotate(-135deg)}
+.info-main .qa summary:focus-visible{outline:2px solid #ff7bc3;outline-offset:2px;border-radius:4px}
+.info-main .qa h2{font-size:18px;margin:0}
+.info-main .qa p{margin:0 0 16px}
+@media (prefers-reduced-motion:reduce){.info-main .qa summary::after{transition:none}}
 .info-main .price-box{display:inline-flex;flex-direction:column;gap:4px;padding:18px 22px;border:1px solid var(--ink);border-radius:14px;background:var(--card)}
 .info-main .price-box b{font-family:"Fraunces",Georgia,serif;font-size:44px;line-height:1}
 .info-main .price-box span{font-size:14px;color:var(--ink2)}
 @media (max-width:520px){.info-top nav a.info-wall{display:none}}
 
+
+/* Report a spot (approved change, 2026-10-01): the one way to report, in every footer */
+.foot-report{all:unset;cursor:pointer;font-size:14px;font-weight:500;color:#0d0d0d}
+.foot-report:hover,.foot-report:focus-visible{text-decoration:underline;text-underline-offset:3px}
+.foot-report:focus-visible{outline:2px solid #ff7bc3;outline-offset:2px}
+.foot-report-form{display:flex;flex-wrap:wrap;align-items:flex-end;gap:8px;max-width:260px}
+.foot-report-form label{display:flex;flex-direction:column;gap:3px;font-size:12px;font-weight:700;color:#615a4d}
+.foot-report-form select,.foot-report-form input{font:inherit;font-size:14px;color:#0d0d0d;background:#fff;border:1px solid #0d0d0d;border-radius:8px;padding:8px 10px;min-height:40px;box-sizing:border-box}
+.foot-report-form input{width:90px}
+.foot-report-form button{font:inherit;font-size:14px;font-weight:700;min-height:40px;padding:0 16px;border-radius:999px;border:1px solid #0d0d0d;background:#0d0d0d;color:#fff;cursor:pointer}
+.foot-report-form button:disabled{opacity:.6}
+.foot-report-err{flex-basis:100%;margin:2px 0 0;font-size:13px;color:#b42318}
+.foot-report-done{margin:0;font-size:14px;font-weight:600}
+@media (max-width:699px){.foot-report{min-height:44px;display:inline-flex;align-items:center}.foot-report-form select,.foot-report-form input,.foot-report-form button{min-height:44px}}

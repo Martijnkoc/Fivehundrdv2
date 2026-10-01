@@ -155,7 +155,7 @@ function Vacant({ s, run }: { s: Spot; run?: Spot[] }) {
       <div className="cap">
         <strong className="vno">{nos}</strong>
         {/* the live wall numbers each lane, so an open spot says which lane it is in */}
-        <span className="v2">{lane ? `${LANE[lane]} · ${PRICE} · 72h` : `${PRICE} · 72 hours`}</span>
+        {lane && <span className="v2">{LANE[lane]}</span>}
       </div>
     </>
   );

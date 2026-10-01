@@ -413,7 +413,6 @@ function CardBody({ card, wall }: { card: CardData; wall: Spot[] }) {
           )}
         </div>
       </div>
-      <p className="lc-help">The wall is a circle, so everyone starts somewhere else. Tap a tile to open it, tap it again to close.</p>
     </>
   );
 }

@@ -300,23 +300,6 @@ export async function unsaveForAccount(story: string) {
   if (data.session) await sb.from("saves").delete().eq("story_id", story);
 }
 
-/* ---------- reporting a story ---------- */
-
-export type ReportReason = "sexual" | "child" | "scam" | "hate" | "violence" | "illegal" | "copyright" | "spam" | "other";
-/** Sends a report. Returns true when it was received. */
-export async function report(story: string, reason: ReportReason, note: string, email: string): Promise<boolean> {
-  try {
-    const r = await fetch("/api/reports", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ story, reason, note, email, visitor: visitorId() }),
-    });
-    return r.ok;
-  } catch {
-    return false;
-  }
-}
-
 /* ---------- Scout (docs/scout.md) ---------- */
 
 const SIGNING_IN = "fh-signing-in";
