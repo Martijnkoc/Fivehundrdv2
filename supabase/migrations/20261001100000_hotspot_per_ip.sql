@@ -101,7 +101,7 @@ begin
       from recent group by story_id, visitor, coalesce(ip_hash, 'v:' || visitor)
   ),
   people as (
-    select distinct story_id, visitor from (
+    select story_id, visitor, addr from (
       select f.*, row_number() over (partition by story_id, addr order by first_at, visitor) as n from firsts f
     ) f where n <= (cfg ->> 'perIp')::int
   ),
@@ -111,7 +111,9 @@ begin
            count(distinct r.visitor) filter (where r.kind = 'link_click') as c,
            count(distinct r.visitor) filter (where r.kind = 'save') as s,
            count(distinct r.visitor) filter (where r.kind = 'share') as sh
+      /* only what a person did from the address they count for */
       from recent r join people p on p.story_id = r.story_id and p.visitor = r.visitor
+                                 and p.addr = coalesce(r.ip_hash, 'v:' || r.visitor)
      group by r.story_id
   ),
   /* everyone exposed in the window: saw the tile, or did anything with the story */

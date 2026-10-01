@@ -666,6 +666,16 @@ describe("hotspots", () => {
     for (let i = 0; i < 3; i++) await evIp(b.id, "save", "fan" + i, "home" + i);
     await db.query("select private.refresh_hotspots()");
     assert.equal((await one("select saves from public.hotspots where story_id = $1", [b.id])).saves, 3);
+    /* people first seen at home count there, not for what they then do from one office */
+    const c = await reserve(story({ no: 37, visitor: "maker-c" }));
+    await complete(c.id);
+    for (let i = 0; i < 10; i++) {
+      await evIp(c.id, "open", "w" + i, "home-w" + i);
+      await evIp(c.id, "save", "w" + i, "office");
+    }
+    await db.query("select private.refresh_hotspots()");
+    const h = await one("select opens, saves from public.hotspots where story_id = $1", [c.id]);
+    assert.deepEqual([h.opens, h.saves], [10, 3]);
   });
 
   test("one address records at most ipPerHour events an hour", async () => {
