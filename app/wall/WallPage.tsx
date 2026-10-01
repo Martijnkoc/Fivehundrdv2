@@ -15,13 +15,15 @@ export const ldHtml = (data: unknown) => ({ __html: JSON.stringify(data).replace
  * A live story's own words in the page as it is sent, for search engines and
  * screen readers: on screen the wall opens the story once its scripts run,
  * so before that the page had only its heading. Visually hidden like the
- * heading; it says what the opened story says.
+ * heading; it says what the opened story says, and steps aside (hidden) once
+ * the wall runs and shows the story itself (WallRuntime), so nobody hears it
+ * twice or tabs onto links they can't see.
  */
 function StoryText({ s }: { s: PublicStory }) {
   const { lane } = storyMeta(s);
   const until = new Date(s.endsAt).toLocaleString("en-US", { month: "long", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "UTC", timeZoneName: "short" });
   return (
-    <article className="sr">
+    <article className="sr" data-story-text="">
       <p>{`${lane}, No. ${s.no}. Live on The Wall until ${until}.`}</p>
       {s.snippet && <p>{s.snippet}</p>}
       {s.excerpt && (
