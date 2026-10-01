@@ -1,7 +1,6 @@
 import { hasDatabase, rpc } from "../../../../lib/server/backend";
 import { offTokenOk } from "../../../../lib/server/reminders";
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+import { isUuid } from "../../../../lib/server/ids";
 
 const page = (msg: string, status = 200) =>
   new Response(
@@ -17,7 +16,7 @@ async function off(req: Request) {
     story = q.get("s") ?? "";
   /* a maker's notices for one spot */
   if (story) {
-    if (!UUID.test(story) || !t || !offTokenOk(story, t, "maker")) return page("That link doesn't work. Open it from the email again.", 400);
+    if (!isUuid(story) || !t || !offTokenOk(story, t, "maker")) return page("That link doesn't work. Open it from the email again.", 400);
     if (!hasDatabase()) return page("Something went wrong. Try again in a minute.", 503);
     try {
       await rpc("maker_notices_off", { p_story: story });
@@ -26,7 +25,7 @@ async function off(req: Request) {
     }
     return page("Done. We won't email you about this spot again. It stays on the wall until its time is up.");
   }
-  if (!UUID.test(u) || !t || !offTokenOk(u, t)) return page("That link doesn't work. Open it from the email again.", 400);
+  if (!isUuid(u) || !t || !offTokenOk(u, t)) return page("That link doesn't work. Open it from the email again.", 400);
   if (!hasDatabase()) return page("Something went wrong. Try again in a minute.", 503);
   try {
     await rpc("remind_off", { p_user: u });

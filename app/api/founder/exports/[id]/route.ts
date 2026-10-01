@@ -2,14 +2,13 @@ import { founderFrom } from "../../../../../lib/founder/auth";
 import { exportGet } from "../../../../../lib/founder/data";
 import { download } from "../../../../../lib/founder/exports";
 import { json } from "../../../../../lib/server/backend";
-
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+import { isUuid } from "../../../../../lib/server/ids";
 
 /** Downloads a finished export: a one-minute signed link to the private file. */
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await founderFrom(req))) return json({ error: "sign in" }, { status: 401 });
   const { id } = await params;
-  if (!UUID.test(id)) return json({ error: "not found" }, { status: 404 });
+  if (!isUuid(id)) return json({ error: "not found" }, { status: 404 });
   const e = await exportGet(id);
   if (!e || e.status !== "done") return json({ error: "not ready" }, { status: 404 });
   const f = await download(e);

@@ -9,9 +9,9 @@ import { LineChart } from "../../../_kit/Chart";
 import { DataTable } from "../../../_kit/DataTable";
 import { NoData } from "../../../_kit/page";
 import { Bars, Card, Empty, Funnel, LANE_SLOT, Stat } from "../../../_kit/ui";
+import { isUuid } from "../../../../../../lib/server/ids";
 
 export const metadata: Metadata = { title: "Spot" };
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 const when = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false, timeZone: TZ }) : "—";
@@ -21,7 +21,7 @@ export default async function SpotPage({ params }: { params: Promise<{ id: strin
   await requireFounder();
   if (!hasData()) return <NoData />;
   const { id } = await params;
-  if (!UUID.test(id)) notFound();
+  if (!isUuid(id)) notFound();
   const d = await spot(id);
   if (!d) notFound();
   const { story: s, totals: t } = d;
