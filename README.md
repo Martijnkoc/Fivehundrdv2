@@ -114,6 +114,7 @@ which were signed off:
     - **Report has one place:** Report a spot, at the bottom of every page (lane and spot number). The Report button on stories and the report sheet are gone.
     - **Questions** open and close one at a time (`details`); the answers stay in the page and in its FAQ structured data.
     - **Favicon:** the wordmark's F in Fraunces with its pink dot, cream on charcoal (`app/icon.svg`, `app/favicon.ico`, `app/apple-icon.png`).
+20. Audit fixes, 2026-10-01: the phone tab bar's inactive tabs are darker (they failed contrast), and the footer's lane list is called "All lanes" for screen readers (two navigations were both "Lanes").
 
 CSS for these lives in `app/wall/overrides/`, one file per part, joined in order (`app/wall/overrides/index.ts`). The visual suite applies it
 to the reference too, so the baselines are "the reference plus the approved
@@ -256,6 +257,13 @@ rules: [`docs/founder-dashboard.md`](docs/founder-dashboard.md).
 - **Limits**: one person holds at most 3 spots at once and starts at most 10
   checkouts an hour; 15 uploads an hour; an invisible robot check before
   paying. Uploads nobody paid for are removed daily.
+- **Hotspots can't be bought with scripts**: one address counts as at most
+  three people per story, the maker's own address not at all, and one
+  address records at most 1,500 events an hour (`private.hotspot_cfg()`).
+- **Headers**: other sites can't frame Fivehundrd (clickjacking), no type
+  sniffing, no full addresses to other sites, no camera, microphone or
+  location, HTTPS only (`next.config.ts`). Scripts aren't restricted by a
+  Content Security Policy yet: that needs nonces for the inline ones.
 - **No spot, no charge**: a payment for a story that was taken off the wall
   (or let go) before it went live is refunded automatically.
 - **`/admin`**: live stories, what needs a look, reports, takings per day,

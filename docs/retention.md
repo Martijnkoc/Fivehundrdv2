@@ -30,7 +30,10 @@ leaderboards or public call counts (CLAUDE.md, "Product rules").
 - **Hotspot score**: per person over 6h, (opens + 3 × link clicks + 4 × saves + 4 × shares)
   / √(exposed + 20), where *exposed* is everyone who saw the tile or did anything with the
   story in those 6 hours; ≥ 3 people; halves every 6h after first reaching the top 5.
-  `stories.hot_at` keeps that first moment for good. **The weights are a hypothesis**, set
+  `stories.hot_at` keeps that first moment for good. One address (salted IP hash) counts as
+  at most `perIp` (3) people per story, and the maker's own browser and address don't count,
+  so a script making new visitor ids can't pose as a crowd; one address records at most
+  `ipPerHour` events an hour. **The weights are a hypothesis**, set
   by hand before any traffic: after a few thousand real sessions, check which early signal
   best predicts what people keep (saves not undone), click through to and share, and
   change the weights in `private.hotspot_cfg()`.
