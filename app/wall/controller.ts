@@ -384,8 +384,6 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
       if (changed) persistSaves();
     }
     bridge.setCard({
-      entryNo,
-      ...(live && WALL[entryNo - 1] && { entryNum: numOf(WALL[entryNo - 1]) }),
       seen: new Set(SEEN),
       saves: [...SAVES],
       savesShown,

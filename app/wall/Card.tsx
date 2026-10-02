@@ -14,9 +14,6 @@ import { GenArt, cssVars } from "./Tile";
 
 export type Account = { via: string; remind: boolean };
 export type CardData = {
-  /** the entry spot's place on the wall (for Take me back) and its number */
-  entryNo: number;
-  entryNum?: number;
   seen: ReadonlySet<string | number>;
   saves: SaveEntry[];
   savesShown: number;
@@ -387,11 +384,6 @@ function CardBody({ card, wall }: { card: CardData; wall: Spot[] }) {
         </div>
         <ScoutCard card={card} />
         <WallToday today={card.today} />
-        <button className="lc-entry" data-go={card.entryNo}>
-          <span>You walked in at</span>
-          <b>{`No. ${pad(card.entryNum ?? card.entryNo)}`}</b>
-          <em>Take me back</em>
-        </button>
         {mine && (
           <button className="lc-row mine" data-go={mine.no}>
             <span>Your story</span>

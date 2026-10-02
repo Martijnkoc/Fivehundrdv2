@@ -312,14 +312,6 @@ test.describe("desktop: the Fivehundrd card (§10, §11, §12)", () => {
     await expect(count).toHaveText(before!);
   });
 
-  test("Take me back opens the spot the visitor walked in at", async ({ wall, page }) => {
-    await wall.goto();
-    await wall.openTile(5);
-    const entry = await page.locator("#card .lc-entry").getAttribute("data-go");
-    await page.locator("#card .lc-entry").click();
-    await expect(page.locator("#rack .panel")).toHaveAttribute("data-no", entry!);
-  });
-
   test("Sign in to Scout is offered from the start and opens the login sheet", async ({ wall, page }) => {
     appOnly("Scout (docs/scout.md): the card says what signing in is for");
     await wall.goto();
@@ -629,10 +621,11 @@ test.describe("desktop: index strip, audio, keys, search (§5, §8, §9)", () =>
 
   test("one visitor keeps the same entry point for the day (§17)", async ({ wall, page }) => {
     await wall.goto();
-    const entry = await page.locator("#card .lc-entry b").textContent();
+    /* the wall starts at the visitor's entry spot */
+    const entry = await page.locator("#rack .spot[data-no]").first().getAttribute("data-no");
     await page.reload();
     await page.waitForSelector("#rack .spot");
-    await expect(page.locator("#card .lc-entry b")).toHaveText(entry!);
+    await expect(page.locator("#rack .spot[data-no]").first()).toHaveAttribute("data-no", entry!);
   });
 });
 
