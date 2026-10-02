@@ -9,6 +9,7 @@
  * React the state through `bridge`, and runs the measurements and animations
  * on the rendered DOM, as the reference did.
  */
+import { endedToShow, prefillFrom, sameNumber, type EndedStory } from "../../lib/wall/again";
 import { PAL, seedWall } from "../../lib/wall/demo";
 import { buildLiveWall, mediaURL, mergeFeed, openNumbers, type Feed } from "../../lib/wall/live";
 import { LANE, LIFE, numOf, pad, seenKey, type FilledSpot, type LaneId, type NavId, type Spot } from "../../lib/wall/model";
@@ -383,8 +384,6 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
       if (changed) persistSaves();
     }
     bridge.setCard({
-      entryNo,
-      ...(live && WALL[entryNo - 1] && { entryNum: numOf(WALL[entryNo - 1]) }),
       seen: new Set(SEEN),
       saves: [...SAVES],
       savesShown,
@@ -393,6 +392,7 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
       history: FINDS,
       reminders: REMINDERS,
       makers: MAKERS,
+      ended: endedToShow(ENDED, WALL.some((s) => !s.vacant && s.mine && left(s) > 0)),
       scout: ACCOUNT ? SCOUT : null,
       today: wallToday({ saves: savesOrder(), prior: PRIOR, fresh: wallStore.get().since?.fresh ?? 0 }),
     });
@@ -686,6 +686,15 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
       openKeep();
     }
     if (t.closest("[data-explore]")) exploreWall();
+    /* "Put it on again": the ended story in the Create form, ready to place */
+    const ag = t.closest<HTMLElement>("[data-again]");
+    if (ag) {
+      const e = ENDED.find((x) => x.id === ag.dataset.again);
+      if (e) {
+        if (cardOpen) setCard(false);
+        openClaim(undefined, e);
+      }
+    }
     if (t.closest("[data-go-scouts]")) document.querySelector("#card .sv-box")?.scrollIntoView({ block: "start", behavior: "smooth" });
     if (t.closest("[data-scout-share]")) openScoutShare();
     if (t.closest("[data-scout-unshare]")) void bridge.actions.scoutShare(false);
@@ -1029,21 +1038,25 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
     if (!live) return n;
     return openNumbers(live.feed, L).includes(n) ? n : (randomVacant(L) ?? n);
   }
-  function openClaim(no?: number) {
+  /** Create your story; `again`: an ended story of this maker's, put on again (its old number if that's open). */
+  function openClaim(no?: number, again?: EndedStory) {
     const at = live && no ? WALL[no - 1] : null;
-    const L: LaneId = at && at.lane ? at.lane : lane === "all" ? "music" : (lane as LaneId);
-    const n = live ? (at && at.vacant && at.num) || randomVacant(L) : no || randomVacant();
+    const L: LaneId = again ? again.lane : at && at.lane ? at.lane : lane === "all" ? "music" : (lane as LaneId);
+    const n = again
+      ? (live && sameNumber(again, openNumbers(live.feed, L))) || randomVacant(L)
+      : live
+        ? (at && at.vacant && at.num) || randomVacant(L)
+        : no || randomVacant();
     if (!n) {
       toast(live ? `Every ${LANE[L]} spot is taken. Check back soon.` : "All 500 spots are taken. Check back soon.");
       return;
     }
     createMoment();
-    bridge.openClaim({
-      no: n,
-      lane: L,
-      seed: Math.floor(Math.random() * 1e9),
-      pal: PAL[Math.floor(Math.random() * PAL.length)],
-    });
+    bridge.openClaim(
+      again
+        ? { no: n, lane: L, seed: again.seed, pal: PAL[again.pal] ?? PAL[0], prefill: prefillFrom(again, live?.base ?? "") }
+        : { no: n, lane: L, seed: Math.floor(Math.random() * 1e9), pal: PAL[Math.floor(Math.random() * PAL.length)] },
+    );
     showVeil("claimVeil");
     document.body.style.overflow = "hidden";
   }
@@ -1119,6 +1132,8 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
     SAVES.sort((x, y) => y.savedAt - x.savedAt);
     persistSaves();
     renderCard();
+    /* signed in: the account's ended stories too, from any device */
+    void loadEnded();
     /* Scout: this browser's history joins the account; the Timeheart that led here can still count */
     const pending = read<{ id: string; at: number } | null>(PENDING_KEY, null);
     drop(PENDING_KEY);
@@ -1238,6 +1253,14 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
     MAKERS = Object.fromEntries(r.map((m) => [m.id, m]));
     renderCard();
   }
+  /** "Your story" after its 72 hours: the final numbers and "Put it on again" (this browser's stories, or the account's). */
+  let ENDED: EndedStory[] = [];
+  async function loadEnded() {
+    const r = await liveApi.makerEnded([...liveApi.mineIds()]);
+    if (!r || !alive()) return;
+    ENDED = r;
+    renderCard();
+  }
   /** The Finds' history from the database (live wall): once a visit, and after a call. */
   async function loadFinds() {
     const ids = SAVES.map((x) => x.k);
@@ -1290,7 +1313,12 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
     syncAccount();
     loadFinds();
     loadMakerStats();
-    every(() => document.hidden || loadMakerStats(), 5 * 60e3);
+    loadEnded();
+    every(() => {
+      if (document.hidden) return;
+      loadMakerStats();
+      loadEnded();
+    }, 5 * 60e3);
     return stop;
   }
   if (ACCOUNT) void loadScout();

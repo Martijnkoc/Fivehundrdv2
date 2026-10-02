@@ -5,6 +5,7 @@ import { LANE, TOTAL, numOf, pad, type FilledSpot, type Spot } from "../../lib/w
 import { provenance, type FindStatus, type Finds } from "../../lib/wall/retention";
 import { callLine, statusLine, tierUp, TIER_NAME, type ScoutCall, type ScoutMe } from "../../lib/wall/scout";
 import { numbersLine, type MakerNumbers } from "../../lib/site/reminderEmail";
+import type { EndedStory } from "../../lib/wall/again";
 import { MAKER, SCOUT, SCOUTS, WALL_TODAY } from "../../lib/site/copy";
 import { foundOrder, savesOrder, skey, type OrderedSave, type SaveEntry } from "../../lib/wall/saves";
 import { left, short, styleFor } from "../../lib/wall/time";
@@ -13,9 +14,6 @@ import { GenArt, cssVars } from "./Tile";
 
 export type Account = { via: string; remind: boolean };
 export type CardData = {
-  /** the entry spot's place on the wall (for Take me back) and its number */
-  entryNo: number;
-  entryNum?: number;
   seen: ReadonlySet<string | number>;
   saves: SaveEntry[];
   savesShown: number;
@@ -24,6 +22,8 @@ export type CardData = {
   finds?: boolean;
   /** "Your story": the maker's own numbers, by story id (live wall; people, without the maker) */
   makers?: Record<string, MakerNumbers>;
+  /** "Your story" after its 72 hours: the newest ended story, with its final numbers (live wall) */
+  ended?: EndedStory | null;
   /** whether reminders are sent (false on the live wall until email is set up) */
   reminders?: boolean;
   /** each Find's history from the database, by story id (live wall) */
@@ -52,9 +52,8 @@ const initials = (name: string) =>
  * Approved change: under "Your story", how the maker's own spot is doing,
  * in people (docs/retention.md). Only the maker sees it; never a rank.
  */
-function MakerLine({ s, m }: { s: FilledSpot; m?: MakerNumbers }) {
+function MakerLine({ nums, final }: { nums: MakerNumbers; final?: boolean }) {
   const n = (v: number) => v.toLocaleString("en-US");
-  const nums = m ?? { seen: 0, opened: s.opens ?? 0, kept: s.saves ?? 0, clicked: 0, shared: 0, hotAt: null };
   const parts = [
     nums.hotAt && "Hotspot",
     nums.seen > 0 && `${n(nums.seen)} saw it`,
@@ -66,8 +65,8 @@ function MakerLine({ s, m }: { s: FilledSpot; m?: MakerNumbers }) {
   const line = numbersLine(nums);
   return (
     <>
-      <small className="mine-nums" title={line ? `So far, ${line}.` : undefined}>
-        {parts.length ? parts.join(" · ") : "Live now. Your first numbers show up here."}
+      <small className="mine-nums" title={line ? `${final ? "In its 72 hours" : "So far"}, ${line}.` : undefined}>
+        {parts.length ? parts.join(" · ") : final ? MAKER.endedEmpty : "Live now. Your first numbers show up here."}
       </small>
       {nums.kept > 0 && <small className="mine-kept">{MAKER.kept(n(nums.kept), nums.kept === 1)}</small>}
     </>
@@ -385,18 +384,27 @@ function CardBody({ card, wall }: { card: CardData; wall: Spot[] }) {
         </div>
         <ScoutCard card={card} />
         <WallToday today={card.today} />
-        <button className="lc-entry" data-go={card.entryNo}>
-          <span>You walked in at</span>
-          <b>{`No. ${pad(card.entryNum ?? card.entryNo)}`}</b>
-          <em>Take me back</em>
-        </button>
         {mine && (
           <button className="lc-row mine" data-go={mine.no}>
             <span>Your story</span>
             <b>{`No. ${pad(numOf(mine))} ${mine.name}`}</b>
             <em>{`${short(left(mine))} left`}</em>
-            <MakerLine s={mine} m={mine.id ? card.makers?.[mine.id] : undefined} />
+            <MakerLine
+              nums={(mine.id && card.makers?.[mine.id]) || { seen: 0, opened: mine.opens ?? 0, kept: mine.saves ?? 0, clicked: 0, shared: 0, hotAt: null }}
+            />
           </button>
+        )}
+        {/* after its 72 hours: how it did, and the same story on the wall again (a new spot, paid again) */}
+        {!mine && card.ended && (
+          <div className="lc-row mine ended">
+            <span>Your story</span>
+            <b>{`No. ${pad(card.ended.no)} ${card.ended.name}`}</b>
+            <em>{MAKER.ended}</em>
+            <MakerLine nums={card.ended.stats} final />
+            <button type="button" className="mine-again" data-again={card.ended.id}>
+              {MAKER.again}
+            </button>
+          </div>
         )}
         <Saves card={card} wall={wall} />
         <div className="lc-wall">

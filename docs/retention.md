@@ -19,6 +19,13 @@ Approved 2026-09-27. Three visible layers; everything else is data.
    312 opened · 48 kept · 21 to your links · 3 shared"). Emails to the checkout address when
    the spot becomes a Hotspot and when it has about 6 hours left (`maker_notices_due`,
    sent with the reminders), once each, with a stop link per spot.
+5. **After its 72 hours** (`maker_ended`, `/api/mine/ended`, approved 2026-10-02): "Your
+   story" on the card stays, with the spot's final numbers and **Put it on again**, which
+   opens Create with the same story (name, line, links, files, pattern) and its old number
+   if that's open in its lane. A new spot and 72 hours, paid again: nothing renews by
+   itself. For the browser that paid, or for the signed-in account with the checkout
+   email; stories that ended in the last 30 days, hidden and removed ones never. No email
+   needed (`lib/wall/again.ts`).
 
 ## Rule: provenance, not competition
 

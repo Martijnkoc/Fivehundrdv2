@@ -10,6 +10,7 @@ import type { Draft } from "./Claim";
 import type { FindStatus } from "../../lib/wall/retention";
 import type { ScoutMe } from "../../lib/wall/scout";
 import type { MakerNumbers } from "../../lib/site/reminderEmail";
+import type { EndedStory } from "../../lib/wall/again";
 
 export const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "";
@@ -79,6 +80,20 @@ export function sendEvent(story: string, kind: EventKind, token?: string | null)
 export async function makerStats(ids: string[]): Promise<(MakerNumbers & { id: string })[] | null> {
   try {
     const r = await fetch("/api/mine", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ visitor: visitorId(), ids }) });
+    return r.ok ? r.json() : null;
+  } catch {
+    return null;
+  }
+}
+/** "Your story" after its 72 hours: this browser's (or this account's) stories that ended, with their final numbers. */
+export async function makerEnded(ids: string[]): Promise<EndedStory[] | null> {
+  try {
+    const token = await authToken();
+    const r = await fetch("/api/mine/ended", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(token && { Authorization: `Bearer ${token}` }) },
+      body: JSON.stringify({ visitor: visitorId(), ids }),
+    });
     return r.ok ? r.json() : null;
   } catch {
     return null;

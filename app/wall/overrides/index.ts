@@ -25,6 +25,8 @@ export const OVERRIDES = [
   "14-iphone-pass.css",
   "15-phone-actions.css",
   "16-speed.css",
+  "17-maker-again.css",
+  "18-card-calmer.css",
 ] as const;
 
 /** All parts, joined in order (the layout inlines it; the visual suite adds it to the reference). */

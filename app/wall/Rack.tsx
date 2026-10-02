@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, memo, useSyncExternalStore, type CSSProperties } from "react";
+import { Fragment, memo, useLayoutEffect, useSyncExternalStore, type CSSProperties } from "react";
 import { pad, type FilledSpot, type Spot } from "../../lib/wall/model";
 import type { RackItem } from "../../lib/wall/rack";
 import { skey } from "../../lib/wall/saves";
@@ -83,6 +83,17 @@ export function Rack() {
   const { rack, version } = st;
   const open = st.view === "panel" && st.openNo ? (st.wall[st.openNo - 1] as FilledSpot) : null;
   const complete = !!rack && limit >= rack.items.length;
+  /*
+   * What sits under the wall waits for it (overrides/16-speed.css): the
+   * page's inline script sets the flag before the first paint, and this sets
+   * it too, for a wall reached by a link inside the app (inline scripts don't
+   * run then). Cleared once the wall is in.
+   */
+  const isIn = !!rack;
+  useLayoutEffect(() => {
+    if (isIn) delete document.documentElement.dataset.wallWait;
+    else document.documentElement.dataset.wallWait = "";
+  }, [isIn]);
   return (
     <ol className="rack" id="rack" data-complete={complete ? "" : undefined} data-lane={st.lane}>
       {rack && (

@@ -67,6 +67,8 @@ export function WallPage({ heading = "The wall", ld, story }: { heading?: string
     <>
       {/* a returning visitor goes straight to the wall: decided before the first paint */}
       <script dangerouslySetInnerHTML={{ __html: heroGate }} />
+      {/* what sits under the wall waits for it (overrides/16-speed.css; the rack clears it) */}
+      <script dangerouslySetInnerHTML={{ __html: 'document.documentElement.dataset.wallWait=""' }} />
       <Header />
       <Hero />
       <Spotlight />

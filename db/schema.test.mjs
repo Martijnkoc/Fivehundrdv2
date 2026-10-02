@@ -9,7 +9,7 @@ import { PGlite } from "@electric-sql/pglite";
  * the wall does goes through the same functions the app calls.
  */
 /* every migration but the platform one (pg_cron, Storage: Supabase only) */
-const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links", "20260926090600_founder_data", "20260926090700_indexable_stories", "20260927090000_hotspots", "20260927100000_retention", "20260927110000_call_rank", "20260927120000_hotspot_cfg", "20260927130000_reminders", "20260927140000_hotspot_not_own", "20260927150000_makers", "20260928090000_scout", "20260928095000_scout_unsave", "20260928100000_copy", "20260928110000_scout_flags_at", "20260928120000_scout_shared_ip", "20261001090000_report_new", "20261001100000_hotspot_per_ip"];
+const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links", "20260926090600_founder_data", "20260926090700_indexable_stories", "20260927090000_hotspots", "20260927100000_retention", "20260927110000_call_rank", "20260927120000_hotspot_cfg", "20260927130000_reminders", "20260927140000_hotspot_not_own", "20260927150000_makers", "20260928090000_scout", "20260928095000_scout_unsave", "20260928100000_copy", "20260928110000_scout_flags_at", "20260928120000_scout_shared_ip", "20261001090000_report_new", "20261001100000_hotspot_per_ip", "20261002090000_maker_ended"];
 const schema = (
   await Promise.all(MIGRATIONS.map((m) => readFile(new URL(`../supabase/migrations/${m}.sql`, import.meta.url), "utf8")))
 ).join("\n");
@@ -898,5 +898,31 @@ describe("makers", () => {
     await one("select public.maker_notices_off($1, $2)", [KEY, s.id]);
     assert.deepEqual(await due(), []);
     await rejects(one("select public.maker_notices_due('nope')"), /forbidden/);
+  });
+
+  test("after its 72 hours: the maker's story with its final numbers, for the paying browser or the account with the checkout email", async () => {
+    const ended = async (visitor, ids, user = null) => (await one("select public.maker_ended($1, $2, $3, $4) r", [KEY, visitor, ids, user])).r;
+    const s = await reserve(story({ no: 53, visitor: "maker-2", email: "Maker@Example.com" }));
+    await complete(s.id);
+    await db.query("insert into public.impressions (story_id, visitor) values ($1, 'a'), ($1, 'b')", [s.id]);
+    await ev(s.id, "open", "a");
+    /* still live: nothing yet */
+    assert.deepEqual(await ended("maker-2", [s.id]), []);
+    await age(s.id, "73 hours");
+    const [e] = await ended("maker-2", [s.id]);
+    assert.deepEqual([e.id, e.name, e.lane, e.no, e.stats.seen, e.stats.opened], [s.id, "Lowtide Club", "music", 53, 2, 1]);
+    assert.ok(Array.isArray(e.links) && e.links.length === 1);
+    /* another browser: nothing; the same person signed in with the checkout email: theirs */
+    assert.deepEqual(await ended("someone-else", [s.id]), []);
+    const U = "00000000-0000-4000-8000-0000000000e1";
+    await db.query("insert into auth.users values ($1, 'maker@example.com')", [U]);
+    assert.equal((await ended("new-phone", [], U))[0].id, s.id);
+    const O = "00000000-0000-4000-8000-0000000000e2";
+    await db.query("insert into auth.users values ($1, 'other@example.com')", [O]);
+    assert.deepEqual(await ended("new-phone", [], O), []);
+    /* removed or long gone: not offered again */
+    await age(s.id, "31 days");
+    assert.deepEqual(await ended("maker-2", [s.id]), []);
+    await rejects(one("select public.maker_ended('nope', 'x', '{}')"), /forbidden/);
   });
 });

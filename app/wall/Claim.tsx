@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useRef, useState, useSyncExternalStore, type FormEvent } from "react";
 import { CREATE } from "../../lib/site/copy";
+import type { Prefill } from "../../lib/wall/again";
 import { readDataURL, shrink } from "../../lib/wall/image";
 import { parseLink } from "../../lib/wall/links";
 import { LANES, numOf, pad, type FilledSpot, type LaneId, type Link, type Palette } from "../../lib/wall/model";
@@ -16,7 +17,8 @@ import { GenArt, LaneIcon, SpotTile, cssVars } from "./Tile";
 /* Whitespace text nodes as in the reference's openClaim/showDone templates. */
 const ws = (indent: number) => "\n" + " ".repeat(indent);
 
-export type ClaimStart = { no: number; lane: LaneId; seed: number; pal: Palette };
+/** `prefill`: an ended story of this maker's, put on again (lib/wall/again.ts) */
+export type ClaimStart = { no: number; lane: LaneId; seed: number; pal: Palette; prefill?: Prefill };
 export type Draft = {
   no: number;
   lane: LaneId;
@@ -39,15 +41,16 @@ const LINK_HINTS = ["open.spotify.com/artist/…", "instagram.com/yourname", "yo
 function ClaimForm({ start }: { start: ClaimStart }) {
   const [no, setNo] = useState(start.no);
   const [lane, setLane] = useState<LaneId>(start.lane);
-  const [name, setName] = useState("");
-  const [snip, setSnip] = useState("");
-  const [links, setLinks] = useState(["", "", ""]);
-  const [img, setImg] = useState<string | null>(null);
-  const [logo, setLogo] = useState<string | null>(null);
-  const [audio, setAudio] = useState<string | null>(null);
-  const [exT, setExT] = useState("");
-  const [ex, setEx] = useState("");
-  const [trailer, setTrailer] = useState("");
+  const p = start.prefill;
+  const [name, setName] = useState(p?.name ?? "");
+  const [snip, setSnip] = useState(p?.snippet ?? "");
+  const [links, setLinks] = useState(p?.links ?? ["", "", ""]);
+  const [img, setImg] = useState<string | null>(p?.img ?? null);
+  const [logo, setLogo] = useState<string | null>(p?.logo ?? null);
+  const [audio, setAudio] = useState<string | null>(p?.audio ?? null);
+  const [exT, setExT] = useState(p?.exT ?? "");
+  const [ex, setEx] = useState(p?.ex ?? "");
+  const [trailer, setTrailer] = useState(p?.trailer ?? "");
   const [err, setErr] = useState("");
   const [placing, setPlacing] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
