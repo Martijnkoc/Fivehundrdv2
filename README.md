@@ -120,6 +120,7 @@ which were signed off:
     - **Nothing jumps while it loads**: until the wall is in, the Scout card and the footer under it wait unseen (`overrides/16-speed.css`), and the first screen's fonts are fetched with the page.
     - **Lighter page**: the CSS is one cacheable file instead of inline (it was in every page twice, in the HTML and in React's payload: 57 → 9 KB compressed HTML), and the wall's scripts come with the page instead of a round trip later.
     - Measured on a production build without a database (the demo wall), compressed as Vercel serves it, phone on slow 4G with a 4× slower CPU: the wall in 3.6 s instead of 4.1, blocked time 0.85 s instead of 2.8, layout shift 0.17 instead of 0.29. Desktop: the wall in 0.46 s instead of 1.3, blocked 0.1 s instead of 0.9, layout shift 0.03 instead of 0.68. What still shifts is the first screen's "today" block giving up its numbers' room when there is no database; with one, the numbers fill that room.
+22. Makers after their 72 hours, approved 2026-10-02: "Your story" on the card shows the spot's final numbers and **Put it on again**, which opens Create with the same story ready to place (a new spot and 72 hours, paid again). In the site itself, no email (`overrides/17-maker-again.css`, docs/retention.md).
 
 CSS for these lives in `app/wall/overrides/`, one file per part, joined in order (`app/wall/overrides/index.ts`). The visual suite applies it
 to the reference too, so the baselines are "the reference plus the approved

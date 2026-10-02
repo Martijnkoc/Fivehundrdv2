@@ -137,4 +137,8 @@ export const CREATE = {
 /** A maker's own spot, in people (maker_stats), with what it means. */
 export const MAKER = {
   kept: (n: string, one: boolean) => `${n} ${one ? "person" : "people"} thought this was worth remembering.`,
+  /* after its 72 hours (founder's ask, 2026-10-02) */
+  ended: "Ended",
+  endedEmpty: "Its 72 hours are over.",
+  again: "Put it on again",
 };
