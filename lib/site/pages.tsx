@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { FREE } from "../wall/model";
-import { CONTACT_EMAIL, DEFINITION, FAQ, LANES, type PageSlug, UPDATED } from "./facts";
+import { CONTACT_EMAIL, DEFINITION, FAQ, LANES, type PageSlug, TERMS_UPDATED, UPDATED } from "./facts";
 
 /*
  * The info pages behind the footer. Plain, specific and checkable: each page
@@ -216,7 +216,7 @@ export const INFO: Record<PageSlug, Info> = {
     lede: `These terms cover using Fivehundrd and placing a spot on the wall. In short: be fair, own what you post, follow the wall rules, and a spot is 72 hours, ${FREE ? "free for now" : "for $9.95"}.`,
     body: (
       <>
-        <p className="muted">Last updated {UPDATED}.</p>
+        <p className="muted">Last updated {TERMS_UPDATED}.</p>
         <h2>1. Using Fivehundrd</h2>
         <p>Browsing, keeping and sharing are free and don&apos;t need an account. Don&apos;t misuse the service: no scraping at scale, no attempts to break it, no automated buying of spots.</p>
         <h2>2. A spot</h2>
