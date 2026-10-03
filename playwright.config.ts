@@ -51,9 +51,11 @@ export default defineConfig<WallOptions>({
     { name: "app", use: { wallPath: "/" } },
   ],
   /* The production build, as visitors get it; SERVE_REFERENCE=1 lets it
-     serve /reference.html for the baselines. */
+     serve /reference.html for the baselines. NEXT_PUBLIC_PAYMENTS=on: the
+     reference shows the paid wall ($9.95), so parity is checked against that;
+     free spots only change the words around the price (lib/wall/model FREE). */
   webServer: {
-    command: "pnpm build && SERVE_REFERENCE=1 pnpm start",
+    command: "NEXT_PUBLIC_PAYMENTS=on pnpm build && SERVE_REFERENCE=1 NEXT_PUBLIC_PAYMENTS=on pnpm start",
     url: "http://127.0.0.1:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 300_000,

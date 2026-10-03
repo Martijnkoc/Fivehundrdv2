@@ -1,5 +1,5 @@
 import { checkClaim } from "../../../lib/wall/claimRules";
-import { LANE } from "../../../lib/wall/model";
+import { FREE, LANE } from "../../../lib/wall/model";
 import { hasDatabase, hasPayments, humanCheck, ipHash, json, rpc, stripe } from "../../../lib/server/backend";
 import { moderate } from "../../../lib/server/moderation";
 import { measured } from "../../../lib/server/ops";
@@ -13,9 +13,12 @@ type Reserved = { id: string; lane: string; no: number };
 /**
  * §13: the maker pays $9.95 for 72 hours. The story is stored and its number
  * held first; the spot goes live when Stripe confirms the payment (webhook).
+ * While spots are FREE, the same checks run and the spot goes live at once
+ * (free_place); the maker is sent straight back to the wall.
  */
 export const POST = measured("/api/checkout", async (req: Request) => {
-  if (!hasDatabase() || !hasPayments()) return json({ error: "Payments aren't open yet." }, { status: 503 });
+  if (!hasDatabase()) return json({ error: "Spots aren't open yet." }, { status: 503 });
+  if (!FREE && !hasPayments()) return json({ error: "Payments aren't open yet." }, { status: 503 });
   let body: unknown;
   try {
     body = await req.json();
@@ -34,7 +37,7 @@ export const POST = measured("/api/checkout", async (req: Request) => {
 
   let spot: Reserved;
   try {
-    spot = await rpc<Reserved>("checkout_reserve", { p_story: { ...claim, ipHash: ipHash(req), moderation } });
+    spot = await rpc<Reserved>(FREE ? "free_place" : "checkout_reserve", { p_story: { ...claim, ipHash: ipHash(req), moderation } });
   } catch (e) {
     const m = e instanceof Error ? e.message : "";
     const [status, error] = m.includes("lane_full")
@@ -46,6 +49,7 @@ export const POST = measured("/api/checkout", async (req: Request) => {
           : [502, "Something went wrong. Try again."];
     return json({ error }, { status });
   }
+  if (FREE) return json({ id: spot.id, lane: spot.lane, no: spot.no, url: `/?claimed=${spot.id}` });
 
   const origin = new URL(req.url).origin;
   try {

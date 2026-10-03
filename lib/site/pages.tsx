@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { FREE } from "../wall/model";
 import { CONTACT_EMAIL, DEFINITION, FAQ, LANES, type PageSlug, UPDATED } from "./facts";
 
 /*
@@ -14,7 +15,7 @@ const mail = CONTACT_EMAIL ? <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}
 
 export const INFO: Record<PageSlug, Info> = {
   "how-it-works": {
-    lede: "Fivehundrd is one wall with six lanes of 500 numbered spots. A maker holds a spot for 72 hours for $9.95. Visitors browse, open, keep and share, without a feed and without an algorithm.",
+    lede: `Fivehundrd is one wall with six lanes of 500 numbered spots. A maker holds a spot for 72 hours, ${FREE ? "free for now" : "for $9.95"}. Visitors browse, open, keep and share, without a feed and without an algorithm.`,
     body: (
       <>
         <h2>For visitors</h2>
@@ -43,7 +44,7 @@ export const INFO: Record<PageSlug, Info> = {
             on the wall.
           </li>
           <li>
-            <b>Pay $9.95.</b> Through Stripe. Your story is checked against the <a href="/rules">wall rules</a> first, and goes live straight away.
+            {FREE ? <b>Place it, free for now.</b> : <><b>Pay $9.95.</b> Through Stripe.</>} Your story is checked against the <a href="/rules">wall rules</a> first, and goes live straight away.
           </li>
           <li>
             <b>72 hours on the wall.</b> Share your spot&apos;s card. After three days the number opens up for the next maker; your lasting link keeps working.
@@ -86,11 +87,13 @@ export const INFO: Record<PageSlug, Info> = {
   },
 
   pricing: {
-    lede: "One price: $9.95 for a spot on the wall for 72 hours. No subscription, no bidding, no ads. Browsing, keeping and sharing are free.",
+    lede: FREE
+      ? "Spots are free for now, while the wall fills up: 72 hours on the wall, no payment. No subscription, no bidding, no ads. Browsing, keeping and sharing are free."
+      : "One price: $9.95 for a spot on the wall for 72 hours. No subscription, no bidding, no ads. Browsing, keeping and sharing are free.",
     body: (
       <>
         <div className="price-box">
-          <b>$9.95</b>
+          <b>{FREE ? "Free" : "$9.95"}</b>
           <span>one spot · 72 hours · any lane</span>
         </div>
         <h2>What you get</h2>
@@ -117,7 +120,7 @@ export const INFO: Record<PageSlug, Info> = {
   },
 
   rules: {
-    lede: "Fivehundrd is for real creative work, open to everyone, teenagers included. Every story is checked before payment, and anyone can report a live story.",
+    lede: "Fivehundrd is for real creative work, open to everyone, teenagers included. Every story is checked before it goes live, and anyone can report a live story.",
     body: (
       <>
         <h2>Welcome</h2>
@@ -133,7 +136,7 @@ export const INFO: Record<PageSlug, Info> = {
         </ul>
         <h2>How stories are checked</h2>
         <p>
-          Before payment, links are checked against simple rules and Google Safe Browsing, and the name, texts and images are checked automatically against these rules. Clear
+          Before a story goes live, links are checked against simple rules and Google Safe Browsing, and the name, texts and images are checked automatically against these rules. Clear
           violations are refused before any money moves, with a reason you can act on. Doubtful stories go live and are looked at by a person.
         </p>
         <h2>Reporting</h2>
@@ -210,7 +213,7 @@ export const INFO: Record<PageSlug, Info> = {
   },
 
   terms: {
-    lede: "These terms cover using Fivehundrd and buying a spot on the wall. In short: be fair, own what you post, follow the wall rules, and a spot is 72 hours for $9.95.",
+    lede: `These terms cover using Fivehundrd and placing a spot on the wall. In short: be fair, own what you post, follow the wall rules, and a spot is 72 hours, ${FREE ? "free for now" : "for $9.95"}.`,
     body: (
       <>
         <p className="muted">Last updated {UPDATED}.</p>
@@ -218,7 +221,7 @@ export const INFO: Record<PageSlug, Info> = {
         <p>Browsing, keeping and sharing are free and don&apos;t need an account. Don&apos;t misuse the service: no scraping at scale, no attempts to break it, no automated buying of spots.</p>
         <h2>2. A spot</h2>
         <p>
-          A spot is one numbered place in one lane for 72 hours from the moment it goes live, for $9.95 paid through Stripe. Spot numbers carry no advantage. Placement on the wall
+          A spot is one numbered place in one lane for 72 hours from the moment it goes live, {FREE ? "free for now (a price is shown before you place, once paid spots start)" : "for $9.95 paid through Stripe"}. Spot numbers carry no advantage. Placement on the wall
           and where visitors start browsing are not guaranteed or promised.
         </p>
         <h2>3. Your content</h2>
@@ -228,7 +231,7 @@ export const INFO: Record<PageSlug, Info> = {
         </p>
         <h2>4. Checks and removal</h2>
         <p>
-          Stories are checked before payment and can be refused. A live story that breaks the rules can be hidden or removed. Whether a removed story is refunded depends on why it
+          Stories are checked before they go live and can be refused. A live story that breaks the rules can be hidden or removed. Whether a removed story is refunded depends on why it
           was removed; ask us at {mail}.
         </p>
         <h2>5. Refunds</h2>

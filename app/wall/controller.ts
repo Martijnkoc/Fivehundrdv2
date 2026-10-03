@@ -34,6 +34,7 @@ import { cardFileName, readyCard, shareCardBlob } from "./shareCard";
 import { wallStore, type Bridge } from "./store";
 import * as liveApi from "./liveClient";
 import { laneBySlug, lanePath } from "../../lib/site/facts";
+import { CREATE } from "../../lib/site/copy";
 import { createMoment, startTracking, surface, unwatchTiles, visitorId, watchTiles } from "./track";
 
 type Opts = { align: boolean };
@@ -1394,6 +1395,6 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
       if (!st || st.status === "vacant" || st.status === "released") break;
       await new Promise((r) => setTimeout(r, 1500));
     }
-    toast("We're confirming your payment. Your spot appears in a minute.");
+    toast(CREATE.confirming);
   }
 }

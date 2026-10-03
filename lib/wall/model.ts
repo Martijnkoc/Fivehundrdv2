@@ -3,6 +3,14 @@
 export const TOTAL = 500;
 export const LIFE = 72 * 3600e3;
 export const PRICE = "$9.95";
+/**
+ * Spots are free until NEXT_PUBLIC_PAYMENTS=on (founder's ask, 2026-10-03:
+ * fill the wall first, switch Stripe on once makers come). Free, a placed
+ * spot goes live straight away; the Stripe code stays as it is.
+ */
+export const FREE = process.env.NEXT_PUBLIC_PAYMENTS !== "on";
+/** What a spot costs, as the wall says it. */
+export const COST = FREE ? "Free for now" : PRICE;
 
 export type LaneId = "music" | "art" | "writers" | "podcasts" | "games" | "letters";
 export type NavId = LaneId | "all";
