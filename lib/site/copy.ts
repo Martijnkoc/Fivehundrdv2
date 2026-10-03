@@ -143,4 +143,7 @@ export const MAKER = {
   ended: "Ended",
   endedEmpty: "Its 72 hours are over.",
   again: "Put it on again",
+  /* a live spot, in its last 24 hours (founder's ask, 2026-10-03): same number, 72 more hours */
+  extend: "Keep it 72 more hours",
+  extended: "72 more hours. Same number, same story.",
 };

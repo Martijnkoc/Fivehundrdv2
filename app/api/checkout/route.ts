@@ -1,6 +1,6 @@
 import { checkClaim } from "../../../lib/wall/claimRules";
 import { FREE, LANE } from "../../../lib/wall/model";
-import { hasDatabase, hasPayments, humanCheck, ipHash, json, rpc, stripe } from "../../../lib/server/backend";
+import { hasDatabase, hasPayments, humanCheck, ipHash, json, rpc, stripe, userFrom } from "../../../lib/server/backend";
 import { moderate } from "../../../lib/server/moderation";
 import { measured } from "../../../lib/server/ops";
 
@@ -37,7 +37,9 @@ export const POST = measured("/api/checkout", async (req: Request) => {
 
   let spot: Reserved;
   try {
-    spot = await rpc<Reserved>(FREE ? "free_place" : "checkout_reserve", { p_story: { ...claim, ipHash: ipHash(req), moderation } });
+    /* free: a signed-in maker's story remembers the account ("Your story" on any device) */
+    const user = FREE ? await userFrom(req) : null;
+    spot = await rpc<Reserved>(FREE ? "free_place" : "checkout_reserve", { p_story: { ...claim, ipHash: ipHash(req), moderation, ...(user && { user }) } });
   } catch (e) {
     const m = e instanceof Error ? e.message : "";
     const [status, error] = m.includes("lane_full")

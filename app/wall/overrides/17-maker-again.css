@@ -13,3 +13,10 @@
 .mine-again:focus-visible{outline:2px solid #141210;outline-offset:2px}
 .mine-again:active{transform:scale(.98)}
 @media (max-width:699px){.mine-again{min-height:44px;display:inline-flex;align-items:center}}
+
+/*
+ * "Keep it 72 more hours" (approved 2026-10-03): under a live "Your story"
+ * in its last 24 hours, the same black pill, close under the pink row.
+ */
+.mine-extend{margin:-2px 0 10px}
+.mine-extend:disabled{opacity:.6;cursor:default}

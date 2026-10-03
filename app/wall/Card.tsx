@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useEffect, useState, useSyncExternalStore } from "react";
-import { LANE, TOTAL, numOf, pad, type FilledSpot, type Spot } from "../../lib/wall/model";
+import { FREE, KEEP_ON, LANE, TOTAL, numOf, pad, type FilledSpot, type Spot } from "../../lib/wall/model";
 import { provenance, type FindStatus, type Finds } from "../../lib/wall/retention";
 import { callLine, statusLine, tierUp, TIER_NAME, type ScoutCall, type ScoutMe } from "../../lib/wall/scout";
 import { numbersLine, type MakerNumbers } from "../../lib/site/reminderEmail";
@@ -385,14 +385,22 @@ function CardBody({ card, wall }: { card: CardData; wall: Spot[] }) {
         <ScoutCard card={card} />
         <WallToday today={card.today} />
         {mine && (
-          <button className="lc-row mine" data-go={mine.no}>
-            <span>Your story</span>
-            <b>{`No. ${pad(numOf(mine))} ${mine.name}`}</b>
-            <em>{`${short(left(mine))} left`}</em>
-            <MakerLine
-              nums={(mine.id && card.makers?.[mine.id]) || { seen: 0, opened: mine.opens ?? 0, kept: mine.saves ?? 0, clicked: 0, shared: 0, hotAt: null }}
-            />
-          </button>
+          <>
+            <button className="lc-row mine" data-go={mine.no}>
+              <span>Your story</span>
+              <b>{`No. ${pad(numOf(mine))} ${mine.name}`}</b>
+              <em>{`${short(left(mine))} left`}</em>
+              <MakerLine
+                nums={(mine.id && card.makers?.[mine.id]) || { seen: 0, opened: mine.opens ?? 0, kept: mine.saves ?? 0, clicked: 0, shared: 0, hotAt: null }}
+              />
+            </button>
+            {/* its last 24 hours: the same number for 72 more (free spots; paid renewal comes with Stripe) */}
+            {FREE && mine.id && left(mine) > 0 && left(mine) <= KEEP_ON && (
+              <button type="button" className="mine-again mine-extend" data-extend={mine.id}>
+                {MAKER.extend}
+              </button>
+            )}
+          </>
         )}
         {/* after its 72 hours: how it did, and the same story on the wall again (a new spot, paid again) */}
         {!mine && card.ended && (

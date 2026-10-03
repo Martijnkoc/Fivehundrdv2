@@ -1,5 +1,5 @@
 import { LIFE, type FilledSpot, type NavId, type Spot } from "./model";
-import { left } from "./time";
+import { age, left } from "./time";
 
 /*
  * Above the wall: Hotspots (traction right now) and Newest. On the live wall
@@ -31,7 +31,7 @@ export function hotspots(wall: Spot[], hot: HotEntry[] | null, lane: NavId, n = 
   }
   /* the demo wall: its own counters, favouring saves, per hour on the wall */
   return spots
-    .map((s) => ({ s, score: ((s.opens || 0) + 4 * (s.saves || 0)) / Math.max(1, (LIFE - left(s)) / 3600e3) }))
+    .map((s) => ({ s, score: ((s.opens || 0) + 4 * (s.saves || 0)) / Math.max(1, age(s) / 3600e3) }))
     .sort((a, b) => b.score - a.score || a.s.no - b.s.no)
     .slice(0, n)
     /* the tile already shows its counts */
@@ -40,7 +40,7 @@ export function hotspots(wall: Spot[], hot: HotEntry[] | null, lane: NavId, n = 
 
 export function newest(wall: Spot[], lane: NavId, n = 5): Pick[] {
   const ago = (s: FilledSpot) => {
-    const m = Math.max(1, Math.round((LIFE - left(s)) / 60e3));
+    const m = Math.max(1, Math.round(age(s) / 60e3));
     return m < 60 ? `joined ${m} min ago` : m < 48 * 60 ? `joined ${Math.round(m / 60)} h ago` : `joined ${Math.round(m / 1440)} days ago`;
   };
   return wall

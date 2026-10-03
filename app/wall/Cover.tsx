@@ -5,7 +5,7 @@ import { SCOUT, TIMEHEART } from "../../lib/site/copy";
 import { HANDS, HEART, ICON } from "../../lib/wall/icons";
 import { LANE, LIFE, numOf, pad, rng, type FilledSpot } from "../../lib/wall/model";
 import { skey } from "../../lib/wall/saves";
-import { left, long } from "../../lib/wall/time";
+import { age, left, long } from "../../lib/wall/time";
 import { bridge, wallStore } from "./store";
 import { GenArt, LaneIcon } from "./Tile";
 
@@ -141,7 +141,7 @@ export const Cover = memo(function Cover({ s, saved, preview }: { s: FilledSpot;
       <div className="art">
         {s.img ? <img src={s.img} alt={`Artwork for ${s.name}`} /> : <GenArt seed={s.seed} pal={s.pal} />}
         <Trailer s={s} />
-        {LIFE - left(s) < 3 * 3600e3 && <span className="stamp">Just arrived</span>}
+        {age(s) < 3 * 3600e3 && <span className="stamp">Just arrived</span>}
       </div>
       {ws(4)}
       <div className="body">
