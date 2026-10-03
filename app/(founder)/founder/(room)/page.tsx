@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { evaluate } from "../../../../lib/founder/alerts";
 import { alertInputs, feed, kpis, live, series, TZ } from "../../../../lib/founder/data";
 import { dayOf, dayStart } from "../../../../lib/founder/filters";
-import { change, int, money, pct, rate } from "../../../../lib/founder/format";
+import { change, int, money, pays, pct, rate } from "../../../../lib/founder/format";
 import { LineChart } from "../_kit/Chart";
 import { LiveFeed } from "../_kit/LiveFeed";
 import { NoData, room, type Params } from "../_kit/page";
@@ -47,8 +47,8 @@ export default async function Pulse({ searchParams }: { searchParams: Promise<Pa
     { value: int(today.shares), label: "shared", sub: vs(today.shares, yday.shares), href: "/founder/shares" },
     { value: int(today.createStarts), label: today.createStarts === 1 ? "creator started" : "creators started", sub: vs(today.createStarts, yday.createStarts), href: "/founder/creators" },
     {
-      value: int(today.paid),
-      label: `${today.paid === 1 ? "spot" : "spots"} purchased — ${money(today.gross)}`,
+      value: int(pays(today)),
+      label: `${pays(today) === 1 ? "spot" : "spots"} purchased — ${money(today.gross)}`,
       sub: vs(today.gross, yday.gross),
       href: "/founder/revenue",
     },

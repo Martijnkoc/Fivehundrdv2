@@ -25,12 +25,12 @@ export default async function Creators({ searchParams }: { searchParams: Promise
       <PageHead title="Creators" desc="Who puts work on the wall, how often they come back, and where Create loses people." />
       <Filters label={v.period.label} show={["range", "lane", "kind"]} />
       <div className="grid g-6">
-        <Kpi label="Creators" value={k.creators} prev={prev?.creators} sub="posted a paid spot" />
+        <Kpi label="Creators" value={k.creators} prev={prev?.creators} sub="put a spot on the wall" />
         <Kpi label="New creators" value={k.newCreators} prev={prev?.newCreators} sub="first spot ever" />
         <Kpi label="Repeat rate" value={rate(repeat, inPeriod.length)} format="pct" kind="rate" sub={`${repeat} of ${inPeriod.length} have posted before`} />
         <Kpi label="Started Create" value={k.createStarts} prev={prev?.createStarts} spark={s.map((x) => x.createStarts)} slot={4} />
         <Kpi label="Create → checkout" value={rate(k.checkouts, k.createStarts)} prev={prev ? rate(prev.checkouts, prev.createStarts) : undefined} format="pct" kind="rate" sub={`${k.checkouts.toLocaleString("en-US")} checkouts started`} />
-        <Kpi label="Checkout → paid" value={rate(k.paid, k.checkouts)} prev={prev ? rate(prev.paid, prev.checkouts) : undefined} format="pct" kind="rate" sub={`${k.paid.toLocaleString("en-US")} spots bought`} href={to("/founder/revenue")} />
+        <Kpi label="Started → live" value={rate(k.paid, k.checkouts)} prev={prev ? rate(prev.paid, prev.checkouts) : undefined} format="pct" kind="rate" sub={`${k.paid.toLocaleString("en-US")} spots live`} href={to("/founder/revenue")} />
       </div>
       <div className="grid g-2 section">
         <Card title="Create funnel" desc="People who opened Create, and how far they got. Steps are the phone flow; desktop goes straight to checkout.">
@@ -39,15 +39,16 @@ export default async function Creators({ searchParams }: { searchParams: Promise
               steps={[
                 { label: "Opened Create", value: fun.started, note: "people" },
                 ...fun.steps.filter((x) => x.step >= 2).map((x) => ({ label: STEP[x.step] ?? `Step ${x.step}`, value: x.visitors })),
-                { label: "Checkout", value: fun.checkouts, href: to("/founder/revenue") },
-                { label: "Paid", value: fun.paid, href: to("/founder/revenue") },
+                /* desktop skips the phone steps, so checkout compares with everyone who opened Create */
+                { label: "Checkout", value: fun.checkouts, href: to("/founder/revenue"), of: 0 },
+                { label: "Live", value: fun.paid, href: to("/founder/revenue") },
               ]}
             />
           ) : (
             <Empty title="Nobody opened Create in this period.">Create is counted from the moment someone taps Create or an open spot on the live wall.</Empty>
           )}
         </Card>
-        <Card title="Spots bought over time" desc="Click a day for its transactions">
+        <Card title="Spots going live over time" desc={`Click ${v.period.bucket === "hour" ? "an" : "a"} ${v.period.bucket} for its transactions`}>
           <LineChart
             labels={s.map((x) => x.t)}
             bucket={b}
@@ -55,7 +56,7 @@ export default async function Creators({ searchParams }: { searchParams: Promise
             series={[
               { name: "Started Create", values: s.map((x) => x.createStarts), slot: 4 },
               { name: "Checkouts", values: s.map((x) => x.checkouts), slot: 2 },
-              { name: "Paid", values: s.map((x) => x.paid), slot: 3 },
+              { name: "Live", values: s.map((x) => x.paid), slot: 3 },
             ]}
             hrefs={b === "day" ? s.map((x) => to("/founder/revenue", dayRange(x.t))) : undefined}
             height={260}

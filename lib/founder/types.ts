@@ -18,7 +18,10 @@ export type Kpis = {
   entries: number;
   createStarts: number;
   checkouts: number;
+  /** stories that went live in the period, free or paid */
   paid: number;
+  /** of those, the ones with money in them (fd_kpis; missing before 2026-10-03) */
+  payments?: number;
   creators: number;
   newCreators: number;
   gross: number;

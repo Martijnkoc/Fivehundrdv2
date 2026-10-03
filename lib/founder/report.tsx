@@ -2,7 +2,7 @@ import "server-only";
 import { Document, Line, Page, Path, Rect, renderToBuffer, StyleSheet, Svg, Text, View } from "@react-pdf/renderer";
 import type { ReportData } from "./exports";
 import { LANE_LABEL } from "./filters";
-import { change, int, money, pct, rate, tickLabel } from "./format";
+import { change, int, money, pays, pct, rate, tickLabel } from "./format";
 
 /*
  * The founder report as a PDF: the period's headline numbers with their
@@ -84,11 +84,12 @@ function Chart({ labels, values, color, money: isMoney, bucket }: { labels: stri
   );
 }
 
-function Funnel({ steps }: { steps: [string, number][] }) {
+/** steps: [label, count, the step it compares with (default the one before)] */
+function Funnel({ steps }: { steps: [string, number, number?][] }) {
   const top = Math.max(1, steps[0][1]);
   return (
     <View>
-      {steps.map(([label, n], i) => (
+      {steps.map(([label, n, of], i) => (
         <View key={label} style={{ flexDirection: "row", alignItems: "center", marginBottom: 4 }}>
           <Text style={{ width: 70, fontSize: 8.5 }}>{label}</Text>
           <Svg width={240} height={10}>
@@ -96,7 +97,7 @@ function Funnel({ steps }: { steps: [string, number][] }) {
             <Rect x={0} y={0} width={Math.max(1, (240 * n) / top)} height={10} rx={2} fill={S1} />
           </Svg>
           <Text style={{ width: 60, textAlign: "right", fontFamily: "Helvetica-Bold", fontSize: 8.5 }}>{int(n)}</Text>
-          <Text style={{ width: 90, textAlign: "right", fontSize: 7.5, color: INK3 }}>{i ? `${pct(rate(n, steps[i - 1][1]))} of previous` : "people"}</Text>
+          <Text style={{ width: 90, textAlign: "right", fontSize: 7.5, color: INK3 }}>{i ? `${pct(rate(n, steps[of ?? i - 1][1]))} of ${of != null ? steps[of][0].toLowerCase() : "previous"}` : "people"}</Text>
         </View>
       ))}
     </View>
@@ -172,8 +173,8 @@ function Report({ d, title }: { d: ReportData; title: string }) {
             ["Visit", k.visitors],
             ["Spot open", k.openers],
             ["Save", k.savers],
-            ["Share", k.sharers],
-            ["Create", k.createStarts],
+            ["Share", k.sharers, 1],
+            ["Create", k.createStarts, 0],
             ["Checkout", k.checkouts],
             ["Live", k.paid],
           ]}
@@ -189,7 +190,7 @@ function Report({ d, title }: { d: ReportData; title: string }) {
             { label: "Net", w: 88, right: true },
             { label: "Payments", w: 83, right: true },
           ]}
-          rows={[[money(k.gross, true), money(-k.refunds, true), money(-k.disputes, true), money(-k.fees, true), money(net(k), true), int(k.paid)]]}
+          rows={[[money(k.gross, true), money(-k.refunds, true), money(-k.disputes, true), money(-k.fees, true), money(net(k), true), int(pays(k))]]}
         />
         <View style={st.foot} fixed>
           <Text>Fivehundrd Control Room · confidential</Text>

@@ -51,3 +51,6 @@
 .foot-report-err{flex-basis:100%;margin:2px 0 0;font-size:13px;color:#b42318}
 .foot-report-done{margin:0;font-size:14px;font-weight:600}
 @media (max-width:699px){.foot-report{min-height:44px;display:inline-flex;align-items:center}.foot-report-form select,.foot-report-form input,.foot-report-form button{min-height:44px}}
+/* polish (2026-10-03): the header buttons stay on one line on the narrowest phones */
+.info-top nav a{white-space:nowrap}
+@media (max-width:360px){.info-top .brand{font-size:22px}.info-top nav a{padding:0 12px;font-size:13px}}

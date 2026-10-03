@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { FREE } from "../wall/model";
+import { CHECKS } from "./checks";
 import { CONTACT_EMAIL, DEFINITION, FAQ, LANES, type PageSlug, TERMS_UPDATED, UPDATED } from "./facts";
 
 /*
@@ -136,8 +137,15 @@ export const INFO: Record<PageSlug, Info> = {
         </ul>
         <h2>How stories are checked</h2>
         <p>
-          Before a story goes live, links are checked against simple rules and Google Safe Browsing, and the name, texts and images are checked automatically against these rules. Clear
-          violations are refused before any money moves, with a reason you can act on. Doubtful stories go live and are looked at by a person.
+          Before a story goes live, its links are checked automatically against the rules above (no short links, no bare server addresses, no hidden logins)
+          {CHECKS.safeBrowsing ? " and against Google Safe Browsing's list of known harmful sites" : ""}.{" "}
+          {CHECKS.ai
+            ? "The name, texts and images are checked automatically against these rules. Clear violations are refused before the story goes live, with a reason you can act on. Doubtful stories go live and are looked at by a person."
+            : "A person looks at every new story: its links, name, texts and images. A story that breaks these rules is taken off the wall, with a reason you can act on."}
+        </p>
+        <p>
+          {CHECKS.robot ? "An invisible check makes sure the person placing a story is human. " : ""}
+          One address can place a limited number of stories an hour, so the wall can&apos;t be flooded.
         </p>
         <h2>Reporting</h2>
         <p>
@@ -296,9 +304,9 @@ export const INFO: Record<PageSlug, Info> = {
           <li>Supabase: database, file storage and sign-in.</li>
           <li>Vercel: hosting (and the country a request comes from).</li>
           <li>Stripe: payments and refunds.</li>
-          <li>Anthropic: the automatic check of a story&apos;s texts and images before payment.</li>
-          <li>Google Safe Browsing: checking links in a story against known harmful sites.</li>
-          <li>Cloudflare Turnstile: an invisible check that a buyer is human.</li>
+          {CHECKS.ai && <li>Anthropic: the automatic check of a story&apos;s texts and images before it goes live.</li>}
+          {CHECKS.safeBrowsing && <li>Google Safe Browsing: checking links in a story against known harmful sites.</li>}
+          {CHECKS.robot && <li>Cloudflare Turnstile: an invisible check that the person placing a story is human.</li>}
           <li>Resend: sending reminder and spot emails, where they are set up.</li>
         </ul>
         <h2>Your choices</h2>

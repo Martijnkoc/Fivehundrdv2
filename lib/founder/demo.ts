@@ -589,6 +589,7 @@ export const demo = {
       createStarts: starters.size,
       checkouts: started.length,
       paid: paidS.length,
+      payments: paidS.filter((s) => s.amount > 0).length,
       creators: new Set(paidS.map(creatorOf)).size,
       newCreators: new Set(paidS.map(creatorOf).filter((c) => !earlier.has(c))).size,
       gross: paidS.reduce((a, s) => a + s.amount, 0),

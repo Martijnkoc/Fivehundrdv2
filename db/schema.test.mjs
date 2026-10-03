@@ -9,7 +9,7 @@ import { PGlite } from "@electric-sql/pglite";
  * the wall does goes through the same functions the app calls.
  */
 /* every migration but the platform one (pg_cron, Storage: Supabase only) */
-const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links", "20260926090600_founder_data", "20260926090700_indexable_stories", "20260927090000_hotspots", "20260927100000_retention", "20260927110000_call_rank", "20260927120000_hotspot_cfg", "20260927130000_reminders", "20260927140000_hotspot_not_own", "20260927150000_makers", "20260928090000_scout", "20260928095000_scout_unsave", "20260928100000_copy", "20260928110000_scout_flags_at", "20260928120000_scout_shared_ip", "20261001090000_report_new", "20261001100000_hotspot_per_ip", "20261002090000_maker_ended", "20261003090000_free_place", "20261003100000_free_place_lock", "20261003110000_maker_account"];
+const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links", "20260926090600_founder_data", "20260926090700_indexable_stories", "20260927090000_hotspots", "20260927100000_retention", "20260927110000_call_rank", "20260927120000_hotspot_cfg", "20260927130000_reminders", "20260927140000_hotspot_not_own", "20260927150000_makers", "20260928090000_scout", "20260928095000_scout_unsave", "20260928100000_copy", "20260928110000_scout_flags_at", "20260928120000_scout_shared_ip", "20261001090000_report_new", "20261001100000_hotspot_per_ip", "20261002090000_maker_ended", "20261003090000_free_place", "20261003100000_free_place_lock", "20261003110000_maker_account", "20261003120000_fd_payments"];
 const schema = (
   await Promise.all(MIGRATIONS.map((m) => readFile(new URL(`../supabase/migrations/${m}.sql`, import.meta.url), "utf8")))
 ).join("\n");
@@ -550,12 +550,20 @@ describe("the Control Room's data", () => {
     assert.equal(k.createStarts, 1);
     assert.equal(k.paid, 2);
     assert.equal(k.gross, 2 * 995);
+    assert.equal(k.payments, 2);
     assert.equal(k.liveSpots, 2);
     assert.equal(k.creators, 1, "the same maker email twice is one creator");
     const mobile = await kpis({ device: "mobile" });
     assert.deepEqual([mobile.visitors, mobile.opens, mobile.saves], [1, 1, 1]);
     const books = await kpis({ lane: "writers" });
     assert.deepEqual([books.opens, books.paid, books.liveSpots], [1, 1, 1]);
+  });
+
+  test("a free spot is live but no payment", async () => {
+    await live();
+    await one("select public.free_place($1, $2) r", [KEY, JSON.stringify(story({ no: 300, ipHash: "ipf" }))]);
+    const k = await kpis();
+    assert.deepEqual([k.paid, k.payments, k.gross, k.liveSpots], [2, 1, 995, 2]);
   });
 
   test("series come in hour or day buckets across the whole range", async () => {
