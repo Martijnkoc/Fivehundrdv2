@@ -12,7 +12,7 @@
 import { endedToShow, prefillFrom, sameNumber, type EndedStory } from "../../lib/wall/again";
 import { PAL, seedWall } from "../../lib/wall/demo";
 import { buildLiveWall, mediaURL, mergeFeed, openNumbers, type Feed } from "../../lib/wall/live";
-import { LANE, LIFE, numOf, pad, seenKey, type FilledSpot, type LaneId, type NavId, type Spot } from "../../lib/wall/model";
+import { LANE, LANES, LIFE, TOTAL, numOf, pad, seenKey, type FilledSpot, type LaneId, type NavId, type Spot } from "../../lib/wall/model";
 import { buildRack } from "../../lib/wall/rack";
 import { savesOrder as savesOrderOf, skey, type SaveEntry } from "../../lib/wall/saves";
 import { SCOUT as SCOUT_CFG, type ScoutMe } from "../../lib/wall/scout";
@@ -394,6 +394,8 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
       reminders: REMINDERS,
       makers: MAKERS,
       ended: endedToShow(ENDED, WALL.some((s) => !s.vacant && s.mine && left(s) > 0)),
+      /* live wall: every lane's 500 numbers, less the live and held ones (the rack shows only some open spots) */
+      openSpots: live ? Math.max(0, LANES.length * TOTAL - live.feed.stories.length - live.feed.held.length) : undefined,
       scout: ACCOUNT ? SCOUT : null,
       today: wallToday({ saves: savesOrder(), prior: PRIOR, fresh: wallStore.get().since?.fresh ?? 0 }),
     });

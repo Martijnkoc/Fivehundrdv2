@@ -24,6 +24,8 @@ export type CardData = {
   makers?: Record<string, MakerNumbers>;
   /** "Your story" after its 72 hours: the newest ended story, with its final numbers (live wall) */
   ended?: EndedStory | null;
+  /** live wall: open spots across every lane (the rack shows only some of them) */
+  openSpots?: number;
   /** whether reminders are sent (false on the live wall until email is set up) */
   reminders?: boolean;
   /** each Find's history from the database, by story id (live wall) */
@@ -304,13 +306,8 @@ function ScoutCard({ card }: { card: CardData }) {
           </div>
         </div>
       )}
-      {me.calls > 0 ? (
-        <p className="sc-facts">{facts.join(" · ")}</p>
-      ) : (
-        <p className="sc-facts">
-          <b>{SCOUT.startsHead}</b> {SCOUT.startsBody}
-        </p>
-      )}
+      {/* no calls yet: "Your Scouts" below says how to start, once is enough */}
+      {me.calls > 0 && <p className="sc-facts">{facts.join(" · ")}</p>}
       {best && (
         <div className="sc-best">
           <span>{SCOUT.strongest}</span>
@@ -364,7 +361,7 @@ function WallToday({ today }: { today?: CardData["today"] }) {
 
 function CardBody({ card, wall }: { card: CardData; wall: Spot[] }) {
   const live = wall.filter((s): s is FilledSpot => !s.vacant && left(s) > 0),
-    vac = TOTAL - live.length;
+    vac = card.openSpots ?? TOTAL - live.length;
   const next = live.reduce<FilledSpot | null>((a, s) => (!a || left(s) < left(a) ? s : a), null);
   const mine = live.filter((s) => s.mine).sort((a, b) => b.start - a.start)[0];
   const day = new Date().toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "long" });

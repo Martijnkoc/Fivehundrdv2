@@ -127,7 +127,10 @@ test.describe("desktop", () => {
     });
     await wall.goto();
     await expect(page.locator("#card .sc-proven")).toHaveText("Your taste, proven over time.");
-    await expect(page.locator("#card .sc-facts")).toHaveText("Your Scout story starts here. Scout a few things you believe in. We’ll remember when you found them.");
+    /* said once, under Your Scouts, with the way to start (not again in the Scout block) */
+    await expect(page.locator("#card .sc-facts")).toHaveCount(0);
+    await expect(page.locator('#card b:text-is("Your Scout story starts here.")')).toHaveCount(1);
+    await expect(page.locator("#card .sv-empty p")).toHaveText("Your Scout story starts here. Scout a few things you believe in. We’ll remember when you found them.");
     await expect(page.locator("#card .sv-sub")).toHaveText("The things you believed in early.");
   });
 });

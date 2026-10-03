@@ -47,12 +47,25 @@ export async function requireFounder(): Promise<string> {
   return f;
 }
 
+/**
+ * A browser write from another site? The Origin is compared with the host the
+ * browser asked for (x-forwarded-host behind a proxy, else Host), not with
+ * req.url, which a server may rewrite (next start answers as localhost).
+ */
+export function crossSite(req: Request): boolean {
+  const origin = req.headers.get("origin");
+  if (!origin) return false;
+  const host = (req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? new URL(req.url).host).split(",")[0].trim();
+  try {
+    return new URL(origin).host !== host;
+  } catch {
+    return true;
+  }
+}
+
 /** For API routes: the founder, or null (answer 401). Also refuses cross-site writes. */
 export async function founderFrom(req: Request): Promise<string | null> {
-  if (req.method !== "GET") {
-    const origin = req.headers.get("origin");
-    if (origin && new URL(origin).host !== new URL(req.url).host) return null;
-  }
+  if (req.method !== "GET" && crossSite(req)) return null;
   return founder();
 }
 
