@@ -11,6 +11,8 @@ export const CHECKS = {
   ai: !!process.env.ANTHROPIC_API_KEY,
   /** links against Google's list of known harmful sites */
   safeBrowsing: !!process.env.GOOGLE_SAFE_BROWSING_KEY,
-  /** Cloudflare's invisible robot check before placing */
+  /** Cloudflare's invisible robot check before placing: verified on the server */
   robot: !!(process.env.TURNSTILE_SECRET_KEY && process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY),
+  /** the browser loads Cloudflare's check whenever its site key is set (privacy: Cloudflare sees visitors then) */
+  cloudflare: !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
 };

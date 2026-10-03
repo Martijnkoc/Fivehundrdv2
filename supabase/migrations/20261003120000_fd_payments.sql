@@ -27,3 +27,24 @@ end $$;
 revoke all on function public.fd_kpis(text, timestamptz, timestamptz, jsonb) from public, anon, authenticated;
 -- a server function: callable, but useless without the server key
 grant execute on function public.fd_kpis(text, timestamptz, timestamptz, jsonb) to anon;
+
+/* Transactions are payments too: a free spot is no transaction (Codex review on #16) */
+create or replace function public.fd_transactions(p_key text, p_from timestamptz, p_to timestamptz, p_f jsonb default '{}')
+returns jsonb
+language plpgsql stable security definer set search_path = '' as $$
+begin
+  perform private.assert_server(p_key);
+  return coalesce((
+    select jsonb_agg(jsonb_build_object(
+      'id', st.id, 'paidAt', st.starts_at, 'lane', st.lane, 'no', st.spot_no, 'name', st.name,
+      'creator', coalesce(st.maker_email, 'visitor ' || left(st.visitor, 8)),
+      'currency', coalesce(st.currency, 'usd'), 'amount', coalesce(st.amount_total, 0),
+      'fee', st.stripe_fee, 'refund', coalesce(st.refund_amount, 0), 'refundedAt', st.refunded_at,
+      'dispute', coalesce(st.dispute_amount, 0), 'disputeStatus', st.dispute_status,
+      'net', coalesce(st.amount_total, 0) - coalesce(st.refund_amount, 0) - coalesce(st.stripe_fee, 0) - coalesce(st.dispute_amount, 0),
+      'paymentIntent', st.payment_intent, 'session', st.stripe_session_id) order by st.starts_at desc)
+    from public.stories st
+   where st.starts_at >= p_from and st.starts_at < p_to and coalesce(st.amount_total, 0) > 0
+     and private.fd_story_ok(p_f, st)
+  ), '[]'::jsonb);
+end $$;

@@ -564,6 +564,8 @@ describe("the Control Room's data", () => {
     await one("select public.free_place($1, $2) r", [KEY, JSON.stringify(story({ no: 300, ipHash: "ipf" }))]);
     const k = await kpis();
     assert.deepEqual([k.paid, k.payments, k.gross, k.liveSpots], [2, 1, 995, 2]);
+    const tx = await q("select public.fd_transactions($1, $2, $3, '{}') r", [FROM, TO]);
+    assert.equal(tx.length, 1, "a free spot is no transaction");
   });
 
   test("series come in hour or day buckets across the whole range", async () => {

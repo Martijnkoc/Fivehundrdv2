@@ -306,7 +306,7 @@ export const INFO: Record<PageSlug, Info> = {
           <li>Stripe: payments and refunds.</li>
           {CHECKS.ai && <li>Anthropic: the automatic check of a story&apos;s texts and images before it goes live.</li>}
           {CHECKS.safeBrowsing && <li>Google Safe Browsing: checking links in a story against known harmful sites.</li>}
-          {CHECKS.robot && <li>Cloudflare Turnstile: an invisible check that the person placing a story is human.</li>}
+          {CHECKS.cloudflare && <li>Cloudflare Turnstile: an invisible check that the person placing a story is human.</li>}
           <li>Resend: sending reminder and spot emails, where they are set up.</li>
         </ul>
         <h2>Your choices</h2>

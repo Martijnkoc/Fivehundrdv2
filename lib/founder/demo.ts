@@ -930,7 +930,8 @@ export const demo = {
     const from = Date.parse(fromIso),
       to = clampNow(Date.parse(toIso));
     return d.stories
-      .filter((s) => s.starts != null && s.starts >= from && s.starts < to && storyOk(f, s))
+      /* payments only: a free spot is no transaction */
+      .filter((s) => s.starts != null && s.starts >= from && s.starts < to && s.amount > 0 && storyOk(f, s))
       .sort((a, b) => b.starts! - a.starts!)
       .map((s) => ({
         id: s.id,
