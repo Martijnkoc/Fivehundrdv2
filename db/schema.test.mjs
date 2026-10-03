@@ -9,7 +9,7 @@ import { PGlite } from "@electric-sql/pglite";
  * the wall does goes through the same functions the app calls.
  */
 /* every migration but the platform one (pg_cron, Storage: Supabase only) */
-const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links", "20260926090600_founder_data", "20260926090700_indexable_stories", "20260927090000_hotspots", "20260927100000_retention", "20260927110000_call_rank", "20260927120000_hotspot_cfg", "20260927130000_reminders", "20260927140000_hotspot_not_own", "20260927150000_makers", "20260928090000_scout", "20260928095000_scout_unsave", "20260928100000_copy", "20260928110000_scout_flags_at", "20260928120000_scout_shared_ip", "20261001090000_report_new", "20261001100000_hotspot_per_ip", "20261002090000_maker_ended"];
+const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links", "20260926090600_founder_data", "20260926090700_indexable_stories", "20260927090000_hotspots", "20260927100000_retention", "20260927110000_call_rank", "20260927120000_hotspot_cfg", "20260927130000_reminders", "20260927140000_hotspot_not_own", "20260927150000_makers", "20260928090000_scout", "20260928095000_scout_unsave", "20260928100000_copy", "20260928110000_scout_flags_at", "20260928120000_scout_shared_ip", "20261001090000_report_new", "20261001100000_hotspot_per_ip", "20261002090000_maker_ended", "20261003090000_free_place"];
 const schema = (
   await Promise.all(MIGRATIONS.map((m) => readFile(new URL(`../supabase/migrations/${m}.sql`, import.meta.url), "utf8")))
 ).join("\n");
@@ -365,6 +365,30 @@ describe("safety", () => {
   test("everything here needs the server key", async () => {
     await rejects(db.query("select public.admin_overview('nope')"), /forbidden/);
     await rejects(db.query("select public.report_story('nope', gen_random_uuid(), 'scam', '', '', '', 'x')"), /forbidden/);
+  });
+});
+
+describe("free spots (while NEXT_PUBLIC_PAYMENTS is off)", () => {
+  const place = async (s, key = KEY) => (await one("select public.free_place($1, $2) r", [key, JSON.stringify(s)])).r;
+  test("a free spot goes live at once, for 72 hours, with no money", async () => {
+    const s = await place(story({ ipHash: "ip1" }));
+    const st = await one("select starts_at, extract(epoch from ends_at - starts_at) / 3600 as len, amount_total, payment_intent from public.stories where id = $1", [s.id]);
+    assert.ok(st.starts_at);
+    assert.equal(Number(st.len), 72);
+    assert.equal(st.amount_total, 0);
+    assert.equal(st.payment_intent, null);
+    assert.equal((await one("select status from public.spots where story_id = $1", [s.id])).status, "live");
+  });
+  test("one address has at most three free spots on the wall; an ended one frees a place", async () => {
+    const ids = [];
+    for (let no = 1; no <= 3; no++) ids.push((await place(story({ no, ipHash: "ip1" }))).id);
+    await assert.rejects(place(story({ no: 4, ipHash: "ip1" })), /too_many_live/);
+    assert.ok(await place(story({ no: 4, ipHash: "ip2" })));
+    await age(ids[0], "73 hours");
+    assert.ok(await place(story({ no: 5, ipHash: "ip1" })));
+  });
+  test("only the server key can place", async () => {
+    await assert.rejects(place(story(), "nope"));
   });
 });
 

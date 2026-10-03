@@ -10,7 +10,7 @@
  * Every claim here is true of the product as built. Numbers are never in
  * this file: they come from the database, or aren't shown.
  */
-import { PRICE } from "../wall/model";
+import { COST, FREE } from "../wall/model";
 
 export const BRAND = {
   line: "Find what’s next. Before everyone else does.",
@@ -27,7 +27,7 @@ export const PROOF = {
   visitors: (n: string) => `${n} visitors`,
   opened: (n: string) => `${n} discoveries opened`,
   line: "People are here to discover.",
-  cta: `Claim a spot · ${PRICE} / 72h`,
+  cta: FREE ? "Claim a spot · free for now" : `Claim a spot · ${COST} / 72h`,
 };
 
 export const STEPS = {
@@ -111,14 +111,14 @@ export const HOTSPOTS = {
 
 export const OPEN_SPOT = {
   head: "Put something worth finding here.",
-  label: `Open Spot · ${PRICE} · 72 hours`,
+  label: `Open Spot · ${COST} · 72 hours`,
   cta: "Claim this spot",
   many: (n: number) => `${n} Open Spots`,
 };
 
 export const CREATE = {
   head: "Put it on the Wall.",
-  sub: `72 hours. ${PRICE}.`,
+  sub: `72 hours. ${COST}.`,
   body: "People come to Fivehundrd to find things they don’t know yet. Give them something worth finding.",
   fair: "There’s no front row: every visitor starts somewhere else on the Wall.",
   nav: "Claim a spot",
@@ -130,8 +130,10 @@ export const CREATE = {
     links: ["Links", "Where can they go next?"],
     lane: ["Lane", "Where does it belong?"],
   } as Record<string, [string, string]>,
-  place: `Place it · ${PRICE}`,
+  place: FREE ? "Live now" : `Place it · ${COST}`,
   placing: "Placing you on the Wall…",
+  fine: FREE ? "Free while we fill the Wall. Nothing to pay." : "Secure payment with Stripe. Refunded if your spot doesn't go live.",
+  confirming: FREE ? "Your spot appears in a minute." : "We're confirming your payment. Your spot appears in a minute.",
 };
 
 /** A maker's own spot, in people (maker_stats), with what it means. */

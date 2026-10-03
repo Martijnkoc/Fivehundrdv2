@@ -122,6 +122,7 @@ which were signed off:
     - Measured on a production build without a database (the demo wall), compressed as Vercel serves it, phone on slow 4G with a 4× slower CPU: the wall in 3.6 s instead of 4.1, blocked time 0.85 s instead of 2.8, layout shift 0.17 instead of 0.29. Desktop: the wall in 0.46 s instead of 1.3, blocked 0.1 s instead of 0.9, layout shift 0.03 instead of 0.68. What still shifts is the first screen's "today" block giving up its numbers' room when there is no database; with one, the numbers fill that room.
 22. Makers after their 72 hours, approved 2026-10-02: "Your story" on the card shows the spot's final numbers and **Put it on again**, which opens Create with the same story ready to place (a new spot and 72 hours, paid again). In the site itself, no email (`overrides/17-maker-again.css`, docs/retention.md).
 23. The Scout card, calmer, approved 2026-10-02: no "You walked in at · Take me back" block (`overrides/18-card-calmer.css` hides it in the reference too). The wall still starts at the visitor's entry spot.
+24. Free spots while the wall fills, approved 2026-10-03: without `NEXT_PUBLIC_PAYMENTS=on`, Create's button reads **Live now**, a placed story goes live at once (`free_place`: the same checks, amount 0, at most three free spots on the wall per address) and the site says "free for now" instead of a price. Stripe stays as it is; set `NEXT_PUBLIC_PAYMENTS=on` and redeploy to charge. The visual tests build with it on, as the reference shows the price.
 
 CSS for these lives in `app/wall/overrides/`, one file per part, joined in order (`app/wall/overrides/index.ts`). The visual suite applies it
 to the reference too, so the baselines are "the reference plus the approved
@@ -188,6 +189,7 @@ Environment variables (Vercel → Settings → Environment Variables):
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase → API keys → publishable |
 | `FIVEHUNDRD_SERVER_KEY` | the Vault secret `fivehundrd_server_key` |
+| `NEXT_PUBLIC_PAYMENTS` | `on` to charge for spots through Stripe; unset, spots are free and go live at once |
 | `STRIPE_SECRET_KEY` | Stripe → Developers → API keys |
 | `STRIPE_WEBHOOK_SECRET` | the webhook endpoint for `/api/stripe/webhook` |
 

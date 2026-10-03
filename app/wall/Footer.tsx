@@ -1,4 +1,4 @@
-import { NAV } from "../../lib/wall/model";
+import { FREE, NAV, PRICE } from "../../lib/wall/model";
 import { CONTACT_EMAIL, DEFINITION, lanePath, PAGES } from "../../lib/site/facts";
 import { ReportSpot } from "./ReportSpot";
 
@@ -31,7 +31,7 @@ export function Footer() {
             <span>3,000 spots</span>
             <span>6 lanes</span>
             <span>72 hours each</span>
-            <span>$9.95 a spot</span>
+            <span>{FREE ? "Free for now" : `${PRICE} a spot`}</span>
             <span>No algorithm</span>
           </p>
         </div>

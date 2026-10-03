@@ -4,7 +4,7 @@
  * engines and AI answer engines get the same plain, checkable facts people do.
  * Every fact here is how the product actually works (BUILD_BRIEF.md, the code).
  */
-import type { LaneId } from "../wall/model";
+import { FREE, type LaneId } from "../wall/model";
 
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || "https://fivehundrd.com").replace(/\/$/, "");
 /** Only shown when the founder has set it; no address is made up. */
@@ -17,14 +17,14 @@ export const UPDATED = "2026-09-27";
 
 /** One sentence that answers "what is Fivehundrd?" */
 export const DEFINITION =
-  "Fivehundrd is a public wall where independent makers (musicians, writers, artists, game makers, podcasters and newsletter writers) pay $9.95 to show their work in one of 500 numbered spots per lane for 72 hours.";
+  `Fivehundrd is a public wall where independent makers (musicians, writers, artists, game makers, podcasters and newsletter writers) ${FREE ? "show their work, free for now," : "pay $9.95 to show their work"} in one of 500 numbered spots per lane for 72 hours.`;
 
 /** The positioning, for metadata and structured data (not shown as UI copy). */
 export const POSITIONING =
   "Fivehundrd is a discovery platform where music, books, games, creators, podcasts and newsletters get a limited-time place on The Wall, to be discovered before they become mainstream.";
 
 export const DESCRIPTION =
-  "A wall of 3,000 spots across Music, Books, Games, Creators, Podcasts and Newsletters. Each spot is one maker for 72 hours, $9.95. No feed, no algorithm, no front row: every visitor starts somewhere else on the wall.";
+  `A wall of 3,000 spots across Music, Books, Games, Creators, Podcasts and Newsletters. Each spot is one maker for 72 hours, ${FREE ? "free for now" : "$9.95"}. No feed, no algorithm, no front row: every visitor starts somewhere else on the wall.`;
 
 /** Lanes as people search for them. Ids are the wall's own. */
 export const LANES: { id: LaneId; slug: string; label: string; who: string; what: string; preview: string }[] = [
@@ -42,7 +42,12 @@ export const lanePath = (id: string) => (id === "all" ? "/" : `/lanes/${laneById
 /** The info pages, in footer order. */
 export const PAGES = {
   "how-it-works": { title: "How it works", description: "How Fivehundrd works for visitors and for makers: 500 numbered spots per lane, 72 hours each, no feed and no algorithm." },
-  pricing: { title: "Pricing", description: "One price: $9.95 for a spot on the wall for 72 hours. No subscription, no ads, no bidding. Browsing and keeping are free." },
+  pricing: {
+    title: "Pricing",
+    description: FREE
+      ? "Spots are free for now: 72 hours on the wall, no payment. No subscription, no ads, no bidding. Browsing and keeping are free."
+      : "One price: $9.95 for a spot on the wall for 72 hours. No subscription, no ads, no bidding. Browsing and keeping are free.",
+  },
   rules: { title: "Wall rules", description: "What can go on Fivehundrd, what can't, how stories are checked before they go live, and how reporting works." },
   faq: { title: "Questions", description: "Answers about Fivehundrd: what it is, how spots work, what it costs, Scouts, accounts, refunds and safety." },
   about: { title: "About", description: "Why Fivehundrd exists: a fair place for independent makers to be discovered, without a feed or an algorithm." },
@@ -57,9 +62,14 @@ export const FAQ: { q: string; a: string }[] = [
   { q: "What is Fivehundrd?", a: DEFINITION },
   {
     q: "How does a spot work?",
-    a: "Each lane has 500 numbered spots. A maker picks one, adds a name, artwork, a short pitch (up to 140 characters), up to three links and, depending on the lane, an audio preview, the first pages or a trailer. After payment the spot is live straight away for 72 hours, then the number is free again.",
+    a: "Each lane has 500 numbered spots. A maker picks one, adds a name, artwork, a short pitch (up to 140 characters), up to three links and, depending on the lane, an audio preview, the first pages or a trailer. Once placed, the spot is live straight away for 72 hours, then the number is free again.",
   },
-  { q: "How much does it cost?", a: "$9.95 per spot for 72 hours, paid once through Stripe. There is no subscription. Browsing, opening, keeping and sharing spots is free." },
+  {
+    q: "How much does it cost?",
+    a: FREE
+      ? "Nothing, for now: while the wall fills up, a spot is free for 72 hours. A price will be shown before you place, once paid spots start. Browsing, opening, keeping and sharing spots is free."
+      : "$9.95 per spot for 72 hours, paid once through Stripe. There is no subscription. Browsing, opening, keeping and sharing spots is free.",
+  },
   {
     q: "Is there an algorithm or a feed?",
     a: "No feed, and no algorithm deciding what you see. Everyone sees the same numbered wall, and each visitor begins at a different spot. Above the wall, Hotspots shows five spots with traction right now (opens, visits to the maker, Timehearts and shares in the last hours, per person and per time seen); a spot's turn there fades after a few hours, so it keeps changing. Or switch to Newest.",
@@ -79,9 +89,9 @@ export const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "How is the wall kept safe?",
-    a: "Every story is checked before payment: its links against simple rules and lists of known harmful sites, and its name, texts and images against the wall rules. Anyone can report a live story; reported stories are reviewed by a person and can be taken down.",
+    a: "Every story is checked before it goes live: its links against simple rules and lists of known harmful sites, and its name, texts and images against the wall rules. Anyone can report a live story; reported stories are reviewed by a person and can be taken down.",
   },
-  { q: "Is Fivehundrd free for visitors?", a: "Yes. There are no ads and no paywall. Makers pay for their spot; visitors don't pay anything." },
+  { q: "Is Fivehundrd free for visitors?", a: FREE ? "Yes. There are no ads and no paywall. Visitors don't pay anything." : "Yes. There are no ads and no paywall. Makers pay for their spot; visitors don't pay anything." },
 ];
 
 export const orgJsonLd = () => ({
@@ -116,7 +126,7 @@ export const orgJsonLd = () => ({
         { "@type": "DefinedTerm", name: "Timeheart", description: "How a visitor says \"I want to remember this\" about a discovery. Once given, the discovery is Kept." },
         { "@type": "DefinedTerm", name: "Scouts", description: "The discoveries a visitor kept with a Timeheart; they stay after the spot ends." },
         { "@type": "DefinedTerm", name: "Hotspot", description: "A discovery getting noticed right now, from real opens, click-throughs and Timehearts in the last 6 hours." },
-        { "@type": "DefinedTerm", name: "Open Spot", description: "A spot no maker holds yet: $9.95 for 72 hours." },
+        { "@type": "DefinedTerm", name: "Open Spot", description: `A spot no maker holds yet: ${FREE ? "free for now" : "$9.95"} for 72 hours.` },
         { "@type": "DefinedTerm", name: "Early Call", description: "A signed-in visitor's Timeheart among the first 20% of a discovery's keepers, before it broke out (became a Hotspot, or grew to 25 keepers and three times that place)." },
         { "@type": "DefinedTerm", name: "Create", description: "Where a maker claims a spot and builds their tile." },
       ],
@@ -128,7 +138,7 @@ export const orgJsonLd = () => ({
       provider: { "@id": `${SITE_URL}/#org` },
       serviceType: "Discovery listing for independent makers",
       description: "One numbered spot on the wall for 72 hours: artwork, name, pitch, up to three links and a preview.",
-      offers: { "@type": "Offer", price: PRICE_USD, priceCurrency: "USD", url: `${SITE_URL}/pricing`, availability: "https://schema.org/InStock" },
+      offers: { "@type": "Offer", price: FREE ? "0" : PRICE_USD, priceCurrency: "USD", url: `${SITE_URL}/pricing`, availability: "https://schema.org/InStock" },
     },
   ],
 });

@@ -2,7 +2,7 @@ import { createElement, memo, type CSSProperties } from "react";
 import { BRAND, OPEN_SPOT } from "../../lib/site/copy";
 import { artShapes, genArt } from "../../lib/wall/art";
 import { EYE, HANDS, HEART, LANE_ICON_PATHS } from "../../lib/wall/icons";
-import { LANE, LIFE, PRICE, fmt, numOf, pad, type FilledSpot, type LaneId, type Palette, type Spot } from "../../lib/wall/model";
+import { COST, LANE, LIFE, fmt, numOf, pad, type FilledSpot, type LaneId, type Palette, type Spot } from "../../lib/wall/model";
 import { LAST, clock, left, phase, short, spotStyle } from "../../lib/wall/time";
 
 /** "--a:1;--b:2" → { "--a": "1", "--b": "2" } */
@@ -144,7 +144,7 @@ function Vacant({ s, run }: { s: Spot; run?: Spot[] }) {
       <div className="stand">
         <button
           className="book vbook"
-          aria-label={`Open Spot ${numOf(s)}${lane ? `, ${LANE[lane]}` : ""}${run ? `, one of ${run.length} in a row` : ""}. ${OPEN_SPOT.head} ${OPEN_SPOT.cta}: ${PRICE} for 72 hours`}
+          aria-label={`Open Spot ${numOf(s)}${lane ? `, ${LANE[lane]}` : ""}${run ? `, one of ${run.length} in a row` : ""}. ${OPEN_SPOT.head} ${OPEN_SPOT.cta}: ${COST} for 72 hours`}
         >
           <span>{run ? OPEN_SPOT.many(run.length) : "Open Spot"}</span>
           <small className="v-h">{run ? BRAND.creator : OPEN_SPOT.head}</small>

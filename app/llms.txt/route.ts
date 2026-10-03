@@ -1,3 +1,4 @@
+import { FREE } from "../../lib/wall/model";
 import { CONTACT_EMAIL, DEFINITION, DESCRIPTION, FAQ, LANES, NAME, PAGES, POSITIONING, SITE_URL } from "../../lib/site/facts";
 
 export const dynamic = "force-static";
@@ -18,7 +19,7 @@ ${DESCRIPTION}
 ## How it works
 
 - The Wall: six lanes (${LANES.map((l) => l.label).join(", ")}) of 500 numbered spots each. Everyone sees the same wall; each visit starts at a different spot.
-- A Spot is one maker's placement for 72 hours. Makers claim a spot in Create, add artwork, a pitch, up to three links and a preview, and pay once.
+- A Spot is one maker's placement for 72 hours. Makers claim a spot in Create, add artwork, a pitch, up to three links and a preview, ${FREE ? "and place it, free for now" : "and pay once"}.
 - Hotspots, above The Wall: five spots with traction right now (opens, visits to the maker, Timehearts and shares in recent hours, per person and per time seen); a spot's turn fades after a few hours. Newest: the five that joined last.
 - Visitors open a Discovery to play, read or watch its preview, give it a Timeheart to keep it in their Scouts, and share its lasting link.
 - Scout: signed in, every Timeheart is a call, recorded with how many people had kept the Discovery before. An Early Call is one among the first 20% of its keepers, before it broke out (became a Hotspot, or grew to 25 keepers and three times that place). Scouts see their Early Calls and, once there are enough Scouts, a private percentile and tier (Top 25%, 10% or 3%) they can choose to share. No leaderboards or public rankings; Scouting never affects Hotspots.
@@ -28,10 +29,10 @@ ${DESCRIPTION}
 ## Key facts
 
 - 6 lanes: ${LANES.map((l) => l.label).join(", ")}; 500 numbered spots each, 3,000 in total.
-- One spot is one maker for 72 hours, $9.95, paid once through Stripe. No subscription.
+- One spot is one maker for 72 hours, ${FREE ? "free for now while the wall fills up" : "$9.95, paid once through Stripe"}. No subscription.
 - No feed and no algorithm: everyone sees the same numbered wall; each visit starts at a different spot, so there is no front row.
 - Free for visitors: browse, open, keep and share without an account. No ads.
-- Every story is checked against the wall rules before payment; anyone can report a live story.
+- Every story is checked against the wall rules before it goes live; anyone can report a live story.
 ${CONTACT_EMAIL ? `- Contact: ${CONTACT_EMAIL}\n` : ""}
 ## Lanes
 

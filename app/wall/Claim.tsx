@@ -374,7 +374,7 @@ function ClaimForm({ start }: { start: ClaimStart }) {
           </button>
           {ws(4)}
           <p className="fine">
-            {document.documentElement.dataset.live === "1" ? "Secure payment with Stripe. Refunded if your spot doesn't go live." : "Prototype. No payment is taken."}
+            {document.documentElement.dataset.live === "1" ? CREATE.fine : "Prototype. No payment is taken."}
           </p>
           {ws(3)}
         </form>
@@ -644,7 +644,7 @@ function Steps(p: StepsProps) {
           <button className="pay" id="fPay" type="button" onClick={p.place} disabled={p.placing}>
             {p.placing ? CREATE.placing : CREATE.place}
           </button>
-          <p className="fine">{live ? "Secure payment with Stripe. Refunded if your spot doesn't go live." : "Prototype. No payment is taken."}</p>
+          <p className="fine">{live ? CREATE.fine : "Prototype. No payment is taken."}</p>
         </div>
       )}
     </div>
