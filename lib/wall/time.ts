@@ -1,9 +1,13 @@
 import { BIND, LIFE, lum, rng, type Spot } from "./model";
 
-type Timed = { start: number };
+type Timed = { start: number; end?: number };
 
 /** Milliseconds this story has left on the wall. */
-export const left = (s: Timed) => Math.max(0, s.start + LIFE - Date.now());
+/** When it leaves the wall: 72 hours after it went live, or later once kept on. */
+export const ends = (s: Timed) => s.end ?? s.start + LIFE;
+export const left = (s: Timed) => Math.max(0, ends(s) - Date.now());
+/** How long it has been on the wall. */
+export const age = (s: Timed) => Math.max(0, Date.now() - s.start);
 
 export function short(ms: number) {
   const h = Math.floor(ms / 3600e3);
@@ -29,7 +33,7 @@ export const RISING = 3 * 3600e3,
 export function phase(s: Timed): Phase {
   const l = left(s);
   if (l < LAST) return "last";
-  return LIFE - l < RISING ? "rising" : "live";
+  return age(s) < RISING ? "rising" : "live";
 }
 
 /** "4h 12m": the final hours, to the minute. */
@@ -40,7 +44,7 @@ export function clock(ms: number) {
 }
 
 export function until(s: Timed) {
-  return new Date(s.start + LIFE).toLocaleString("en-GB", {
+  return new Date(ends(s)).toLocaleString("en-GB", {
     weekday: "short",
     day: "numeric",
     month: "short",
@@ -50,8 +54,8 @@ export function until(s: Timed) {
 }
 
 /** The lane colours and ageing of one story, as CSS custom properties. */
-export function styleFor(s: { lane: keyof typeof BIND; start: number; seed?: number }) {
-  const l = left(s) / LIFE,
+export function styleFor(s: { lane: keyof typeof BIND; start: number; end?: number; seed?: number }) {
+  const l = Math.min(1, left(s) / LIFE),
     b = BIND[s.lane] || BIND.writers,
     c1 = b.c1,
     light = lum(c1) > 0.28;

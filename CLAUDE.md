@@ -16,6 +16,9 @@ These hold for every change, whoever asks for it; raise it before building anyth
   single editorial pick for everyone, no paid boost, no infinite feed.
 - **Real numbers only.** Nothing public shows a made-up or placeholder number, date, name,
   address or company fact. Small samples get no percentages.
+- **Prices are always in US dollars.** (2026-10-03, by Martijn.) A spot's price, checkout
+  currency and every public mention of it are in USD, never euros or a local currency.
+  VAT is settled when payments switch on (`NEXT_PUBLIC_PAYMENTS=on`).
 - **Hotspot weights are a hypothesis.** They live in `private.hotspot_cfg()` and are tuned
   from real data, not presented as proven.
 - **The UI is frozen unless a change is approved.** Approved changes go in

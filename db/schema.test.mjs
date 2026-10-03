@@ -9,7 +9,7 @@ import { PGlite } from "@electric-sql/pglite";
  * the wall does goes through the same functions the app calls.
  */
 /* every migration but the platform one (pg_cron, Storage: Supabase only) */
-const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links", "20260926090600_founder_data", "20260926090700_indexable_stories", "20260927090000_hotspots", "20260927100000_retention", "20260927110000_call_rank", "20260927120000_hotspot_cfg", "20260927130000_reminders", "20260927140000_hotspot_not_own", "20260927150000_makers", "20260928090000_scout", "20260928095000_scout_unsave", "20260928100000_copy", "20260928110000_scout_flags_at", "20260928120000_scout_shared_ip", "20261001090000_report_new", "20261001100000_hotspot_per_ip", "20261002090000_maker_ended", "20261003090000_free_place"];
+const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links", "20260926090600_founder_data", "20260926090700_indexable_stories", "20260927090000_hotspots", "20260927100000_retention", "20260927110000_call_rank", "20260927120000_hotspot_cfg", "20260927130000_reminders", "20260927140000_hotspot_not_own", "20260927150000_makers", "20260928090000_scout", "20260928095000_scout_unsave", "20260928100000_copy", "20260928110000_scout_flags_at", "20260928120000_scout_shared_ip", "20261001090000_report_new", "20261001100000_hotspot_per_ip", "20261002090000_maker_ended", "20261003090000_free_place", "20261003100000_free_place_lock", "20261003110000_maker_account"];
 const schema = (
   await Promise.all(MIGRATIONS.map((m) => readFile(new URL(`../supabase/migrations/${m}.sql`, import.meta.url), "utf8")))
 ).join("\n");
@@ -389,6 +389,50 @@ describe("free spots (while NEXT_PUBLIC_PAYMENTS is off)", () => {
   });
   test("only the server key can place", async () => {
     await assert.rejects(place(story(), "nope"));
+  });
+});
+
+describe("your story from any device, and 72 more hours", () => {
+  const U = "00000000-0000-0000-0000-0000000000aa";
+  const place = async (s) => (await one("select public.free_place($1, $2) r", [KEY, JSON.stringify(s)])).r;
+  const stats = async (visitor, ids, user = null) =>
+    (await one("select public.maker_stats($1, $2, $3, $4) r", [KEY, visitor, ids, user])).r;
+  const extend = async (id, visitor, user = null) =>
+    (await one("select public.maker_extend($1, $2, $3, $4) r", [KEY, id, visitor, user])).r;
+  beforeEach(async () => {
+    await db.query("insert into auth.users (id, email) values ($1, 'maker@example.com')", [U]);
+  });
+  test("a story placed signed in shows on the account's card in another browser", async () => {
+    const s = await place(story({ user: U, email: "", visitor: "v1", ipHash: "ip1" }));
+    assert.deepEqual((await stats("v2", [])).map((x) => x.id), []);
+    const r = await stats("v2", [], U);
+    assert.deepEqual(r.map((x) => x.id), [s.id]);
+    assert.ok(r[0].endsAt);
+  });
+  test("the browser that placed it still sees it, with no account", async () => {
+    const s = await place(story({ visitor: "v1", ipHash: "ip1" }));
+    assert.deepEqual((await stats("v1", [s.id])).map((x) => x.id), [s.id]);
+  });
+  test("72 more hours: only in the last 24, only its maker, same number", async () => {
+    const s = await place(story({ visitor: "v1", ipHash: "ip1" }));
+    await assert.rejects(extend(s.id, "v1"), /too_early/);
+    await age(s.id, "50 hours");
+    await assert.rejects(extend(s.id, "v2"), /not_yours/);
+    const before = await one("select ends_at from public.stories where id = $1", [s.id]);
+    await extend(s.id, "v1");
+    const after = await one("select ends_at, spot_no from public.stories where id = $1", [s.id]);
+    assert.equal(after.ends_at - before.ends_at, 72 * 3600e3);
+    assert.equal(after.spot_no, 217);
+    assert.equal((await one("select status from public.spots where story_id = $1", [s.id])).status, "live");
+    /* just extended: more than 24 hours left again */
+    await assert.rejects(extend(s.id, "v1"), /too_early/);
+  });
+  test("the account can extend from another browser; an ended spot can't be", async () => {
+    const s = await place(story({ user: U, visitor: "v1", ipHash: "ip1" }));
+    await age(s.id, "60 hours");
+    assert.ok(await extend(s.id, "v9", U));
+    await age(s.id, "200 hours");
+    await assert.rejects(extend(s.id, "v1"), /not_live/);
   });
 });
 

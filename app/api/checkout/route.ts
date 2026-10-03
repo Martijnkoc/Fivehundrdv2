@@ -1,6 +1,6 @@
 import { checkClaim } from "../../../lib/wall/claimRules";
 import { FREE, LANE } from "../../../lib/wall/model";
-import { hasDatabase, hasPayments, humanCheck, ipHash, json, rpc, stripe } from "../../../lib/server/backend";
+import { hasDatabase, hasPayments, humanCheck, ipHash, json, rpc, stripe, userFrom } from "../../../lib/server/backend";
 import { moderate } from "../../../lib/server/moderation";
 import { measured } from "../../../lib/server/ops";
 
@@ -37,16 +37,20 @@ export const POST = measured("/api/checkout", async (req: Request) => {
 
   let spot: Reserved;
   try {
-    spot = await rpc<Reserved>(FREE ? "free_place" : "checkout_reserve", { p_story: { ...claim, ipHash: ipHash(req), moderation } });
+    /* free: a signed-in maker's story remembers the account ("Your story" on any device) */
+    const user = FREE ? await userFrom(req) : null;
+    spot = await rpc<Reserved>(FREE ? "free_place" : "checkout_reserve", { p_story: { ...claim, ipHash: ipHash(req), moderation, ...(user && { user }) } });
   } catch (e) {
     const m = e instanceof Error ? e.message : "";
     const [status, error] = m.includes("lane_full")
       ? [409, `Every ${LANE[claim.lane]} spot is taken right now.`]
-      : m.includes("too_many_holds")
-        ? [429, "You're already holding spots. Finish paying for one, or wait 30 minutes."]
-        : m.includes("rate_limited")
-          ? [429, "Too many tries. Wait a little and try again."]
-          : [502, "Something went wrong. Try again."];
+      : m.includes("too_many_live")
+        ? [429, "You already have three spots on the wall. Place another when one ends."]
+        : m.includes("too_many_holds")
+          ? [429, "You're already holding spots. Finish paying for one, or wait 30 minutes."]
+          : m.includes("rate_limited")
+            ? [429, "Too many tries. Wait a little and try again."]
+            : [502, "Something went wrong. Try again."];
     return json({ error }, { status });
   }
   if (FREE) return json({ id: spot.id, lane: spot.lane, no: spot.no, url: `/?claimed=${spot.id}` });

@@ -34,7 +34,7 @@ import { cardFileName, readyCard, shareCardBlob } from "./shareCard";
 import { wallStore, type Bridge } from "./store";
 import * as liveApi from "./liveClient";
 import { laneBySlug, lanePath } from "../../lib/site/facts";
-import { CREATE } from "../../lib/site/copy";
+import { CREATE, MAKER } from "../../lib/site/copy";
 import { createMoment, startTracking, surface, unwatchTiles, visitorId, watchTiles } from "./track";
 
 type Opts = { align: boolean };
@@ -687,6 +687,21 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
       openKeep();
     }
     if (t.closest("[data-explore]")) exploreWall();
+    /* "Keep it 72 more hours": the maker's live spot, same number */
+    const ex = t.closest<HTMLButtonElement>("[data-extend]");
+    if (ex && !ex.disabled) {
+      ex.disabled = true;
+      void liveApi.extendSpot(ex.dataset.extend!).then((r) => {
+        if (!alive()) return;
+        ex.disabled = false;
+        if ("error" in r) return toast(r.error);
+        const s = WALL.find((w): w is FilledSpot => !w.vacant && w.id === ex.dataset.extend);
+        if (s) s.end = Date.parse(r.endsAt);
+        renderCard();
+        bridge.refresh();
+        toast(MAKER.extended);
+      });
+    }
     /* "Put it on again": the ended story in the Create form, ready to place */
     const ag = t.closest<HTMLElement>("[data-again]");
     if (ag) {
@@ -1133,7 +1148,8 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
     SAVES.sort((x, y) => y.savedAt - x.savedAt);
     persistSaves();
     renderCard();
-    /* signed in: the account's ended stories too, from any device */
+    /* signed in: the account's live and ended stories too, from any device */
+    void loadMakerStats();
     void loadEnded();
     /* Scout: this browser's history joins the account; the Timeheart that led here can still count */
     const pending = read<{ id: string; at: number } | null>(PENDING_KEY, null);
@@ -1248,10 +1264,17 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
   let MAKERS: Record<string, MakerNumbers> = {};
   async function loadMakerStats() {
     const ids = [...liveApi.mineIds()];
-    if (!ids.length) return;
+    if (!ids.length && !ACCOUNT) return;
     const r = await liveApi.makerStats(ids);
     if (!r || !alive()) return;
     MAKERS = Object.fromEntries(r.map((m) => [m.id, m]));
+    /* signed in: the account's live spots from another device are this maker's too */
+    for (const m of r)
+      if (!liveApi.mineIds().has(m.id)) {
+        liveApi.addMine(m.id);
+        const s = WALL.find((w): w is FilledSpot => !w.vacant && w.id === m.id);
+        if (s) s.mine = true;
+      }
     renderCard();
   }
   /** "Your story" after its 72 hours: the final numbers and "Put it on again" (this browser's stories, or the account's). */

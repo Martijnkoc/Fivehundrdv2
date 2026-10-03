@@ -3,7 +3,7 @@ import { BRAND, OPEN_SPOT } from "../../lib/site/copy";
 import { artShapes, genArt } from "../../lib/wall/art";
 import { EYE, HANDS, HEART, LANE_ICON_PATHS } from "../../lib/wall/icons";
 import { COST, LANE, LIFE, fmt, numOf, pad, type FilledSpot, type LaneId, type Palette, type Spot } from "../../lib/wall/model";
-import { LAST, clock, left, phase, short, spotStyle } from "../../lib/wall/time";
+import { LAST, age, clock, left, phase, short, spotStyle } from "../../lib/wall/time";
 
 /** "--a:1;--b:2" → { "--a": "1", "--b": "2" } */
 export function cssVars(style: string) {
@@ -78,7 +78,7 @@ const NL4 = "\n    ";
 
 function Filled({ s, open, still, compact, since, big }: { s: FilledSpot; open: boolean; still?: boolean; compact?: boolean; since?: number; big?: boolean }) {
   const l = left(s),
-    recent = LIFE - l < 3 * 3600e3,
+    recent = age(s) < 3 * 3600e3,
     /* approved change: also new to you, since your last visit */
     newToYou = !still && !!since && s.start > since,
     fresh = recent || newToYou;
@@ -110,7 +110,7 @@ function Filled({ s, open, still, compact, since, big }: { s: FilledSpot; open: 
           {NL6}
           <span className="bk-no">{pad(numOf(s))}</span>
           {fresh && <i className="new" title={recent ? "Joined in the last 3 hours" : "New since your last visit"}></i>}
-          <i className="prog" style={{ width: `${((l / LIFE) * 100).toFixed(1)}%` }}></i>
+          <i className="prog" style={{ width: `${((Math.min(l, LIFE) / LIFE) * 100).toFixed(1)}%` }}></i>
         </Book>
       </div>
       {NL4}

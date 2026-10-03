@@ -11,6 +11,8 @@ export const PRICE = "$9.95";
 export const FREE = process.env.NEXT_PUBLIC_PAYMENTS !== "on";
 /** What a spot costs, as the wall says it. */
 export const COST = FREE ? "Free for now" : PRICE;
+/** A maker can keep a live spot on for 72 more hours in its last 24 (maker_extend). */
+export const KEEP_ON = 24 * 3600e3;
 
 export type LaneId = "music" | "art" | "writers" | "podcasts" | "games" | "letters";
 export type NavId = LaneId | "all";
@@ -57,6 +59,8 @@ export type FilledSpot = {
   name: string;
   snippet: string;
   start: number;
+  /** set only when it runs past start + 72 hours (kept on for 72 more) */
+  end?: number;
   seed: number;
   pal: Palette;
   links: Link[];

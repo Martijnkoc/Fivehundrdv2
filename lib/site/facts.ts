@@ -14,6 +14,8 @@ export const TAGLINE = "Find what’s next. Before everyone else does.";
 export const SLOGAN = "Good stories find good people.";
 export const PRICE_USD = "9.95";
 export const UPDATED = "2026-09-27";
+/** The terms changed with free spots (a spot is placed, not bought, while FREE). */
+export const TERMS_UPDATED = "2026-10-03";
 
 /** One sentence that answers "what is Fivehundrd?" */
 export const DEFINITION =

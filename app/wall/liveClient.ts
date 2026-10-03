@@ -77,12 +77,34 @@ export function sendEvent(story: string, kind: EventKind, token?: string | null)
 
 /* ---------- retention: Call it and the Finds' history (docs/retention.md) ---------- */
 
-export async function makerStats(ids: string[]): Promise<(MakerNumbers & { id: string })[] | null> {
+/** "Your story": this browser's spots, and the signed-in account's live ones from any device. */
+export async function makerStats(ids: string[]): Promise<(MakerNumbers & { id: string; endsAt: string })[] | null> {
   try {
-    const r = await fetch("/api/mine", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ visitor: visitorId(), ids }) });
+    const token = await authToken();
+    const r = await fetch("/api/mine", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(token && { Authorization: `Bearer ${token}` }) },
+      body: JSON.stringify({ visitor: visitorId(), ids }),
+    });
     return r.ok ? r.json() : null;
   } catch {
     return null;
+  }
+}
+/** "Keep it 72 more hours": the maker's live spot, same number. Returns its new end, or an error message. */
+export async function extendSpot(id: string): Promise<{ endsAt: string } | { error: string }> {
+  try {
+    const token = await authToken();
+    const r = await fetch("/api/mine/extend", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(token && { Authorization: `Bearer ${token}` }) },
+      body: JSON.stringify({ visitor: visitorId(), id }),
+    });
+    const out = (await r.json().catch(() => ({}))) as { endsAt?: string; error?: string };
+    if (r.ok && out.endsAt) return { endsAt: out.endsAt };
+    return { error: out.error || "Something went wrong. Try again." };
+  } catch {
+    return { error: "Something went wrong. Try again." };
   }
 }
 /** "Your story" after its 72 hours: this browser's (or this account's) stories that ended, with their final numbers. */
@@ -200,9 +222,10 @@ export async function checkout(draft: Draft): Promise<string | null> {
     ]);
     const reads = draft.lane === "writers" || draft.lane === "letters";
     const human = await humanToken();
+    const token = await authToken();
     const r = await fetch("/api/checkout", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(token && { Authorization: `Bearer ${token}` }) },
       body: JSON.stringify({
         lane: draft.lane,
         no: draft.no,

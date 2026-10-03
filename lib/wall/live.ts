@@ -7,7 +7,7 @@
  * wall walks round) and keeps its own lane and number (`lane`, `num`).
  */
 import { PAL } from "./demo";
-import { LANES, type FilledSpot, type LaneId, type Spot, type VacantSpot } from "./model";
+import { LANES, LIFE, type FilledSpot, type LaneId, type Spot, type VacantSpot } from "./model";
 
 export const WALL_SIZE = 500;
 export const PER_LANE = 500;
@@ -60,6 +60,12 @@ function takeTurns<T>(queues: T[][], limit = Infinity): T[] {
 export const mediaURL = (base: string, bucket: "art" | "audio", path: string | null) =>
   path ? `${base}/storage/v1/object/public/${bucket}/${path}` : null;
 
+/** A story kept on past its first 72 hours ends later than start + 72 hours. */
+function endOf(s: FeedStory): { end?: number } {
+  const end = Date.parse(s.endsAt);
+  return end > Date.parse(s.startsAt) + LIFE ? { end } : {};
+}
+
 export function toSpot(s: FeedStory, no: number, base: string, mine: ReadonlySet<string>): FilledSpot {
   return {
     no,
@@ -70,6 +76,7 @@ export function toSpot(s: FeedStory, no: number, base: string, mine: ReadonlySet
     name: s.name,
     snippet: s.snippet || "",
     start: Date.parse(s.startsAt),
+    ...endOf(s),
     seed: s.seed,
     pal: PAL[s.pal] ?? PAL[0],
     links: s.links,
@@ -137,6 +144,11 @@ export function mergeFeed(wall: Spot[], feed: Feed, base: string, mine: Readonly
     onWall.add(f.id);
     s.opens = Math.max(s.opens, f.opens);
     s.saves = f.saves;
+    const { end } = endOf(f);
+    if (end !== s.end) {
+      if (end) s.end = end;
+      else delete s.end;
+    }
     if (mine.has(f.id)) s.mine = true;
   });
   const fresh = feed.stories.filter((s) => !onWall.has(s.id)).sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt));
