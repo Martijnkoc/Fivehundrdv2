@@ -28,7 +28,7 @@ export default async function Growth({ searchParams }: { searchParams: Promise<P
         <Kpi label="New creators" value={k.newCreators} prev={prev?.newCreators} sub={`${k.creators.toLocaleString("en-US")} creators posted`} href={to("/founder/creators")} />
       </div>
       <div className="grid g-2 section">
-        <Card title="New and returning" desc="Unique visitors, stacked: first seen in this bucket, or seen before. Click a day to drill in.">
+        <Card title="New and returning" desc={`Unique visitors, stacked: first seen in this ${v.period.bucket}, or seen before. Click ${v.period.bucket === "hour" ? "an" : "a"} ${v.period.bucket} to drill in.`}>
           <LineChart
             labels={s.map((x) => x.t)}
             bucket={b}
@@ -57,14 +57,14 @@ export default async function Growth({ searchParams }: { searchParams: Promise<P
         </Card>
       </div>
       <div className="section">
-        <Card title="Creators joining" desc="People starting Create and spots bought, per bucket">
+        <Card title="Creators joining" desc={`People starting Create and spots going live, per ${v.period.bucket}`}>
           <LineChart
             labels={s.map((x) => x.t)}
             bucket={b}
             partial={partial}
             series={[
               { name: "Started Create", values: s.map((x) => x.createStarts), slot: 4 },
-              { name: "Spots bought", values: s.map((x) => x.paid), slot: 3 },
+              { name: "Spots live", values: s.map((x) => x.paid), slot: 3 },
             ]}
             hrefs={b === "day" ? s.map((x) => to("/founder/revenue", dayRange(x.t))) : undefined}
             height={220}
@@ -72,7 +72,7 @@ export default async function Growth({ searchParams }: { searchParams: Promise<P
         </Card>
       </div>
       <div className="section">
-        <Card title="By day" desc="The numbers behind the charts">
+        <Card title={b === "hour" ? "By hour" : "By day"} desc="The numbers behind the charts">
           <DataTable
             rows={s.map((x) => ({ ...x, id: x.t, returning: x.visitors - x.newVisitors, day: x.t.replace("T", " ").replace(" 00:00", "") }))}
             cols={[
@@ -83,7 +83,7 @@ export default async function Growth({ searchParams }: { searchParams: Promise<P
               { key: "visits", label: "Visits", type: "int" },
               { key: "opens", label: "Opens", type: "int" },
               { key: "saves", label: "Saves", type: "int" },
-              { key: "paid", label: "Spots bought", type: "int" },
+              { key: "paid", label: "Spots live", type: "int" },
             ]}
             sort="day"
             pageSize={15}

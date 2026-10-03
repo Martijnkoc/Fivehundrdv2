@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { evaluate } from "../../../../../lib/founder/alerts";
 import { alertInputs, kpisFor, prevSeriesFor, seriesFor } from "../../../../../lib/founder/data";
-import { rate } from "../../../../../lib/founder/format";
+import { pays, rate } from "../../../../../lib/founder/format";
 import { LineChart } from "../../_kit/Chart";
 import { Filters } from "../../_kit/Filters";
 import { dayRange, NoData, room, type Params } from "../../_kit/page";
@@ -53,13 +53,13 @@ export default async function Overview({ searchParams }: { searchParams: Promise
           format="money"
           kind="money"
           spark={s.map((x) => x.gross)}
-          sub={`${k.paid.toLocaleString("en-US")} spots, after refunds`}
+          sub={`${pays(k).toLocaleString("en-US")} payments, after refunds`}
           href={to("/founder/revenue")}
         />
       </div>
 
       <div className="grid g-21 section">
-        <Card title="Visitors" desc={ps ? "Unique visitors, against the previous period (dashed). Click a day to drill in." : "Unique visitors. Click a day to drill in."}>
+        <Card title="Visitors" desc={ps ? `Unique visitors, against the previous period (dashed). Click ${b === "hour" ? "an" : "a"} ${b} to drill in.` : `Unique visitors. Click ${b === "hour" ? "an" : "a"} ${b} to drill in.`}>
           <LineChart
             labels={s.map((x) => x.t)}
             prevLabels={ps?.map((x) => x.t)}
@@ -87,14 +87,15 @@ export default async function Overview({ searchParams }: { searchParams: Promise
               { label: "Visit", value: k.visitors, href: to("/founder/growth"), note: "people" },
               { label: "Spot open", value: k.openers, href: to("/founder/wall", { metric: "opens" }) },
               { label: "Save", value: k.savers, href: to("/founder/wall", { metric: "saves" }) },
-              { label: "Share", value: k.sharers, href: to("/founder/shares") },
-              { label: "Create", value: k.createStarts, href: to("/founder/creators") },
+              /* not everyone who shares saved first, nor does every creator share: these compare with the step they come from */
+              { label: "Share", value: k.sharers, href: to("/founder/shares"), of: 1 },
+              { label: "Create", value: k.createStarts, href: to("/founder/creators"), of: 0 },
               { label: "Checkout", value: k.checkouts, href: to("/founder/revenue") },
               { label: "Live", value: k.paid, href: to("/founder/revenue") },
             ]}
           />
         </Card>
-        <Card title="Revenue" desc="Gross sales per day, before refunds and fees">
+        <Card title="Revenue" desc={`Gross sales per ${b}, before refunds and fees`}>
           <LineChart
             labels={s.map((x) => x.t)}
             bucket={b}

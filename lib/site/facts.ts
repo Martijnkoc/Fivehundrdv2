@@ -91,7 +91,7 @@ export const FAQ: { q: string; a: string }[] = [
   },
   {
     q: "How is the wall kept safe?",
-    a: "Every story is checked before it goes live: its links against simple rules and lists of known harmful sites, and its name, texts and images against the wall rules. Anyone can report a live story; reported stories are reviewed by a person and can be taken down.",
+    a: "Every story is checked against the wall rules: its links automatically before it goes live, and its name, texts and images by an automatic check or by a person. Anyone can report a live story; reported stories are reviewed by a person and can be taken down.",
   },
   { q: "Is Fivehundrd free for visitors?", a: FREE ? "Yes. There are no ads and no paywall. Visitors don't pay anything." : "Yes. There are no ads and no paywall. Makers pay for their spot; visitors don't pay anything." },
 ];

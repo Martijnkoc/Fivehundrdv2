@@ -6,6 +6,7 @@ import * as data from "./data";
 import { demo } from "./demo";
 import { KIND_LABEL, LANE_LABEL, parseFilters, parsePeriod, type View } from "./filters";
 import { phraseText } from "./feedText";
+import { pays } from "./format";
 import type { ExportRow } from "./types";
 import { toCsv } from "./csv";
 
@@ -131,12 +132,12 @@ export async function tablesFor(ds: Dataset, v: View): Promise<Table[]> {
             { key: "note", label: "Note" },
           ],
           rows: [
-            { line: "Gross revenue", value: cents(k.gross), note: `${k.paid} payments made in the period` },
+            { line: "Gross revenue", value: cents(k.gross), note: `${pays(k)} payments made in the period` },
             { line: "Refunds", value: cents(-k.refunds), note: "refunded in the period" },
             { line: "Chargebacks", value: cents(-k.disputes), note: "disputes opened in the period" },
             { line: "Stripe fees", value: cents(-k.fees), note: "from each payment's balance transaction" },
             { line: "Net revenue", value: cents(net), note: "gross − refunds − chargebacks − fees" },
-            { line: "Average order value", value: k.paid ? cents(k.gross / k.paid) : null, note: "" },
+            { line: "Average order value", value: pays(k) ? cents(k.gross / pays(k)) : null, note: "" },
             { line: "Revenue per visitor", value: k.visitors ? cents((k.gross - k.refunds) / k.visitors) : null, note: `${k.visitors} visitors` },
             { line: "Revenue per creator", value: k.creators ? cents((k.gross - k.refunds) / k.creators) : null, note: `${k.creators} creators` },
             { line: "Revenue per live spot", value: k.liveSpots ? cents((k.gross - k.refunds) / k.liveSpots) : null, note: `${k.liveSpots} live at the end` },

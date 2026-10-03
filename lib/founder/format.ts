@@ -74,3 +74,6 @@ export function longLabel(t: string, bucket: "hour" | "day") {
 export type Fmt = "int" | "dec" | "money" | "pct";
 export const fmt = (f: Fmt, v: number | null | undefined, short = false) =>
   v == null ? "—" : f === "dec" ? v.toFixed(2) : f === "money" ? money(v, !short) : f === "pct" ? pct(v) : short ? compact(v) : int(v);
+
+/** Payments in a period: stories with money in them, not free ones (fd_kpis "payments"; "paid" before it existed). */
+export const pays = (k: { paid: number; payments?: number }) => k.payments ?? k.paid;

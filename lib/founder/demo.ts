@@ -589,6 +589,7 @@ export const demo = {
       createStarts: starters.size,
       checkouts: started.length,
       paid: paidS.length,
+      payments: paidS.filter((s) => s.amount > 0).length,
       creators: new Set(paidS.map(creatorOf)).size,
       newCreators: new Set(paidS.map(creatorOf).filter((c) => !earlier.has(c))).size,
       gross: paidS.reduce((a, s) => a + s.amount, 0),
@@ -929,7 +930,8 @@ export const demo = {
     const from = Date.parse(fromIso),
       to = clampNow(Date.parse(toIso));
     return d.stories
-      .filter((s) => s.starts != null && s.starts >= from && s.starts < to && storyOk(f, s))
+      /* payments only: a free spot is no transaction */
+      .filter((s) => s.starts != null && s.starts >= from && s.starts < to && s.amount > 0 && storyOk(f, s))
       .sort((a, b) => b.starts! - a.starts!)
       .map((s) => ({
         id: s.id,
