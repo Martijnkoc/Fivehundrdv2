@@ -90,6 +90,15 @@ test.describe("desktop", () => {
     await expect(page.locator(".hero [aria-live], .hero [role=status]")).toHaveCount(0);
   });
 
+  test("a quiet day: under 25 visitors the block shows no numbers", async ({ wall, page }) => {
+    await today(page, { available: true, visitors: 1, opened: 0 });
+    await wall.goto("", { hero: true });
+    const proof = page.locator(".proof");
+    await expect(proof.locator(".proof-sub")).toBeVisible();
+    await expect(proof.locator(".proof-n")).toHaveCount(0);
+    await expect(proof.locator(".proof-h")).toHaveCount(0);
+  });
+
   test("today's numbers unavailable: no numbers, no heading that promises them", async ({ wall, page }) => {
     await today(page, { available: false });
     await wall.goto("", { hero: true });

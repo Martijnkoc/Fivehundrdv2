@@ -28,7 +28,7 @@ function Proof() {
       clearInterval(i);
     };
   }, []);
-  const real = t?.available ? t : null;
+  const real = t?.available && t.visitors >= PROOF.min ? t : null;
   /* while loading, the numbers' room is kept (invisibly), so they arrive without moving anything */
   const nums = real ?? (t ? null : { visitors: 0, opened: 0 });
   return (

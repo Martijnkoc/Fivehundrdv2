@@ -25,7 +25,9 @@ export const BRAND = {
 export const PROOF = {
   head: "Today on Fivehundrd",
   visitors: (n: string) => `${n} visitors`,
-  opened: (n: string) => `${n} discoveries opened`,
+  opened: (n: string) => `${n} ${n === "1" ? "discovery" : "discoveries"} opened`,
+  /** below this many visitors today the block says no numbers at all (a near-empty count reads as an empty room) */
+  min: 25,
   line: "People are here to discover.",
   cta: FREE ? "Claim a spot · free for now" : `Claim a spot · ${COST} / 72h`,
 };
