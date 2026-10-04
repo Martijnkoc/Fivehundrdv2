@@ -87,3 +87,8 @@
 .vbook .v-cta{font-style:normal;font-size:11px;font-weight:800;color:var(--ink);text-decoration:underline;text-decoration-color:var(--pink);text-decoration-thickness:2px;text-underline-offset:3px}
 @media (max-width:699px){.vbook .v-h{display:none}}
 
+/* a quiet day (under 25 visitors, 2026-10-04): the line for makers sits in the numbers' reserved room, so the card keeps its height */
+.proof>.proof-slot{display:grid;width:100%}
+.proof-slot>*{grid-area:1/1}
+.proof-slot>div{display:flex;flex-direction:column;gap:6px}
+.proof-slot>.proof-sub{align-self:center}
