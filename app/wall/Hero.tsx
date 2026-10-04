@@ -28,22 +28,35 @@ function Proof() {
       clearInterval(i);
     };
   }, []);
-  const real = t?.available ? t : null;
+  const real = t?.available && t.visitors >= PROOF.min ? t : null;
+  /* a quiet day: the numbers' room stays (invisibly) and the line for makers sits in it, so nothing moves */
+  const quiet = !!t?.available && !real;
   /* while loading, the numbers' room is kept (invisibly), so they arrive without moving anything */
-  const nums = real ?? (t ? null : { visitors: 0, opened: 0 });
+  const nums = real ?? (t && !quiet ? null : { visitors: 0, opened: 0 });
   return (
     <aside className="proof" aria-label={real ? PROOF.head : BRAND.statement}>
-      {nums && (
-        <div className={real ? undefined : "proof-wait"} aria-hidden={real ? undefined : true}>
-          <p className="proof-h">{PROOF.head}</p>
-          <p className="proof-n">
-            <b>{PROOF.visitors(n(nums.visitors))}</b>
-            <b>{PROOF.opened(n(nums.opened))}</b>
-          </p>
-        </div>
-      )}
+      {nums &&
+        (() => {
+          const room = (
+            <div className={real ? undefined : "proof-wait"} aria-hidden={real ? undefined : true}>
+              <p className="proof-h">{PROOF.head}</p>
+              <p className="proof-n">
+                <b>{PROOF.visitors(n(nums.visitors))}</b>
+                <b>{PROOF.opened(n(nums.opened))}</b>
+              </p>
+            </div>
+          );
+          return quiet ? (
+            <div className="proof-slot">
+              {room}
+              <p className="proof-sub">{BRAND.creator}</p>
+            </div>
+          ) : (
+            room
+          );
+        })()}
       <p className="proof-line">{PROOF.line}</p>
-      {t && !real && <p className="proof-sub">{BRAND.creator}</p>}
+      {t && !real && !quiet && <p className="proof-sub">{BRAND.creator}</p>}
       <button type="button" className="proof-cta" onClick={() => bridge.actions.heroCta()}>
         {PROOF.cta}
       </button>

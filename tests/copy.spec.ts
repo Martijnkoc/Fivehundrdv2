@@ -90,6 +90,21 @@ test.describe("desktop", () => {
     await expect(page.locator(".hero [aria-live], .hero [role=status]")).toHaveCount(0);
   });
 
+  test("a quiet day: under 25 visitors no numbers show, and the card keeps its height", async ({ wall, page }) => {
+    await today(page, { available: true, visitors: 1284, opened: 3906 });
+    await wall.goto("", { hero: true });
+    await expect(page.locator(".proof .proof-n")).toBeVisible();
+    const busy = (await page.locator(".proof").boundingBox())!.height;
+    await page.unroute("**/api/today");
+    await today(page, { available: true, visitors: 1, opened: 0 });
+    await wall.goto("", { hero: true });
+    const proof = page.locator(".proof");
+    await expect(proof.locator(".proof-sub")).toBeVisible();
+    await expect(proof.locator(".proof-n")).toBeHidden();
+    expect(await proof.innerText()).not.toMatch(/\d+ (visitors|discoveries)/);
+    expect((await proof.boundingBox())!.height).toBeCloseTo(busy, 0);
+  });
+
   test("today's numbers unavailable: no numbers, no heading that promises them", async ({ wall, page }) => {
     await today(page, { available: false });
     await wall.goto("", { hero: true });

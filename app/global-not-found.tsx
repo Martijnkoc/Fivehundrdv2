@@ -17,7 +17,7 @@ export default function GlobalNotFound() {
             Fivehundrd<span style={{ color: "#ff3d8b" }}>.</span>
           </p>
           <h1 style={{ fontSize: 20, margin: "0 0 8px" }}>Nothing lives at this address.</h1>
-          <p style={{ margin: "0 0 20px", color: "#5f5b53" }}>There are 500 spots on the wall right now.</p>
+          <p style={{ margin: "0 0 20px", color: "#5f5b53" }}>There are 3,000 spots on the wall, 500 in each lane.</p>
           <a href="/" style={{ display: "inline-block", padding: "12px 20px", borderRadius: 999, background: "#1a1917", color: "#fff", textDecoration: "none", fontWeight: 600 }}>
             See the wall
           </a>
