@@ -31,7 +31,10 @@ export function WallRuntime() {
         if (!gone) run(bridge.batch(() => startWall(bridge)));
         return;
       }
-      const feed = fetchFeed(true).catch(() => ({ now: "", stories: [], held: [] }));
+      /* one quick retry: a wall drawn from a failed read shows every spot open until the next minute */
+      const feed = fetchFeed(true)
+        .catch(() => new Promise((r) => setTimeout(r, 1500)).then(() => fetchFeed()))
+        .catch(() => ({ now: "", stories: [], held: [] }));
       /* back from a login link: let Supabase read it before the wall rewrites the address */
       if (/access_token|error_description/.test(location.hash)) await (await supabase()).auth.getSession();
       /* the live wall (open spots only if the database can't be reached; it catches up each minute) */

@@ -944,13 +944,17 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
       }
     });
     afterChange(changed);
-    if (live) refreshFeed();
+    /* a tab in the background doesn't fetch the whole wall every minute; it catches up when it's back */
+    if (live && !document.hidden) refreshFeed();
   }, 60e3);
+  let fedAt = Date.now();
+  document.addEventListener("visibilitychange", () => live && !document.hidden && Date.now() - fedAt > 60e3 && refreshFeed(), sig);
   /** The live wall follows the database every minute, without reshuffling under the visitor. */
-  async function refreshFeed() {
+  async function refreshFeed(story?: string) {
     if (!live) return;
+    fedAt = Date.now();
     try {
-      live.feed = await liveApi.fetchFeed();
+      live.feed = await liveApi.fetchFeed(false, story);
       if (!alive()) return;
       bridge.setHot(live.feed.hot ?? null);
     } catch {
@@ -1401,8 +1405,13 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
       const st = await liveApi.checkoutStatus(id).catch(() => null);
       if (!alive()) return;
       if (st?.status === "live") {
-        await refreshFeed();
+        await refreshFeed(id);
         const s = WALL.find((w): w is FilledSpot => !w.vacant && w.id === id);
+        /* not on this wall yet (a slow read): look again */
+        if (!s && i < 19) {
+          await new Promise((r) => setTimeout(r, 1500));
+          continue;
+        }
         if (s) {
           s.mine = true;
           if (lane !== "all" && lane !== s.lane) {

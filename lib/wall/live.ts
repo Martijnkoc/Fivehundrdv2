@@ -151,7 +151,9 @@ export function mergeFeed(wall: Spot[], feed: Feed, base: string, mine: Readonly
     }
     if (mine.has(f.id)) s.mine = true;
   });
-  const fresh = feed.stories.filter((s) => !onWall.has(s.id)).sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt));
+  /* a cached feed can still carry a story whose time ran out on this wall a moment ago: it doesn't come back */
+  const now = Date.now();
+  const fresh = feed.stories.filter((s) => !onWall.has(s.id) && Date.parse(s.endsAt) > now).sort((a, b) => Date.parse(a.startsAt) - Date.parse(b.startsAt));
   for (const f of fresh) {
     let i = wall.findIndex((s) => s.vacant && s.lane === f.lane && s.num === f.no);
     if (i < 0) i = wall.findIndex((s) => s.vacant);

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { hasDatabase, rpc } from "../../../../../lib/server/backend";
-import type { Feed } from "../../../../../lib/wall/live";
+import { hasDatabase } from "../../../../../lib/server/backend";
+import { wallFeed } from "../../../../../lib/server/story";
 import { mediaURL } from "../../../../../lib/wall/live";
 import { LANE, pad, type LaneId } from "../../../../../lib/wall/model";
 import { left, short } from "../../../../../lib/wall/time";
@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const num = Number(no);
   /* a spot number changes hands every 72 hours: the story's own link is the one to index */
   if (!(lane in LANE) || !Number.isInteger(num) || !hasDatabase()) return { robots: { index: false, follow: true } };
-  const feed = await rpc<Feed>("wall_public", {}, false).catch(() => null);
+  const feed = await wallFeed().catch(() => null);
   const s = feed?.stories.find((x) => x.lane === lane && x.no === num);
   if (!s) return { title: { absolute: `${LANE[lane as LaneId]} No. ${pad(num)} on fivehundrd.` }, robots: { index: false, follow: true } };
   const title = `${s.name} on fivehundrd.`;

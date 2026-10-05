@@ -2,7 +2,7 @@ import { env, hasDatabase, ipHash, json, rpc } from "../../../lib/server/backend
 import { isUuid, isVisitor } from "../../../lib/server/ids";
 import { measured } from "../../../lib/server/ops";
 import { hasReminders, reminderConfig } from "../../../lib/server/reminders";
-import type { Feed } from "../../../lib/wall/live";
+import { wallFeed } from "../../../lib/server/story";
 import { LANE, pad, type LaneId } from "../../../lib/wall/model";
 
 /**
@@ -17,7 +17,7 @@ export const POST = measured("/api/reports", async (req: Request) => {
   if (!b.lane || !(b.lane in LANE) || !Number.isInteger(no) || no < 1 || no > 500) return json({ error: "bad request" }, { status: 400 });
   const lane = b.lane as LaneId;
   try {
-    const feed = await rpc<Feed>("wall_public", {}, false);
+    const feed = await wallFeed();
     const story = feed.stories.find((s) => s.lane === lane && s.no === no);
     if (!story || !isUuid(story.id)) return json({ ok: false, error: "not found" }, { status: 404 });
     const r = await rpc<{ ok: boolean; hidden: boolean; new?: boolean }>("report_story", {
