@@ -2,7 +2,7 @@ import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
-import type { CheckedClaim } from "../wall/claimRules";
+import type { CheckedClaim, CheckedWords } from "../wall/claimRules";
 import { linkProblems } from "../wall/linkRules";
 import { mediaURL } from "../wall/live";
 import { env } from "./backend";
@@ -88,10 +88,13 @@ Decide:
 let client: Anthropic | null = null;
 
 /** Claude's read of the story's name, texts, links and images. */
-async function scanContent(c: CheckedClaim, base: string): Promise<Pick<Moderation, "verdict" | "categories" | "reason">> {
+/** What the check reads: a claim, or a live spot's changed words (no files then). */
+export type Checkable = CheckedWords & Pick<CheckedClaim, "lane" | "artwork" | "logo" | "gallery">;
+
+async function scanContent(c: Checkable, base: string): Promise<Pick<Moderation, "verdict" | "categories" | "reason">> {
   if (!process.env.ANTHROPIC_API_KEY) return { verdict: "unscanned", categories: [], reason: "Automatic check isn't set up." };
   client ??= new Anthropic({ timeout: 25_000, maxRetries: 1 });
-  const images = [mediaURL(base, "art", c.artwork), mediaURL(base, "art", c.logo)].filter((u): u is string => !!u);
+  const images = [c.artwork, c.logo, ...c.gallery].map((p) => mediaURL(base, "art", p)).filter((u): u is string => !!u);
   const story = {
     lane: c.lane,
     name: c.name,
@@ -100,7 +103,9 @@ async function scanContent(c: CheckedClaim, base: string): Promise<Pick<Moderati
     excerptTitle: c.excerptTitle,
     excerpt: c.excerpt,
     trailer: c.trailerUrl,
-    images: images.length ? `${images.length} attached above (artwork first, then logo)` : "none",
+    audioTitle: c.audioTitle,
+    comingUp: c.milestone,
+    images: images.length ? `${images.length} attached above (artwork first, then logo, then more images)` : "none",
   };
   try {
     const res = await client.beta.messages.parse({
@@ -136,7 +141,7 @@ const worst = (a: Verdict, b: Verdict): Verdict => {
 };
 
 /** Checks a story before payment. */
-export async function moderate(c: CheckedClaim): Promise<Moderation> {
+export async function moderate(c: Checkable): Promise<Moderation> {
   const urls = [...c.links.map((l) => l.url), ...(c.trailerUrl ? [c.trailerUrl] : [])];
   const [unsafe, content] = await Promise.all([unsafeLinks(urls), scanContent(c, env.supabaseUrl)]);
   const links = urls.flatMap((url) => {

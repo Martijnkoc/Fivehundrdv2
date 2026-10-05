@@ -78,3 +78,21 @@ export function bookVars(s: Spot) {
 export function spotStyle(s: Spot) {
   return s.vacant ? bookVars(s) : styleFor(s) + ";" + bookVars(s);
 }
+
+/**
+ * Something coming up, as the open spot says it: "Sat 12 Oct · in 7 days",
+ * "Today", "Tomorrow". Counted in the visitor's own days. Null once the day
+ * has passed: an old date isn't news. Without a date, just the maker's words.
+ */
+export function comingUp(m: { t: string; on?: string } | undefined, now = Date.now()): { t: string; when: string } | null {
+  if (!m?.t) return null;
+  if (!m.on) return { t: m.t, when: "" };
+  const [y, mo, d] = m.on.split("-").map(Number);
+  const day = new Date(y, mo - 1, d);
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  const days = Math.round((day.getTime() - today.getTime()) / 864e5);
+  if (!Number.isFinite(days) || days < 0) return null;
+  const date = day.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
+  return { t: m.t, when: days === 0 ? "Today" : days === 1 ? "Tomorrow" : `${date} · in ${days} days` };
+}

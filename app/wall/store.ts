@@ -240,6 +240,8 @@ export const bridge = {
     numberFor: (lane: LaneId, no: number) => number;
     /** Starts placing the spot; returns an error message, or null (on the live wall, once Checkout fails or opens). */
     placeClaim: (draft: Draft) => string | null | Promise<string | null>;
+    /** Saves a live spot's fixed words and links (its first hour); an error message, or null once saved. */
+    saveEdit: (id: string, draft: Draft) => Promise<string | null>;
     previewClick: (e: MouseEvent, spot: FilledSpot) => void;
     share: (spot: FilledSpot) => void;
     /** Opens the share sheet (every card size, save, copy) without trying the native sheet first. */

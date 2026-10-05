@@ -28,3 +28,8 @@ export function wallFeed(fresh = false): Promise<Feed> {
   }
   return wallMemo.feed;
 }
+
+/** After a maker's fix: this instance reads the wall again on its next request. */
+export function forgetWall() {
+  wallMemo = null;
+}

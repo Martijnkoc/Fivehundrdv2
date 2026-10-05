@@ -87,14 +87,36 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
     const mine = read<FilledSpot[]>("fh-claims", []);
     if (Array.isArray(mine)) for (const s of mine) if (Date.now() - s.start < LIFE) WALL[s.no - 1] = s;
   }
+  /*
+   * A maker's fix, remembered in their browser for a few minutes: the wall's
+   * feed is cached at the edge, so a reload right after saving could still
+   * show the old words. Theirs are put back until the feed has caught up.
+   */
+  type Fix = { at: number; d: Partial<FilledSpot> };
+  const FIX_MS = 5 * 60e3;
+  function rememberFix(id: string, d: Partial<FilledSpot>) {
+    const all = read<Record<string, Fix>>("fh-fixed", {});
+    const keep = Object.fromEntries(Object.entries(all && typeof all === "object" ? all : {}).filter(([, f]) => Date.now() - f.at < FIX_MS));
+    write("fh-fixed", { ...keep, [id]: { at: Date.now(), d } });
+  }
+  function applyFix(s: FilledSpot, d: Partial<FilledSpot>, at: number) {
+    for (const k of ["audioTitle", "milestone"] as const) if (!(k in d)) delete s[k];
+    Object.assign(s, d);
+    s.fixedUntil = at + FIX_MS;
+  }
+  if (live) {
+    const fixes = read<Record<string, Fix>>("fh-fixed", {});
+    if (fixes && typeof fixes === "object")
+      for (const s of WALL) if (!s.vacant && s.id && fixes[s.id] && Date.now() - fixes[s.id].at < FIX_MS) applyFix(s, fixes[s.id].d, fixes[s.id].at);
+  }
   bridge.setWall(WALL);
   /* the live wall promises reminders only once they are sent (docs/retention.md) */
   const REMINDERS = !live || process.env.NEXT_PUBLIC_REMINDERS === "1";
   bridge.setMode(!!live, REMINDERS);
   /** Counts an open, save, share… on the live wall. */
-  const ev = (id: string | undefined, kind: liveApi.EventKind) => {
+  const ev = (id: string | undefined, kind: liveApi.EventKind, link?: string) => {
     if (!live || !id) return;
-    if (kind !== "save" && kind !== "unsave") return liveApi.sendEvent(id, kind);
+    if (kind !== "save" && kind !== "unsave") return liveApi.sendEvent(id, kind, null, link);
     /* Scout: a signed-in Timeheart is a call made by the account (the server checks the token). The
        session is read directly, not from ACCOUNT, which is only filled once syncAccount() returns */
     void liveApi.authToken().then((t) => {
@@ -473,7 +495,9 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
       toast("Demo spot. Real makers link out to their own pages.");
       return true;
     }
-    if (t.closest("a[href]")) ev(s.id, "link_click");
+    /* one of the maker's links (clicks per link), or the trailer */
+    const out = t.closest<HTMLAnchorElement>("a[href]");
+    if (out) ev(s.id, "link_click", out.closest(".links") ? s.links.find((l) => l.url === out.getAttribute("href"))?.url : undefined);
     const unavailable = () => toast("Audio isn't available in this browser.");
     const pl = t.closest("[data-play]");
     if (pl) {
@@ -703,6 +727,24 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
         bridge.refresh();
         toast(MAKER.extended);
       });
+    }
+    /* fix it in the first hour: the maker's live spot in the same form, words and links only */
+    const fx = t.closest<HTMLElement>("[data-edit]");
+    if (fx) {
+      const s = WALL.find((w): w is FilledSpot => !w.vacant && w.id === fx.dataset.edit);
+      if (s) {
+        if (cardOpen) setCard(false);
+        openEdit(s);
+      }
+    }
+    /* the maker's own card, every size (the story one is 9:16, for Instagram and TikTok) */
+    const sm = t.closest<HTMLElement>("[data-share-mine]");
+    if (sm) {
+      const s = WALL.find((w): w is FilledSpot => !w.vacant && w.id === sm.dataset.shareMine);
+      if (s) {
+        if (cardOpen) setCard(false);
+        bridge.actions.shareSheet(s);
+      }
     }
     /* "Put it on again": the ended story in the Create form, ready to place */
     const ag = t.closest<HTMLElement>("[data-again]");
@@ -1082,6 +1124,60 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
     showVeil("claimVeil");
     document.body.style.overflow = "hidden";
   }
+  /** The maker's live spot in the Create form, to fix its words and links in its first hour. */
+  function openEdit(s: FilledSpot) {
+    const links = s.links.slice(0, 3).map((l) => l.url.replace(/^https?:\/\//, ""));
+    while (links.length < 3) links.push("");
+    bridge.openClaim({
+      no: numOf(s),
+      lane: s.lane,
+      seed: s.seed,
+      pal: s.pal,
+      edit: { id: s.id! },
+      prefill: {
+        name: s.name,
+        snippet: s.snippet,
+        links,
+        img: s.img ?? null,
+        logo: s.logo ?? null,
+        audio: s.audio ?? null,
+        exT: s.excerpt?.t ?? "",
+        ex: s.excerpt?.x ?? "",
+        trailer: (s.trailer?.url ?? "").replace(/^https?:\/\//, ""),
+        audioTitle: s.audioTitle ?? "",
+        milestone: s.milestone?.t ?? "",
+        milestoneOn: s.milestone?.on ?? "",
+        gallery: s.gallery ?? [],
+      },
+    });
+    showVeil("claimVeil");
+    document.body.style.overflow = "hidden";
+  }
+  async function saveEdit(id: string, draft: Draft): Promise<string | null> {
+    const problem = await liveApi.editSpot(id, draft);
+    if (problem || !alive()) return problem;
+    const s = WALL.find((w): w is FilledSpot => !w.vacant && w.id === id);
+    if (s) {
+      /* the maker sees it at once, also after a reload; the wall's cached feed catches up within minutes */
+      const d: Partial<FilledSpot> = {
+        name: draft.name,
+        snippet: draft.snippet,
+        links: draft.links,
+        excerpt: (s.lane === "writers" || s.lane === "letters") && draft.excerpt?.x ? draft.excerpt : null,
+        trailer: s.lane === "art" || s.lane === "games" ? draft.trailer : null,
+        ...(draft.audioTitle && (s.lane === "music" || s.lane === "podcasts") && { audioTitle: draft.audioTitle }),
+        ...(draft.milestone && { milestone: draft.milestone }),
+      };
+      applyFix(s, d, Date.now());
+      rememberFix(id, d);
+    }
+    closeVeils();
+    renderRack();
+    if (s) openSpot(spotEl(s.no), { align: true });
+    void loadMakerStats();
+    toast(CREATE.saved);
+    return null;
+  }
   function placeClaim(draft: Draft): string | null | Promise<string | null> {
     surface("creator_place_clicked", undefined, { lane: draft.lane });
     /* the live wall holds the spot and sends the maker to Stripe Checkout */
@@ -1111,6 +1207,9 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
         audio: L === "music" || L === "podcasts" ? draft.audio : null,
         excerpt: (L === "writers" || L === "letters") && draft.excerpt?.x ? draft.excerpt : null,
         trailer: L === "art" || L === "games" ? draft.trailer : null,
+        ...((L === "music" || L === "podcasts") && draft.audioTitle && { audioTitle: draft.audioTitle }),
+        ...(draft.milestone && { milestone: draft.milestone }),
+        ...((L === "art" || L === "games") && draft.gallery?.length && { gallery: draft.gallery }),
       };
       WALL[s.no - 1] = s;
       const mine = read<FilledSpot[]>("fh-claims", []);
@@ -1189,6 +1288,7 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
     randomVacant,
     numberFor,
     placeClaim,
+    saveEdit,
     previewClick: (e: MouseEvent, p: FilledSpot) => coverClick(e, p),
     share: (s: FilledSpot) => shareSpot(s),
     shareSheet(s: FilledSpot) {

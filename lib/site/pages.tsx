@@ -268,7 +268,7 @@ export const INFO: Record<PageSlug, Info> = {
         <h2>Visitors</h2>
         <ul>
           <li>
-            <b>A random visitor id</b> stored in your browser, and your Scouts. They keep your card working and count opens, Timehearts and shares.
+            <b>A random visitor id</b> stored in your browser, and your Scouts. They keep your card working and count opens, Timehearts, shares and which of a maker&apos;s links you followed.
           </li>
           <li>
             <b>How you arrived and on what</b>: the referring site, campaign tags in the link, device type (phone, tablet or computer) and country. Never your exact location.

@@ -136,6 +136,13 @@ export const CREATE = {
   placing: "Placing you on the Wall…",
   fine: FREE ? "Free while we fill the Wall. Nothing to pay." : "Secure payment with Stripe. Refunded if your spot doesn't go live.",
   confirming: FREE ? "Your spot appears in a minute." : "We're confirming your payment. Your spot appears in a minute.",
+  /* fix it in the first hour (founder's ask, 2026-10-05) */
+  editHead: "Fix your spot.",
+  editSub: "Words and links can change in its first hour. Its images, lane and number stay as they are.",
+  save: "Save changes",
+  saving: "Saving…",
+  editFine: "You see the changes right away; everyone else within a few minutes.",
+  saved: "Saved. Your spot shows the changes.",
 };
 
 /** A maker's own spot, in people (maker_stats), with what it means. */
@@ -148,4 +155,8 @@ export const MAKER = {
   /* a live spot, in its last 24 hours (founder's ask, 2026-10-03): same number, 72 more hours */
   extend: "Keep it 72 more hours",
   extended: "72 more hours. Same number, same story.",
+  /* the maker's tools (founder's ask, 2026-10-05) */
+  fix: (min: number) => `Fix a typo or link · ${min} min left`,
+  share: "Share my card",
+  wasHot: "It became a Hotspot.",
 };

@@ -51,7 +51,8 @@ ${rows
 
 /* ---------- for makers ---------- */
 
-export type MakerNumbers = { seen: number; opened: number; kept: number; clicked: number; shared: number; hotAt?: string | null };
+/** `links`: people per link, in the story's link order (clicks before 2026-10-05 aren't split). */
+export type MakerNumbers = { seen: number; opened: number; kept: number; clicked: number; shared: number; hotAt?: string | null; links?: number[] };
 export type MakerNotice = { kind: "hot" | "ending"; name: string; lane: string; no: number; slug: string; endsAt: string; stats: MakerNumbers };
 
 const num = (v: number) => v.toLocaleString("en-US");

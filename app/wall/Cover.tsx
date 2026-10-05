@@ -5,7 +5,7 @@ import { SCOUT, TIMEHEART } from "../../lib/site/copy";
 import { HANDS, HEART, ICON } from "../../lib/wall/icons";
 import { LANE, LIFE, numOf, pad, rng, type FilledSpot } from "../../lib/wall/model";
 import { skey } from "../../lib/wall/saves";
-import { age, left, long } from "../../lib/wall/time";
+import { age, comingUp, left, long } from "../../lib/wall/time";
 import { bridge, wallStore } from "./store";
 import { GenArt, LaneIcon } from "./Tile";
 
@@ -54,7 +54,8 @@ function Player({ s }: { s: FilledSpot }) {
           0:00 / 0:30
         </span>
       </div>
-      <p className="pcap">{`${s.lane === "podcasts" ? "Episode trailer" : "30-second preview"}${src ? ". Full version on " + src + "." : ""}`}</p>
+      {/* approved change (2026-10-05): what the clip is from, in the maker's words */}
+      <p className="pcap">{`${s.lane === "podcasts" ? `Episode trailer${s.audioTitle ? ": " + s.audioTitle : ""}` : `30-second preview${s.audioTitle ? " from " + s.audioTitle : ""}`}${src ? ". Full version on " + src + "." : ""}`}</p>
     </>
   );
 }
@@ -78,6 +79,43 @@ function Read({ s }: { s: FilledSpot }) {
         {full ? "Show less" : "Keep reading"}
       </button>
     </div>
+  );
+}
+
+/** Approved change (2026-10-05): something coming up, with its day if it has one. */
+function ComingUp({ s }: { s: FilledSpot }) {
+  const m = comingUp(s.milestone);
+  if (!m) return null;
+  return (
+    <p className="mile">
+      <b>{m.t}</b>
+      {m.when && <span>{m.when}</span>}
+    </p>
+  );
+}
+
+/**
+ * Approved change (2026-10-05): Art and Games may show two more images. The
+ * wall only carries their addresses; the images load when the spot is open,
+ * and the small squares switch the big one.
+ */
+function Art({ s }: { s: FilledSpot }) {
+  const [i, setI] = useState(0);
+  const all = s.gallery?.length ? [s.img ?? null, ...s.gallery] : null;
+  const src = all ? all[i] : s.img;
+  return (
+    <>
+      {src ? <img src={src} alt={`${i ? `Image ${i + 1}` : "Artwork"} for ${s.name}`} /> : <GenArt seed={s.seed} pal={s.pal} />}
+      {all && (
+        <span className="gal" role="group" aria-label="More images">
+          {all.map((g, j) => (
+            <button key={j} type="button" className="gal-i" aria-label={`Image ${j + 1} of ${all.length}`} aria-pressed={j === i} onClick={() => setI(j)}>
+              {g ? <img src={g} alt="" /> : <GenArt seed={s.seed} pal={s.pal} />}
+            </button>
+          ))}
+        </span>
+      )}
+    </>
   );
 }
 
@@ -139,7 +177,7 @@ export const Cover = memo(function Cover({ s, saved, preview }: { s: FilledSpot;
     <div className="cover">
       {ws(4)}
       <div className="art">
-        {s.img ? <img src={s.img} alt={`Artwork for ${s.name}`} /> : <GenArt seed={s.seed} pal={s.pal} />}
+        <Art s={s} />
         <Trailer s={s} />
         {age(s) < 3 * 3600e3 && <span className="stamp">Just arrived</span>}
       </div>
@@ -157,6 +195,7 @@ export const Cover = memo(function Cover({ s, saved, preview }: { s: FilledSpot;
         {ws(6)}
         <h2 className="title">{s.name}</h2>
         {ws(6)}
+        <ComingUp s={s} />
         <p className="snip">{s.snippet}</p>
         {ws(6)}
         <Extra s={s} />
