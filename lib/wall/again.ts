@@ -26,8 +26,15 @@ export type EndedStory = {
   links: Link[];
   seed: number;
   pal: number;
+  startsAt?: string;
   endsAt: string;
   stats: MakerNumbers;
+  /** its lane's other spots that ended in the 30 days before it, and how many had fewer opens */
+  standing?: { peers: number; fewer: number };
+  audioTitle?: string;
+  milestone?: string;
+  milestoneOn?: string;
+  gallery?: string[];
 };
 
 /** What the Create form starts from: the story as it was, its files by their public address. */
@@ -41,6 +48,10 @@ export type Prefill = {
   exT: string;
   ex: string;
   trailer: string;
+  audioTitle: string;
+  milestone: string;
+  milestoneOn: string;
+  gallery: string[];
 };
 
 export function prefillFrom(e: EndedStory, base: string): Prefill {
@@ -56,7 +67,26 @@ export function prefillFrom(e: EndedStory, base: string): Prefill {
     exT: e.excerptTitle ?? "",
     ex: e.excerpt ?? "",
     trailer: e.trailerUrl ?? "",
+    audioTitle: e.audioTitle ?? "",
+    /* a date that has passed isn't carried into a new spot */
+    milestone: e.milestone ?? "",
+    milestoneOn: e.milestoneOn && e.milestoneOn >= new Date().toISOString().slice(0, 10) ? e.milestoneOn : "",
+    gallery: (e.gallery ?? []).map((p) => mediaURL(base, "art", p)).filter((u): u is string => !!u),
   };
+}
+
+/**
+ * How an ended spot did next to its lane, in words: only when at least 20
+ * other spots ended in its lane that month (small samples get no verdict),
+ * and only when it's something worth saying.
+ */
+export function standingLine(st: { peers: number; fewer: number } | undefined, lane: string): string | null {
+  if (!st || st.peers < 20) return null;
+  const share = st.fewer / st.peers;
+  if (share >= 0.9) return `Opened more than almost every ${lane} spot this month.`;
+  if (share >= 0.75) return `Opened more than most ${lane} spots this month.`;
+  if (share >= 0.5) return `Opened more than half the ${lane} spots this month.`;
+  return null;
 }
 
 /** Its old number if that's open in its lane again, otherwise none (the form picks an open one). */

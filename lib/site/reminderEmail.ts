@@ -51,7 +51,8 @@ ${rows
 
 /* ---------- for makers ---------- */
 
-export type MakerNumbers = { seen: number; opened: number; kept: number; clicked: number; shared: number; hotAt?: string | null };
+/** `links`: people per link, in the story's link order (clicks before 2026-10-05 aren't split). */
+export type MakerNumbers = { seen: number; opened: number; kept: number; clicked: number; shared: number; hotAt?: string | null; links?: number[] };
 export type MakerNotice = { kind: "hot" | "ending"; name: string; lane: string; no: number; slug: string; endsAt: string; stats: MakerNumbers };
 
 const num = (v: number) => v.toLocaleString("en-US");
@@ -78,7 +79,7 @@ export function makerEmail(n: MakerNotice, site: string, offUrl: string, now = D
   const lead =
     n.kind === "hot"
       ? "Your spot is one of the five with the most traction on The Wall right now. It stays in Hotspots until others catch up, so this is a good moment to share it."
-      : `Your spot leaves The Wall in about ${hours} hours. Its link keeps working after that, so people who kept it can still find you.`;
+      : `Your spot leaves The Wall in about ${hours} hours. Its link keeps working after that, so people who scouted it can still find you.`;
   const so = line ? `So far, ${line}.` : "";
   const again = n.kind === "ending" ? `Want another 72 hours? Claim a new spot: ${site}/?create=1` : "";
   const text = [lead, "", so, "", `${n.name} (${lane}, No. ${String(n.no).padStart(3, "0")})`, url, "", again, "", `You get this because you placed ${n.name} on ${NAME}. Stop these emails for this spot: ${offUrl}`]

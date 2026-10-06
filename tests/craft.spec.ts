@@ -2,7 +2,7 @@ import { expect, test, viewports } from "./wall";
 
 /*
  * The craft pass (approved change): time as a material, the wall answering
- * the pointer, the tile becoming the open view, and the Timeheart. The app
+ * the pointer, the tile becoming the open view, and Scout it. The app
  * only; the reference has none of it. Motion is checked with reduced motion
  * off, and that it is gone with it on.
  */
@@ -62,15 +62,15 @@ test.describe("desktop", () => {
       await expect(page.locator("#rack .panel .cover > .art")).toHaveCSS("opacity", "1");
     });
 
-    test("a Timeheart beats once, fills, and says Kept", async ({ wall, page }) => {
+    test("a scout beats once, fills, and says Scouted", async ({ wall, page }) => {
       await wall.goto();
       /* nothing opens by itself (approved change, 2026-10-01): open the first spot */
       await wall.openTile(0);
       const heart = page.locator("#rack .panel [data-save]");
-      await expect(heart).toHaveText("Timeheart");
+      await expect(heart).toHaveText("Scout it");
       await heart.click();
       await expect(heart).toHaveAttribute("aria-pressed", "true");
-      await expect(heart).toHaveText("Kept");
+      await expect(heart).toHaveText("Scouted");
       await expect(heart).toHaveClass(/\bbeat\b/);
       await expect(page.locator("#rack .panel .live")).toHaveClass(/\bbeat\b/);
       await expect(page.locator("#rack .spot.open")).toHaveClass(/\bbeat\b/);
@@ -78,7 +78,7 @@ test.describe("desktop", () => {
       await expect(heart.locator(".th-fill")).toHaveCSS("opacity", "1");
       /* letting it go is quiet */
       await heart.click();
-      await expect(heart).toHaveText("Timeheart");
+      await expect(heart).toHaveText("Scout it");
       await expect(heart).not.toHaveClass(/\bbeat\b/);
     });
   });
@@ -92,7 +92,7 @@ test.describe("desktop", () => {
     await expect(page.locator("#rack .panel .cover")).toHaveCSS("animation-name", "none");
     const heart = page.locator("#rack .panel [data-save]");
     await heart.click();
-    await expect(heart).toHaveText("Kept");
+    await expect(heart).toHaveText("Scouted");
     await expect(heart).toHaveCSS("animation-name", "none");
   });
 
@@ -149,13 +149,13 @@ test.describe("desktop", () => {
 test.describe("phone", () => {
   test.use({ viewport: { width: phone.width, height: phone.height }, viewportSpec: phone, hasTouch: true });
 
-  test("the Timeheart in the overlay: Kept, and the Finds badge counts it", async ({ wall, page }) => {
+  test("Scout it in the overlay: Scouted, and the Finds badge counts it", async ({ wall, page }) => {
     await wall.goto();
     await wall.openTile(1);
     const heart = page.locator("#dsheet [data-save]");
     await heart.click();
-    await expect(heart).toHaveText("Kept");
+    await expect(heart).toHaveText("Scouted");
     await expect(page.locator("#tbN")).toHaveText("1");
-    await expect(page.locator("#toast")).toHaveText("Kept in your Scouts.");
+    await expect(page.locator("#toast")).toHaveText("Scouted. It's in your Scouts.");
   });
 });

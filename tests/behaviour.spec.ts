@@ -104,7 +104,7 @@ test.describe("phone: the tile comes forward as a sheet (§7)", () => {
     const save = page.locator("#dsheet [data-save]");
     await save.click();
     await expect(save).toHaveAttribute("aria-pressed", "true");
-    await expect(save).toHaveText(wall.isReference ? "Saved" : "Kept");
+    await expect(save).toHaveText(wall.isReference ? "Saved" : "Scouted");
     await expect(save).toHaveClass(/\bpop\b/);
     await expect(page.locator("#tbN")).toBeVisible();
     await expect(page.locator("#tbN")).toHaveText("1");
@@ -257,12 +257,12 @@ test.describe("desktop: a tile opens inline under its row (§6)", () => {
     const save = page.locator("#rack .panel [data-save]");
     await save.click();
     await expect(save).toHaveAttribute("aria-pressed", "true");
-    await expect(save).toHaveText(wall.isReference ? "Saved" : "Kept");
+    await expect(save).toHaveText(wall.isReference ? "Saved" : "Scouted");
     await expect(page.locator("#card .msp")).toHaveCount(1);
     await expect(page.locator("#card .msp")).toHaveClass(/\blanded\b/);
     await expect(saves).toHaveText(String(before + 1));
     await save.click();
-    await expect(save).toHaveText(wall.isReference ? "Save" : "Timeheart");
+    await expect(save).toHaveText(wall.isReference ? "Save" : "Scout it");
     await expect(saves).toHaveText(String(before));
   });
 });
@@ -842,7 +842,7 @@ for (const ph of PHONES) {
 
     test("an open spot's buttons are thumb-sized", async ({ wall, page }) => {
       appOnly("approved change: mobile audit");
-      /* the Scout line after a Timeheart included (docs/scout.md) */
+      /* the Scout line after a scout included (docs/scout.md) */
       await wall.goto();
       await wall.openTile(0);
       await wall.openView.locator("[data-save]").click();
@@ -855,7 +855,7 @@ for (const ph of PHONES) {
       expect(small).toEqual([]);
     });
 
-    test("an open spot's Timeheart is in reach without scrolling, and settles at the end", async ({ wall, page }) => {
+    test("an open spot's Scout it is in reach without scrolling, and settles at the end", async ({ wall, page }) => {
       appOnly("approved change: the open spot's actions stay in reach on phones");
       await wall.goto();
       await wall.openTile(0);
@@ -867,7 +867,7 @@ for (const ph of PHONES) {
           const links = document.querySelector("#dsheet .links")!.getBoundingClientRect();
           return { sheet: sheet.bottom, top: Math.min(...row.map((r) => r.top)), bottom: Math.max(...row.map((r) => r.bottom)), oneRow: new Set(row.map((r) => Math.round(r.top))).size === 1, links: links.bottom, vh: innerHeight };
         });
-      /* on open: Share, Timeheart and Next spot in one row, inside the overlay and on screen */
+      /* on open: Share, Scout it and Next spot in one row, inside the overlay and on screen */
       let b = await bar();
       expect(b.oneRow).toBe(true);
       expect(b.bottom).toBeLessThanOrEqual(Math.min(b.sheet, b.vh));
@@ -877,7 +877,7 @@ for (const ph of PHONES) {
       await page.waitForTimeout(200);
       b = await bar();
       expect(b.top).toBeGreaterThanOrEqual(b.links);
-      /* a Timeheart from the row works as before */
+      /* a scout from the row works as before */
       await sheet(page).locator("[data-save]").click();
       await expect(sheet(page).locator("[data-save]")).toHaveAttribute("aria-pressed", "true");
     });

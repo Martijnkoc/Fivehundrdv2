@@ -10,10 +10,10 @@ export const POST = measured("/api/events", async (req: Request) => {
   if (!hasDatabase()) return new Response(null, { status: 204 });
   /* crawlers and link previewers don't count (they'd skew the counts and Hotspots) */
   if (isBot(req.headers.get("user-agent"))) return new Response(null, { status: 204 });
-  const b = (await req.json().catch(() => ({}))) as { story?: string; kind?: string; visitor?: string };
+  const b = (await req.json().catch(() => ({}))) as { story?: string; kind?: string; visitor?: string; link?: unknown };
   if (!b.story || !isUuid(b.story) || !b.kind || !KINDS.has(b.kind) || !b.visitor || !isVisitor(b.visitor))
     return json({ error: "bad request" }, { status: 400 });
-  /* Scout: a signed-in Timeheart is the account's call (only saves carry the account) */
+  /* Scout: a signed-in Scout it is the account's call (only saves carry the account) */
   const user = b.kind === "save" || b.kind === "unsave" ? await userFrom(req) : null;
   try {
     const counted = await rpc<boolean>("record_event", {
@@ -21,6 +21,8 @@ export const POST = measured("/api/events", async (req: Request) => {
       p_kind: b.kind,
       p_visitor: b.visitor,
       p_ip_hash: ipHash(req),
+      /* which of the story's links (the database keeps it only when it is one of them) */
+      ...(b.kind === "link_click" && typeof b.link === "string" && b.link.length <= 500 && { p_link: b.link }),
       /* only when signed in: without it the call matches the database before Scout as well */
       ...(user && { p_user: user }),
     });

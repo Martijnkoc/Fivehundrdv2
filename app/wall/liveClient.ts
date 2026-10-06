@@ -62,9 +62,10 @@ export function addMine(id: string) {
 }
 
 export type EventKind = "open" | "save" | "unsave" | "link_click" | "share" | "entry";
-/** `token`: a signed-in visitor's access token, so a Timeheart is the account's Scout call. */
-export function sendEvent(story: string, kind: EventKind, token?: string | null) {
-  const body = JSON.stringify({ story, kind, visitor: visitorId() });
+/** `token`: a signed-in visitor's access token, so a scout is the account's Scout call. */
+/** `link`: for a link click, the address of the maker's link that was clicked (clicks per link). */
+export function sendEvent(story: string, kind: EventKind, token?: string | null, link?: string) {
+  const body = JSON.stringify({ story, kind, visitor: visitorId(), ...(link && { link }) });
   if (token) {
     fetch("/api/events", { method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` }, body, keepalive: true }).catch(() => {});
     return;
@@ -218,10 +219,12 @@ async function humanToken(): Promise<string | undefined> {
 /** Uploads the draft's files, holds the spot and sends the maker to Stripe. Returns an error message on failure. */
 export async function checkout(draft: Draft): Promise<string | null> {
   try {
-    const [artwork, logo, audio] = await Promise.all([
+    const shows = draft.lane === "art" || draft.lane === "games";
+    const [artwork, logo, audio, ...gallery] = await Promise.all([
       upload("art", draft.img),
       upload("art", draft.logo),
       draft.lane === "music" || draft.lane === "podcasts" ? upload("audio", draft.audio) : null,
+      ...(shows ? (draft.gallery ?? []).slice(0, 2).map((g) => upload("art", g)) : []),
     ]);
     const reads = draft.lane === "writers" || draft.lane === "letters";
     const human = await humanToken();
@@ -241,6 +244,10 @@ export async function checkout(draft: Draft): Promise<string | null> {
         excerptTitle: reads ? draft.excerpt?.t : "",
         excerpt: reads ? draft.excerpt?.x : "",
         trailerUrl: draft.trailer?.url ?? "",
+        audioTitle: draft.audioTitle ?? "",
+        milestone: draft.milestone?.t ?? "",
+        milestoneOn: draft.milestone?.on ?? "",
+        gallery: gallery.filter(Boolean),
         seed: draft.seed,
         pal: Math.max(0, PAL.findIndex((p) => p.join() === draft.pal.join())),
         visitor: visitorId(),
@@ -254,6 +261,36 @@ export async function checkout(draft: Draft): Promise<string | null> {
     return null;
   } catch (e) {
     return (e as Error).message || "Something went wrong. Try again.";
+  }
+}
+
+/** Fix it in the first hour: the live spot's new words and links (maker_edit). Returns an error message, or null. */
+export async function editSpot(id: string, draft: Draft): Promise<string | null> {
+  try {
+    const token = await authToken();
+    const reads = draft.lane === "writers" || draft.lane === "letters";
+    const r = await fetch("/api/mine/edit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(token && { Authorization: `Bearer ${token}` }) },
+      body: JSON.stringify({
+        id,
+        lane: draft.lane,
+        visitor: visitorId(),
+        name: draft.name,
+        snippet: draft.snippet,
+        links: draft.links.map((l) => l.url),
+        excerptTitle: reads ? draft.excerpt?.t : "",
+        excerpt: reads ? draft.excerpt?.x : "",
+        trailerUrl: draft.trailer?.url ?? "",
+        audioTitle: draft.audioTitle ?? "",
+        milestone: draft.milestone?.t ?? "",
+        milestoneOn: draft.milestone?.on ?? "",
+      }),
+    });
+    const out = (await r.json().catch(() => ({}))) as { left?: number; error?: string };
+    return r.ok ? null : out.error || "Something went wrong. Try again.";
+  } catch {
+    return "Something went wrong. Try again.";
   }
 }
 
@@ -285,7 +322,7 @@ export async function signIn(via: string, remind: boolean): Promise<string | nul
     localStorage.setItem(SIGNING_IN, String(Date.now()));
   } catch {}
   const auth = (await supabase()).auth;
-  /* back to the spot you were on (Scout: the Timeheart that led here) */
+  /* back to the spot you were on (Scout: the scout that led here) */
   const back = location.origin + (location.pathname.startsWith("/s/") ? location.pathname : "/");
   if (via === "Google" || via === "Apple") {
     const id = via.toLowerCase() as "google" | "apple";
@@ -381,7 +418,7 @@ async function scoutFetch<T>(path: string, body?: unknown): Promise<T | null> {
   }
 }
 
-/** This browser's history joins the account; `story`: the Timeheart that led to signing in. */
+/** This browser's history joins the account; `story`: the scout that led to signing in. */
 export const scoutAttach = (story?: string) => scoutFetch<{ migrated: number; counted: number }>("/api/scout/attach", { visitor: visitorId(), story });
 export const scoutMe = () => scoutFetch<ScoutMe>("/api/scout/me");
 /** Shares the Scout Card (or stops); the link's slug, null when off. */

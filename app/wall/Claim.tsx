@@ -17,8 +17,12 @@ import { GenArt, LaneIcon, SpotTile, cssVars } from "./Tile";
 /* Whitespace text nodes as in the reference's openClaim/showDone templates. */
 const ws = (indent: number) => "\n" + " ".repeat(indent);
 
-/** `prefill`: an ended story of this maker's, put on again (lib/wall/again.ts) */
-export type ClaimStart = { no: number; lane: LaneId; seed: number; pal: Palette; prefill?: Prefill };
+/**
+ * `prefill`: an ended story of this maker's, put on again (lib/wall/again.ts).
+ * `edit`: the maker's own live spot, fixed in its first hour: the same form,
+ * words and links only (its files, lane and number stay).
+ */
+export type ClaimStart = { no: number; lane: LaneId; seed: number; pal: Palette; prefill?: Prefill; edit?: { id: string } };
 export type Draft = {
   no: number;
   lane: LaneId;
@@ -30,6 +34,10 @@ export type Draft = {
   audio?: string | null;
   excerpt?: { t: string; x: string } | null;
   trailer?: { url: string; len: string } | null;
+  audioTitle?: string;
+  milestone?: { t: string; on?: string };
+  /** Art, Games: up to two more images (data URLs until uploaded) */
+  gallery?: string[];
   seed: number;
   pal: Palette;
 };
@@ -51,6 +59,11 @@ function ClaimForm({ start }: { start: ClaimStart }) {
   const [exT, setExT] = useState(p?.exT ?? "");
   const [ex, setEx] = useState(p?.ex ?? "");
   const [trailer, setTrailer] = useState(p?.trailer ?? "");
+  const [audioTitle, setAudioTitle] = useState(p?.audioTitle ?? "");
+  const [mileT, setMileT] = useState(p?.milestone ?? "");
+  const [mileOn, setMileOn] = useState(p?.milestoneOn ?? "");
+  const [gallery, setGallery] = useState<string[]>(p?.gallery ?? []);
+  const editing = !!start.edit;
   const [err, setErr] = useState("");
   const [placing, setPlacing] = useState(false);
   const nameRef = useRef<HTMLInputElement>(null);
@@ -60,8 +73,8 @@ function ClaimForm({ start }: { start: ClaimStart }) {
     return w ? Math.round(w * 100) / 100 : 180;
   });
   const linkRef = useRef<HTMLInputElement>(null);
-  /* phones: the same form, one small step at a time (approved change) */
-  const [stepped] = useState(() => matchMedia("(max-width:699px)").matches);
+  /* phones: the same form, one small step at a time (approved change); a fix is one short page */
+  const [stepped] = useState(() => !editing && matchMedia("(max-width:699px)").matches);
   const [step, setStep] = useState(0);
 
   useEffect(() => {
@@ -74,7 +87,7 @@ function ClaimForm({ start }: { start: ClaimStart }) {
   const prevRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (playingIn(prevRef.current)) stopAudio();
-  }, [no, lane, name, snip, links, img, logo, audio, exT, ex, trailer]);
+  }, [no, lane, name, snip, links, img, logo, audio, exT, ex, trailer, audioTitle]);
 
   const parsedLinks = links.map(parseLink).filter((l): l is Link => !!l);
   const t = parseLink(trailer);
@@ -89,6 +102,9 @@ function ClaimForm({ start }: { start: ClaimStart }) {
     audio,
     excerpt: exT || ex ? { t: exT.trim(), x: ex.trim() } : null,
     trailer: t ? { url: t.url, len: "" } : null,
+    ...((lane === "music" || lane === "podcasts") && audioTitle.trim() && { audioTitle: audioTitle.trim() }),
+    ...(mileT.trim() && { milestone: { t: mileT.trim(), ...(mileOn && { on: mileOn }) } }),
+    ...((lane === "art" || lane === "games") && gallery.length && { gallery }),
     seed: start.seed,
     pal: start.pal,
   };
@@ -120,9 +136,9 @@ function ClaimForm({ start }: { start: ClaimStart }) {
     }
     place();
   };
-  /** Places the story (demo) or starts paying for it (live). */
+  /** Places the story (demo) or starts paying for it (live); a fix saves the new words. */
   const place = () => {
-    const problem = bridge.actions.placeClaim(draft);
+    const problem = start.edit ? bridge.actions.saveEdit(start.edit.id, draft) : bridge.actions.placeClaim(draft);
     if (problem instanceof Promise) {
       setErr("");
       setPlacing(true);
@@ -157,6 +173,16 @@ function ClaimForm({ start }: { start: ClaimStart }) {
       setErr("That file couldn't be read. Try a JPG or PNG.");
     }
   };
+  const onMore = async (files?: FileList | null) => {
+    if (!files?.length) return;
+    try {
+      const add = await Promise.all([...files].slice(0, 2 - gallery.length).map((f) => shrink(f)));
+      setGallery([...gallery, ...add].slice(0, 2));
+      setErr("");
+    } catch {
+      setErr("That file couldn't be read. Try a JPG or PNG.");
+    }
+  };
   const onAudio = async (f?: File) => {
     if (!f) return;
     if (f.size > 4e6) {
@@ -167,9 +193,77 @@ function ClaimForm({ start }: { start: ClaimStart }) {
     setErr("");
   };
 
+  /* approved change (2026-10-05): what the clip is from */
+  const audioLine = (
+    <div className="f">
+      <label htmlFor="fAudioT">
+        {`${lane === "music" ? "What's the preview from?" : "Which episode?"} `}
+        <span className="hint">(optional)</span>
+      </label>
+      <input
+        type="text"
+        id="fAudioT"
+        maxLength={60}
+        placeholder={lane === "music" ? "Night Bus EP" : "Ep. 12: The long way home"}
+        autoComplete="off"
+        value={audioTitle}
+        onChange={(e) => setAudioTitle(e.target.value)}
+      />
+    </div>
+  );
+  /* approved change (2026-10-05): up to two more images for Art and Games */
+  const moreImages = (
+    <div className="f">
+      <span className="lbl">
+        {"More images "}
+        <span className="hint">(optional, up to 2)</span>
+      </span>
+      <div className="more-imgs">
+        {gallery.map((g, i) => (
+          <span key={i} className="mi">
+            <img src={g} alt={`Image ${i + 2}`} />
+            <button type="button" aria-label={`Remove image ${i + 2}`} onClick={() => setGallery(gallery.filter((_, j) => j !== i))}>
+              &times;
+            </button>
+          </span>
+        ))}
+        {gallery.length < 2 && (
+          <span className="mi mi-add">
+            <input type="file" id="fMore" accept="image/*" multiple aria-label="Add an image" onChange={(e) => onMore(e.target.files)} />
+            <span aria-hidden="true">+</span>
+          </span>
+        )}
+      </div>
+      <span className="hint">Visitors flick through them when they open your spot.</span>
+    </div>
+  );
+  /* approved change (2026-10-05): something coming up, with its day */
+  const comingUp = (
+    <div className="f">
+      <label htmlFor="fMile">
+        {"Coming up "}
+        <span className="hint">(optional)</span>
+      </label>
+      <div className="mile-in">
+        <input
+          type="text"
+          id="fMile"
+          maxLength={48}
+          placeholder={lane === "games" ? "Demo out" : lane === "music" ? "Album out" : lane === "writers" ? "Book out" : "Launch"}
+          autoComplete="off"
+          value={mileT}
+          onChange={(e) => setMileT(e.target.value)}
+        />
+        <input type="date" id="fMileOn" aria-label="On which day (optional)" value={mileOn} min={new Date().toISOString().slice(0, 10)} onChange={(e) => setMileOn(e.target.value)} />
+      </div>
+      <span className="hint">A release, a show, a deadline. With a day, the spot counts down to it.</span>
+    </div>
+  );
+
   const extra =
     lane === "music" || lane === "podcasts" ? (
-      <div className="f">
+      <>
+      {!editing && (<div className="f">
         <span className="lbl">
           {`${lane === "music" ? "Song preview" : "Episode trailer"} `}
           <span className="hint">(optional)</span>
@@ -184,7 +278,10 @@ function ClaimForm({ start }: { start: ClaimStart }) {
             <span className="hint">A clip of up to 30 seconds, max 4 MB. Visitors hear it right on the wall.</span>
           </span>
         </label>
-      </div>
+      </div>)}
+      {/* once there's a clip to say something about */}
+      {audio && audioLine}
+      </>
     ) : lane === "writers" || lane === "letters" ? (
       <div className="f">
         <label htmlFor="fEx">
@@ -226,12 +323,18 @@ function ClaimForm({ start }: { start: ClaimStart }) {
         <span className="hint">A play button appears on your artwork and opens the video.</span>
       </div>
     );
+  const extras = (
+    <>
+      {extra}
+      {(lane === "art" || lane === "games") && !editing && moreImages}
+    </>
+  );
 
   if (stepped)
     return (
       <Steps
         {...{ step, setStep, no, setNo, lane, setLane, name, setName, snip, setSnip, links, setLinks, img, logo, audio, exT, ex, trailer, err, setErr, placing }}
-        {...{ onArt, onLogo, onAudio, extra, preview, draft, place, tileWidth, nameRef, linkRef, prevRef }}
+        {...{ onArt, onLogo, onAudio, extra, audioLine, moreImages, comingUp, gallery, preview, draft, place, tileWidth, nameRef, linkRef, prevRef }}
       />
     );
 
@@ -242,8 +345,11 @@ function ClaimForm({ start }: { start: ClaimStart }) {
       </button>
       {ws(2)}
       {/* craft pass: the mental model is putting something on the wall */}
-      <h2 id="claimH">{CREATE.head}</h2>
+      <h2 id="claimH">{editing ? CREATE.editHead : CREATE.head}</h2>
       {ws(2)}
+      {editing ? (
+        <p className="sub">{CREATE.editSub}</p>
+      ) : (
       <p className="sub">
         {"Spot "}
         <b id="claimNo">{pad(no)}</b>
@@ -260,8 +366,9 @@ function ClaimForm({ start }: { start: ClaimStart }) {
           Pick another number
         </button>
       </p>
+      )}
       {ws(2)}
-      <p className="promise">{`${CREATE.body} ${CREATE.fair}`}</p>
+      {!editing && <p className="promise">{`${CREATE.body} ${CREATE.fair}`}</p>}
       {ws(2)}
       <div className="claim-grid">
         {ws(3)}
@@ -282,6 +389,7 @@ function ClaimForm({ start }: { start: ClaimStart }) {
             />
           </div>
           {ws(4)}
+          {!editing && (<>
           <div className="f">
             <span className="lbl">{F.lane[0]}</span>
             <span className="hint">{F.lane[1]}</span>
@@ -330,8 +438,9 @@ function ClaimForm({ start }: { start: ClaimStart }) {
               </span>
             </label>
           </div>
+          </>)}
           {ws(4)}
-          <div id="fExtra">{extra}</div>
+          <div id="fExtra">{extras}</div>
           {ws(4)}
           <div className="f">
             <span className="lbl">{F.links[0]}</span>
@@ -364,17 +473,18 @@ function ClaimForm({ start }: { start: ClaimStart }) {
             />
             <span className="hint" id="fCount">{`${140 - snip.length} left`}</span>
           </div>
+          {comingUp}
           {ws(4)}
           <p className="err" id="fErr" role="alert">
             {err}
           </p>
           {ws(4)}
           <button className="pay" id="fPay" type="submit" disabled={placing}>
-            {placing ? CREATE.placing : CREATE.place}
+            {editing ? (placing ? CREATE.saving : CREATE.save) : placing ? CREATE.placing : CREATE.place}
           </button>
           {ws(4)}
           <p className="fine">
-            {document.documentElement.dataset.live === "1" ? CREATE.fine : "Prototype. No payment is taken."}
+            {editing ? CREATE.editFine : document.documentElement.dataset.live === "1" ? CREATE.fine : "Prototype. No payment is taken."}
           </p>
           {ws(3)}
         </form>
@@ -425,6 +535,10 @@ type StepsProps = {
   onLogo: (f?: File) => void;
   onAudio: (f?: File) => void;
   extra: React.ReactNode;
+  audioLine: React.ReactNode;
+  moreImages: React.ReactNode;
+  comingUp: React.ReactNode;
+  gallery: string[];
   preview: FilledSpot;
   draft: Draft;
   place: () => void;
@@ -544,6 +658,7 @@ function Steps(p: StepsProps) {
         <input type="file" accept="image/*" onChange={(e) => p.onLogo(e.target.files?.[0])} />
         <span>{p.logo ? "Logo added. Change it" : "Add a logo (optional)"}</span>
       </label>
+      {(lane === "art" || lane === "games") && p.moreImages}
     </>,
     /* 3. name */
     <>
@@ -574,6 +689,8 @@ function Steps(p: StepsProps) {
       ) : (
         p.extra
       )}
+      {(lane === "music" || lane === "podcasts") && p.audio && p.audioLine}
+      {p.comingUp}
     </>,
     /* 5. links */
     <>

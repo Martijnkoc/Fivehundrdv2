@@ -67,7 +67,7 @@ function Proof() {
 /**
  * The first screen (docs/copy.md): what this is in one line, what's here,
  * today's real numbers, and the loop in three steps. Only for
- * a first visit: once a visitor has given a Timeheart or signed in, the
+ * a first visit: once a visitor has scouted something or signed in, the
  * wall starts right under the header. Whether to show it is decided before the
  * first paint (the script in WallPage), so nothing jumps.
  */
@@ -104,5 +104,5 @@ export function Hero() {
   );
 }
 
-/** Before the first paint: someone who has given a Timeheart (fh-intro) or signed in (fh-account) gets the wall straight away. */
+/** Before the first paint: someone who has scouted something (fh-intro) or signed in (fh-account) gets the wall straight away. */
 export const heroGate = `try{if(localStorage.getItem("fh-intro")||localStorage.getItem("fh-account"))document.documentElement.classList.add("fh-back")}catch(e){}`;

@@ -1,0 +1,63 @@
+
+/*
+ * The maker's tools (approved 2026-10-05).
+ *
+ * In an open spot: what's coming up, in the lime of the "Just arrived"
+ * stamp, with its day in the quiet ink; and for Art and Games, small squares
+ * top left that switch the big image (the phone sheet's close button keeps
+ * the top right, the trailer's length the bottom right, the stamp the
+ * bottom left).
+ */
+.mile{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 9px;margin:0;font-size:13px;line-height:1.3}
+.mile b{background:var(--lime);color:#0d0d0d;font-weight:800;padding:4px 8px;border-radius:2px;transform:rotate(-1deg)}
+.mile span{color:var(--ink2);font-weight:700}
+.art .gal{position:absolute;z-index:3;top:12px;left:12px;display:flex;gap:8px}
+.art .gal-i{all:unset;box-sizing:border-box;cursor:pointer;display:block;width:42px;height:42px;border-radius:3px;overflow:hidden;
+  box-shadow:0 0 0 2px rgba(255,255,255,.9),0 2px 8px rgba(0,0,0,.25);opacity:.82;transition:opacity .15s,transform .15s;touch-action:manipulation}
+.art .gal-i:hover{opacity:1}
+.art .gal-i[aria-pressed=true]{opacity:1;box-shadow:0 0 0 2px #fff,0 0 0 4px #141210,0 2px 8px rgba(0,0,0,.25)}
+.art .gal-i:focus-visible{outline:2px solid #ff7bc3;outline-offset:3px}
+.art .gal-i img,.art .gal-i svg{width:100%;height:100%;object-fit:cover}
+@media (max-width:699px){.art .gal-i{width:44px;height:44px}}
+
+/*
+ * The Create form's new parts: "Coming up" with its day beside it, and up
+ * to two more images as small squares with a remove cross. Editing uses the
+ * same form, words and links only.
+ */
+.mile-in{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.mile-in input[type=date]{border:1px solid var(--line);background:var(--paper);border-radius:6px;padding:10px 10px;font-size:16px;font-family:inherit;color:inherit;min-width:0}
+.mile-in input[type=date]:focus{outline:2px solid var(--ink);outline-offset:-1px}
+@media (max-width:420px){.mile-in{grid-template-columns:minmax(0,1fr)}}
+.more-imgs{display:flex;gap:8px;flex-wrap:wrap}
+.more-imgs .mi{position:relative;display:grid;place-items:center;width:64px;height:64px;border-radius:6px;overflow:hidden;background:var(--aged)}
+.more-imgs .mi img{width:100%;height:100%;object-fit:cover;display:block}
+.more-imgs .mi button{all:unset;box-sizing:border-box;cursor:pointer;position:absolute;top:3px;right:3px;width:22px;height:22px;border-radius:50%;
+  display:grid;place-items:center;background:#141210;color:#fff;font-size:15px;font-weight:700;line-height:1}
+.more-imgs .mi button:focus-visible{outline:2px solid #ff7bc3;outline-offset:1px}
+.more-imgs .mi-add{cursor:pointer;border:1.5px dashed var(--line);background:var(--paper);font-size:24px;font-weight:700;color:var(--ink2)}
+.more-imgs .mi-add:hover{border-color:var(--ink);color:var(--ink)}
+.more-imgs .mi-add input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.more-imgs .mi-add:focus-within{outline:2px solid var(--ink);outline-offset:1px}
+
+/*
+ * "Your story": which link people went to, under the numbers; "Fix a typo
+ * or link" in its first hour and "Share my card" (every size, the 9:16 story
+ * one included), as the same black pills, side by side.
+ */
+.lc-row.mine .mine-links{grid-column:1/3;margin-top:3px;font-size:11.5px;font-weight:700;line-height:1.35;color:rgba(20,18,16,.68);white-space:normal}
+.mine-acts{display:flex;flex-wrap:wrap;gap:6px;margin:-2px 0 10px}
+.mine-acts .mine-again{margin-top:0}
+.mine-acts+.mine-extend{margin-top:-4px}
+
+/*
+ * After its 72 hours: the report, its numbers as small stamps, then what
+ * they mean in words (a Hotspot, next to its lane), then per link.
+ */
+.lc-row.ended .rep{grid-column:1/3;display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.lc-row.ended .rep-n{display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:6px;margin:0}
+.lc-row.ended .rep-n div{background:rgba(255,255,255,.42);border-radius:3px;padding:6px 8px;min-width:0}
+.lc-row.ended .rep-n dt{font-size:10.5px;font-weight:700;line-height:1.2;color:rgba(20,18,16,.68);white-space:normal}
+.lc-row.ended .rep-n dd{margin:1px 0 0;font-size:17px;font-weight:900;letter-spacing:-.02em;color:#141210}
+.lc-row.ended .rep-l{font-family:"Fraunces",Georgia,serif;font-style:italic;font-weight:500;font-size:12.5px;line-height:1.35;color:rgba(20,18,16,.8)}
+.lc-row.ended .rep .mine-links{margin-top:0}

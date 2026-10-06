@@ -17,7 +17,12 @@ export const GET = measured("/api/wall", async (req: Request) => {
     const hot = await hotRead;
     return Response.json(
       { ...feed, hot },
-      { headers: { "Cache-Control": wanted ? "private, no-store" : "public, s-maxage=15, stale-while-revalidate=45" } },
+      {
+        headers: wanted
+          ? { "Cache-Control": "private, no-store" }
+          : /* the edge keeps it briefly; a browser never serves an old one (stale-while-revalidate there showed a reload a wall from before) */
+            { "Cache-Control": "public, max-age=0, must-revalidate", "Vercel-CDN-Cache-Control": "public, s-maxage=15, stale-while-revalidate=45" },
+      },
     );
   } catch {
     return json({ error: "unavailable" }, { status: 502 });

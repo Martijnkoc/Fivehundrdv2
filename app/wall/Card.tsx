@@ -5,10 +5,10 @@ import { FREE, KEEP_ON, LANE, TOTAL, numOf, pad, type FilledSpot, type Spot } fr
 import { provenance, type FindStatus, type Finds } from "../../lib/wall/retention";
 import { callLine, statusLine, tierUp, TIER_NAME, type ScoutCall, type ScoutMe } from "../../lib/wall/scout";
 import { numbersLine, type MakerNumbers } from "../../lib/site/reminderEmail";
-import type { EndedStory } from "../../lib/wall/again";
+import { standingLine, type EndedStory } from "../../lib/wall/again";
 import { MAKER, SCOUT, SCOUTS, WALL_TODAY } from "../../lib/site/copy";
 import { foundOrder, savesOrder, skey, type OrderedSave, type SaveEntry } from "../../lib/wall/saves";
-import { left, short, styleFor } from "../../lib/wall/time";
+import { age, left, short, styleFor } from "../../lib/wall/time";
 import { bridge, wallStore } from "./store";
 import { GenArt, cssVars } from "./Tile";
 
@@ -20,8 +20,8 @@ export type CardData = {
   account: Account | null;
   /** phones and tablets: the card is the Finds tab */
   finds?: boolean;
-  /** "Your story": the maker's own numbers, by story id (live wall; people, without the maker) */
-  makers?: Record<string, MakerNumbers>;
+  /** "Your story": the maker's own numbers, by story id (live wall; people, without the maker); `edits`: changes made */
+  makers?: Record<string, MakerNumbers & { edits?: number }>;
   /** "Your story" after its 72 hours: the newest ended story, with its final numbers (live wall) */
   ended?: EndedStory | null;
   /** live wall: open spots across every lane (the rack shows only some of them) */
@@ -49,6 +49,57 @@ const initials = (name: string) =>
     .toUpperCase();
 
 
+/**
+ * Approved change (2026-10-05): which of the maker's links people went to,
+ * in people, when there's more than one link and someone went.
+ */
+function PerLink({ links, counts }: { links: { label: string; url: string }[]; counts?: number[] }) {
+  if (!counts || links.length < 2 || !counts.some((n) => n > 0)) return null;
+  return (
+    <small className="mine-links">
+      {`Per link: ${links.map((l, i) => `${l.label} ${(counts[i] ?? 0).toLocaleString("en-US")}`).join(" · ")}`}
+    </small>
+  );
+}
+
+/**
+ * Approved change (2026-10-05): after its 72 hours, how the spot did: its
+ * numbers in people, per link, and next to its lane in words (only with
+ * enough spots to compare; lib/wall/again.ts, standingLine).
+ */
+function Report({ e }: { e: EndedStory }) {
+  const n = (v: number) => v.toLocaleString("en-US");
+  const m = e.stats;
+  const stats = (
+    [
+      ["Saw it", m.seen],
+      ["Opened it", m.opened],
+      ["Scouted it", m.kept],
+      ["To your links", m.clicked],
+      ["Shared it", m.shared],
+    ] as const
+  ).filter(([, v]) => v > 0);
+  const standing = standingLine(e.standing, LANE[e.lane]);
+  if (!stats.length && !m.hotAt) return <small className="mine-nums">{MAKER.endedEmpty}</small>;
+  return (
+    <div className="rep">
+      {stats.length > 0 && (
+        <dl className="rep-n">
+          {stats.map(([k, v]) => (
+            <div key={k}>
+              <dt>{k}</dt>
+              <dd>{n(v)}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
+      {m.hotAt && <small className="rep-l">{MAKER.wasHot}</small>}
+      {standing && <small className="rep-l">{standing}</small>}
+      <PerLink links={e.links} counts={m.links} />
+    </div>
+  );
+}
+
 /** One save: a small square in the wall tile's visual language (§11). */
 /**
  * Approved change: under "Your story", how the maker's own spot is doing,
@@ -60,7 +111,7 @@ function MakerLine({ nums, final }: { nums: MakerNumbers; final?: boolean }) {
     nums.hotAt && "Hotspot",
     nums.seen > 0 && `${n(nums.seen)} saw it`,
     nums.opened > 0 && `${n(nums.opened)} opened`,
-    nums.kept > 0 && `${n(nums.kept)} ${nums.kept === 1 ? "Timeheart" : "Timehearts"}`,
+    nums.kept > 0 && `${n(nums.kept)} scouted it`,
     nums.clicked > 0 && `${n(nums.clicked)} to your links`,
     nums.shared > 0 && `${n(nums.shared)} shared`,
   ].filter(Boolean) as string[];
@@ -312,7 +363,7 @@ function ScoutCard({ card }: { card: CardData }) {
         <div className="sc-best">
           <span>{SCOUT.strongest}</span>
           <b>{best.name}</b>
-          <em>{`Found #${best.position} · ${(best.finalKeepers ?? best.keepersNow).toLocaleString("en-US")} kept it${best.breakout === "hotspot" ? " · a Hotspot" : ""}`}</em>
+          <em>{`Found #${best.position} · ${(best.finalKeepers ?? best.keepersNow).toLocaleString("en-US")} scouted it${best.breakout === "hotspot" ? " · a Hotspot" : ""}`}</em>
           <button type="button" className="sc-link" data-share-call={best.id}>
             {SCOUT.shareCall}
           </button>
@@ -341,7 +392,7 @@ function WallToday({ today }: { today?: CardData["today"] }) {
   if (!today) return null;
   const lines = [
     today.fresh > 0 && `${today.fresh} new ${today.fresh === 1 ? "spot" : "spots"} since your last visit`,
-    today.moving > 0 && `${today.moving} of your Scouts gained Timehearts while you were away`,
+    today.moving > 0 && `${today.moving} of your Scouts gained new Scouts while you were away`,
     today.ending > 0 && `${today.ending} of your Scouts ${today.ending === 1 ? "ends" : "end"} within 6 hours`,
   ].filter(Boolean) as string[];
   if (!lines.length) return null;
@@ -366,6 +417,9 @@ function CardBody({ card, wall }: { card: CardData; wall: Spot[] }) {
   const mine = live.filter((s) => s.mine).sort((a, b) => b.start - a.start)[0];
   const day = new Date().toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "long" });
   const tier = card.account && card.scout && ["gold", "silver", "bronze"].includes(card.scout.status) ? card.scout.status : null;
+  const mineNums = mine?.id ? card.makers?.[mine.id] : undefined;
+  /* fix it in the first hour (live wall, the maker's own numbers known), at most 10 changes */
+  const fixLeft = mine && mineNums ? 3600e3 - age(mine) : 0;
   return (
     <>
       <button
@@ -388,9 +442,22 @@ function CardBody({ card, wall }: { card: CardData; wall: Spot[] }) {
               <b>{`No. ${pad(numOf(mine))} ${mine.name}`}</b>
               <em>{`${short(left(mine))} left`}</em>
               <MakerLine
-                nums={(mine.id && card.makers?.[mine.id]) || { seen: 0, opened: mine.opens ?? 0, kept: mine.saves ?? 0, clicked: 0, shared: 0, hotAt: null }}
+                nums={mineNums || { seen: 0, opened: mine.opens ?? 0, kept: mine.saves ?? 0, clicked: 0, shared: 0, hotAt: null }}
               />
+              <PerLink links={mine.links} counts={mineNums?.links} />
             </button>
+            {mine.id && card.makers && (
+              <div className="mine-acts">
+                {fixLeft > 0 && (mineNums?.edits ?? 0) < 10 && (
+                  <button type="button" className="mine-again mine-fix" data-edit={mine.id}>
+                    {MAKER.fix(Math.max(1, Math.ceil(fixLeft / 60e3)))}
+                  </button>
+                )}
+                <button type="button" className="mine-again mine-share" data-share-mine={mine.id}>
+                  {MAKER.share}
+                </button>
+              </div>
+            )}
             {/* its last 24 hours: the same number for 72 more (free spots; paid renewal comes with Stripe) */}
             {FREE && mine.id && left(mine) > 0 && left(mine) <= KEEP_ON && (
               <button type="button" className="mine-again mine-extend" data-extend={mine.id}>
@@ -405,7 +472,7 @@ function CardBody({ card, wall }: { card: CardData; wall: Spot[] }) {
             <span>Your story</span>
             <b>{`No. ${pad(card.ended.no)} ${card.ended.name}`}</b>
             <em>{MAKER.ended}</em>
-            <MakerLine nums={card.ended.stats} final />
+            <Report e={card.ended} />
             <button type="button" className="mine-again" data-again={card.ended.id}>
               {MAKER.again}
             </button>

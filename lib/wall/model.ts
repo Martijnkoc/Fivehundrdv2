@@ -73,6 +73,14 @@ export type FilledSpot = {
   audio?: string | null;
   excerpt?: Excerpt | null;
   trailer?: { url: string; len: string } | null;
+  /** Music, Podcasts: what the clip is from */
+  audioTitle?: string;
+  /** something coming up, with its day (YYYY-MM-DD) if there is one */
+  milestone?: { t: string; on?: string };
+  /** Art, Games: up to two more images, shown when the spot is open */
+  gallery?: string[];
+  /** its maker just fixed it here: until then a refresh (maybe older than the fix) doesn't undo it */
+  fixedUntil?: number;
 };
 export type VacantSpot = { no: number; vacant: true; num?: number; lane?: LaneId };
 export type Spot = FilledSpot | VacantSpot;

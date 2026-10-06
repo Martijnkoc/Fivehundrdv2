@@ -9,7 +9,7 @@ import { PGlite } from "@electric-sql/pglite";
  * the wall does goes through the same functions the app calls.
  */
 /* every migration but the platform one (pg_cron, Storage: Supabase only) */
-const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links", "20260926090600_founder_data", "20260926090700_indexable_stories", "20260927090000_hotspots", "20260927100000_retention", "20260927110000_call_rank", "20260927120000_hotspot_cfg", "20260927130000_reminders", "20260927140000_hotspot_not_own", "20260927150000_makers", "20260928090000_scout", "20260928095000_scout_unsave", "20260928100000_copy", "20260928110000_scout_flags_at", "20260928120000_scout_shared_ip", "20261001090000_report_new", "20261001100000_hotspot_per_ip", "20261002090000_maker_ended", "20261003090000_free_place", "20261003100000_free_place_lock", "20261003110000_maker_account", "20261003120000_fd_payments"];
+const MIGRATIONS = ["20260926090000_wall_v2_schema", "20260926090200_checkout_status_session", "20260926090300_sync_card", "20260926090400_moderation", "20260926090500_durable_links", "20260926090600_founder_data", "20260926090700_indexable_stories", "20260927090000_hotspots", "20260927100000_retention", "20260927110000_call_rank", "20260927120000_hotspot_cfg", "20260927130000_reminders", "20260927140000_hotspot_not_own", "20260927150000_makers", "20260928090000_scout", "20260928095000_scout_unsave", "20260928100000_copy", "20260928110000_scout_flags_at", "20260928120000_scout_shared_ip", "20261001090000_report_new", "20261001100000_hotspot_per_ip", "20261002090000_maker_ended", "20261003090000_free_place", "20261003100000_free_place_lock", "20261003110000_maker_account", "20261003120000_fd_payments", "20261005090000_maker_tools"];
 const schema = (
   await Promise.all(MIGRATIONS.map((m) => readFile(new URL(`../supabase/migrations/${m}.sql`, import.meta.url), "utf8")))
 ).join("\n");
@@ -1002,5 +1002,85 @@ describe("makers", () => {
     await age(s.id, "31 days");
     assert.deepEqual(await ended("maker-2", [s.id]), []);
     await rejects(one("select public.maker_ended('nope', 'x', '{}')"), /forbidden/);
+  });
+});
+
+describe("the maker's tools (2026-10-05)", () => {
+  const live = async (extra = {}) => {
+    const s = await reserve(story(extra));
+    await complete(s.id);
+    return s;
+  };
+  const fix = (id, visitor, patch, user = null) => one("select public.maker_edit($1, $2, $3, $4, $5) r", [KEY, id, visitor, user, JSON.stringify(patch)]);
+  const words = { name: "Lowtide Club", snippet: "Fixed line.", links: [{ label: "Bandcamp", url: "https://lowtide.bandcamp.com" }] };
+
+  test("placing keeps the audio line, coming up with its day, and more images (Art and Games only); the wall carries them only when set", async () => {
+    const a = await live({ no: 1, audioTitle: "Night Bus EP", milestone: "Album out", milestoneOn: "2026-12-01" });
+    const b = await live({ lane: "art", no: 2, gallery: ["pending/aaaaaaaaaaaaaaaa1.jpg", "pending/aaaaaaaaaaaaaaaa2.jpg"] });
+    const c = await live({ no: 3 });
+    const w = await wall();
+    const by = Object.fromEntries(w.stories.map((s) => [s.id, s]));
+    assert.deepEqual([by[a.id].audioTitle, by[a.id].milestone, by[a.id].milestoneOn], ["Night Bus EP", "Album out", "2026-12-01"]);
+    assert.deepEqual(by[b.id].gallery, ["pending/aaaaaaaaaaaaaaaa1.jpg", "pending/aaaaaaaaaaaaaaaa2.jpg"]);
+    assert.ok(!("gallery" in by[c.id]) && !("milestone" in by[c.id]) && !("audioTitle" in by[c.id]));
+    /* the database holds the same limits */
+    await rejects(reserve(story({ lane: "art", no: 4, audioTitle: "x" })), /audio_title_lane/);
+    await rejects(reserve(story({ no: 5, gallery: ["pending/aaaaaaaaaaaaaaaa1.jpg"] })), /gallery_lane/);
+    /* the daily clean-up keeps the extra images */
+    const kept = (await one("select public.media_in_use($1, $2) r", [KEY, ["pending/aaaaaaaaaaaaaaaa2.jpg", "pending/gone.jpg"]])).r;
+    assert.deepEqual(kept, ["pending/aaaaaaaaaaaaaaaa2.jpg"]);
+  });
+
+  test("clicks per link: people per link in the story's order, only for its own links, following the link through a fix", async () => {
+    const s = await live({ no: 9, visitor: "maker", links: [{ label: "Spotify", url: "https://open.spotify.com/x" }, { label: "Bandcamp", url: "https://lowtide.bandcamp.com" }] });
+    const click = (v, url) => one("select public.record_event($1, $2, 'link_click', $3, 'ip', null, $4) r", [KEY, s.id, v, url]);
+    await click("a", "https://lowtide.bandcamp.com");
+    await click("b", "https://lowtide.bandcamp.com");
+    await click("b", "https://lowtide.bandcamp.com");
+    await click("c", "https://open.spotify.com/x");
+    await click("d", "https://evil.example");
+    await click("maker", "https://open.spotify.com/x");
+    const stats = async () => (await one("select public.maker_stats($1, 'maker', $2) r", [KEY, [s.id]])).r[0];
+    const st = await stats();
+    assert.deepEqual(st.links, [1, 2]);
+    assert.equal(st.clicked, 4);
+    assert.equal(st.edits, 0);
+    /* Bandcamp moves to the front in a fix: its people go with it */
+    await fix(s.id, "maker", { ...words, links: [{ label: "Bandcamp", url: "https://lowtide.bandcamp.com" }] });
+    assert.deepEqual((await stats()).links, [2]);
+  });
+
+  test("a fix: its maker only, while live, in the first hour, at most 10 times; words and links only", async () => {
+    const s = await live({ no: 11, visitor: "maker", audioTitle: "Old EP", milestone: "Tour", milestoneOn: "2026-12-01" });
+    await rejects(fix(s.id, "someone-else", words), /not_yours/);
+    const left = (await fix(s.id, "maker", { ...words, audioTitle: "Night Bus EP", milestone: "", milestoneOn: "2026-12-01", excerpt: "not for music" })).r;
+    assert.equal(left, 9);
+    const row = await one("select name, snippet, links, audio_title, milestone, milestone_on, excerpt, lane, spot_no, artwork_key, edits from public.stories where id = $1", [s.id]);
+    assert.deepEqual([row.snippet, row.audio_title, row.milestone, row.milestone_on, row.excerpt, row.lane, row.spot_no, row.edits], ["Fixed line.", "Night Bus EP", null, null, null, "music", 11, 1]);
+    assert.equal(row.links[0].label, "Bandcamp");
+    /* the signed-in account with the checkout email may fix it too */
+    const U = "00000000-0000-4000-8000-0000000000f1";
+    await db.query("insert into auth.users values ($1, 'maker@example.com')", [U]);
+    assert.equal((await fix(s.id, "new-phone", words, U)).r, 8);
+    for (let i = 0; i < 8; i++) await fix(s.id, "maker", words);
+    await rejects(fix(s.id, "maker", words), /too_many/);
+    const t = await live({ no: 12, visitor: "maker" });
+    await age(t.id, "61 minutes");
+    await rejects(fix(t.id, "maker", words), /too_late/);
+    await rejects(one("select public.maker_edit('nope', $1, 'maker', null, '{}')", [t.id]), /forbidden/);
+  });
+
+  test("an ended story's report: how many of its lane's spots that month had fewer opens", async () => {
+    const mine = await live({ no: 20, visitor: "maker" });
+    const others = [];
+    for (let i = 0; i < 4; i++) others.push(await live({ no: 30 + i, visitor: "o" + i, email: "" }));
+    await db.query("update public.stories set opens = 10 where id = $1", [mine.id]);
+    await db.query("update public.stories set opens = 3 where id = any($1)", [others.slice(0, 3).map((o) => o.id)]);
+    await db.query("update public.stories set opens = 50 where id = $1", [others[3].id]);
+    for (const o of others) await age(o.id, "74 hours");
+    await age(mine.id, "73 hours");
+    const [e] = (await one("select public.maker_ended($1, 'maker', $2) r", [KEY, [mine.id]])).r;
+    assert.deepEqual(e.standing, { peers: 4, fewer: 3 });
+    assert.ok(Array.isArray(e.stats.links));
   });
 });

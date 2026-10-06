@@ -27,6 +27,8 @@ export const OVERRIDES = [
   "16-speed.css",
   "17-maker-again.css",
   "18-card-calmer.css",
+  "19-maker-tools.css",
+  "20-scout-it.css",
 ] as const;
 
 /** All parts, joined in order (the layout inlines it; the visual suite adds it to the reference). */

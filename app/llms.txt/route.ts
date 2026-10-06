@@ -20,10 +20,10 @@ ${DESCRIPTION}
 
 - The Wall: six lanes (${LANES.map((l) => l.label).join(", ")}) of 500 numbered spots each. Everyone sees the same wall; each visit starts at a different spot.
 - A Spot is one maker's placement for 72 hours. Makers claim a spot in Create, add artwork, a pitch, up to three links and a preview, ${FREE ? "and place it, free for now" : "and pay once"}.
-- Hotspots, above The Wall: five spots with traction right now (opens, visits to the maker, Timehearts and shares in recent hours, per person and per time seen); a spot's turn fades after a few hours. Newest: the five that joined last.
-- Visitors open a Discovery to play, read or watch its preview, give it a Timeheart to keep it in their Scouts, and share its lasting link.
-- Scout: signed in, every Timeheart is a call, recorded with how many people had kept the Discovery before. An Early Call is one among the first 20% of its keepers, before it broke out (became a Hotspot, or grew to 25 keepers and three times that place). Scouts see their Early Calls and, once there are enough Scouts, a private percentile and tier (Top 25%, 10% or 3%) they can choose to share. No leaderboards or public rankings; Scouting never affects Hotspots.
-- Scouts (a visitor's history) keep each Discovery's line for that visitor: how many people had kept it when they did, whether they found it early (among the first 10% to keep it, or before it became a Hotspot), and whether its maker is back.
+- Hotspots, above The Wall: five spots with traction right now (opens, visits to the maker, scouts and shares in recent hours, per person and per time seen); a spot's turn fades after a few hours. Newest: the five that joined last.
+- Visitors open a Discovery to play, read or watch its preview, scout it to keep it in their Scouts, and share its lasting link.
+- Scout: signed in, every scout is a call, recorded with how many people had kept the Discovery before. An Early Call is one among the first 20% of its keepers, before it broke out (became a Hotspot, or grew to 25 keepers and three times that place). Scouts see their Early Calls and, once there are enough Scouts, a private percentile and tier (Top 25%, 10% or 3%) they can choose to share. No leaderboards or public rankings; Scouting never affects Hotspots.
+- Scouts (a visitor's history) keep each Discovery's line for that visitor: how many people had scouted it when they did, whether they found it early (among the first 10% to scout it, or before it became a Hotspot), and whether its maker is back.
 - After 72 hours the spot's number opens up for the next maker. The Discovery's lasting link keeps working and says its time on The Wall has ended.
 
 ## Key facts

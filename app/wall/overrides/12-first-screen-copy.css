@@ -76,7 +76,7 @@
 @media (max-width:979px){.sv-explore{min-height:44px}}
 .lc-row.mine .mine-kept{grid-column:1/3;margin-top:2px;font-family:"Fraunces",Georgia,serif;font-style:italic;font-weight:500;font-size:12.5px;line-height:1.35;color:rgba(20,18,16,.75);white-space:normal}
 
-/* the nudge after a Timeheart: a short question, not a wall */
+/* the nudge after a scout: a short question, not a wall */
 .scout-nudge small{display:block;margin-top:2px;font-size:12.5px}
 .scout-x{width:auto;padding:0 10px;font-size:13px;font-weight:700;text-decoration:underline;text-underline-offset:3px}
 @media (max-width:699px){.scout-x{width:auto}}

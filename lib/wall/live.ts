@@ -37,6 +37,11 @@ export type FeedStory = {
   endsAt: string;
   opens: number;
   saves: number;
+  /* only present when the story has them (private.story_extras) */
+  audioTitle?: string;
+  milestone?: string;
+  milestoneOn?: string;
+  gallery?: string[];
 };
 export type Feed = { now: string; stories: FeedStory[]; held: [LaneId, number][]; hot?: HotEntry[] };
 
@@ -88,6 +93,17 @@ export function toSpot(s: FeedStory, no: number, base: string, mine: ReadonlySet
     audio: mediaURL(base, "audio", s.audio),
     excerpt: s.excerpt ? { t: s.excerptTitle || "", x: s.excerpt } : null,
     trailer: s.trailerUrl ? { url: s.trailerUrl, len: s.trailerLen || "" } : null,
+    ...extrasOf(s, base),
+  };
+}
+
+/** The audio line, the milestone and the extra images, as a spot carries them (only those the story has). */
+export function extrasOf(s: Pick<FeedStory, "audioTitle" | "milestone" | "milestoneOn" | "gallery">, base: string): Pick<FilledSpot, "audioTitle" | "milestone" | "gallery"> {
+  const gallery = (s.gallery ?? []).map((p) => mediaURL(base, "art", p)).filter((u): u is string => !!u);
+  return {
+    ...(s.audioTitle && { audioTitle: s.audioTitle }),
+    ...(s.milestone && { milestone: { t: s.milestone, ...(s.milestoneOn && { on: s.milestoneOn }) } }),
+    ...(gallery.length && { gallery }),
   };
 }
 
@@ -129,6 +145,9 @@ export function openNumbers(feed: Feed, lane: LaneId): number[] {
  * else a new place at the end), and counters follow the feed.
  * Returns true when the wall's layout changed.
  */
+/** What a maker can change in a live spot's first hour (maker_edit). */
+const EDITABLE = ["name", "snippet", "links", "excerpt", "trailer", "audioTitle", "milestone"] as const satisfies readonly (keyof FilledSpot)[];
+
 export function mergeFeed(wall: Spot[], feed: Feed, base: string, mine: ReadonlySet<string> = new Set()): boolean {
   const byId = new Map(feed.stories.map((s) => [s.id, s]));
   const onWall = new Set<string>();
@@ -142,6 +161,15 @@ export function mergeFeed(wall: Spot[], feed: Feed, base: string, mine: Readonly
       return;
     }
     onWall.add(f.id);
+    /* its maker fixed something in its first hour: the words and links follow */
+    const latest = toSpot(f, s.no, base, mine);
+    if (!(s.fixedUntil && s.fixedUntil > Date.now()))
+    for (const k of EDITABLE)
+      if (JSON.stringify(s[k] ?? null) !== JSON.stringify(latest[k] ?? null)) {
+        if (latest[k] === undefined) delete s[k];
+        else (s as Record<string, unknown>)[k] = latest[k];
+        changed = true;
+      }
     s.opens = Math.max(s.opens, f.opens);
     s.saves = f.saves;
     const { end } = endOf(f);

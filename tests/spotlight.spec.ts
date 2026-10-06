@@ -143,6 +143,6 @@ test.describe("behaviour", () => {
     });
     await wall.goto();
     await expect(page.locator(".sq-r").first()).toHaveText(/^#7 of \d+$/);
-    await expect(page.locator(".sq-r").first()).toHaveAttribute("title", /7th to give this a Timeheart\. \d+ people have now/);
+    await expect(page.locator(".sq-r").first()).toHaveAttribute("title", /7th to scout this\. \d+ people have now/);
   });
 });
