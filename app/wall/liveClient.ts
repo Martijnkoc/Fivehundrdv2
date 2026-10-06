@@ -62,7 +62,7 @@ export function addMine(id: string) {
 }
 
 export type EventKind = "open" | "save" | "unsave" | "link_click" | "share" | "entry";
-/** `token`: a signed-in visitor's access token, so a Timeheart is the account's Scout call. */
+/** `token`: a signed-in visitor's access token, so a scout is the account's Scout call. */
 /** `link`: for a link click, the address of the maker's link that was clicked (clicks per link). */
 export function sendEvent(story: string, kind: EventKind, token?: string | null, link?: string) {
   const body = JSON.stringify({ story, kind, visitor: visitorId(), ...(link && { link }) });
@@ -322,7 +322,7 @@ export async function signIn(via: string, remind: boolean): Promise<string | nul
     localStorage.setItem(SIGNING_IN, String(Date.now()));
   } catch {}
   const auth = (await supabase()).auth;
-  /* back to the spot you were on (Scout: the Timeheart that led here) */
+  /* back to the spot you were on (Scout: the scout that led here) */
   const back = location.origin + (location.pathname.startsWith("/s/") ? location.pathname : "/");
   if (via === "Google" || via === "Apple") {
     const id = via.toLowerCase() as "google" | "apple";
@@ -418,7 +418,7 @@ async function scoutFetch<T>(path: string, body?: unknown): Promise<T | null> {
   }
 }
 
-/** This browser's history joins the account; `story`: the Timeheart that led to signing in. */
+/** This browser's history joins the account; `story`: the scout that led to signing in. */
 export const scoutAttach = (story?: string) => scoutFetch<{ migrated: number; counted: number }>("/api/scout/attach", { visitor: visitorId(), story });
 export const scoutMe = () => scoutFetch<ScoutMe>("/api/scout/me");
 /** Shares the Scout Card (or stops); the link's slug, null when off. */

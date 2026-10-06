@@ -1,7 +1,7 @@
 import { createElement, memo, type CSSProperties } from "react";
 import { BRAND, OPEN_SPOT } from "../../lib/site/copy";
 import { artShapes, genArt } from "../../lib/wall/art";
-import { EYE, HANDS, HEART, LANE_ICON_PATHS } from "../../lib/wall/icons";
+import { EYE, FLAG_SMALL, LANE_ICON_PATHS } from "../../lib/wall/icons";
 import { COST, LANE, LIFE, fmt, numOf, pad, type FilledSpot, type LaneId, type Palette, type Spot } from "../../lib/wall/model";
 import { LAST, age, clock, left, phase, short, spotStyle } from "../../lib/wall/time";
 
@@ -123,8 +123,8 @@ function Filled({ s, open, still, compact, since, big }: { s: FilledSpot; open: 
               <PillIcon paths={EYE} />
               <b data-o="">{fmt(s.opens)}</b>
             </i>
-            <i className="m-v" title="Timehearts: people keeping it">
-              <PillIcon paths={HEART + HANDS} />
+            <i className="m-v" title="Scouted by this many people">
+              <PillIcon paths={FLAG_SMALL} />
               <b data-v="">{fmt(s.saves)}</b>
             </i>
           </span>

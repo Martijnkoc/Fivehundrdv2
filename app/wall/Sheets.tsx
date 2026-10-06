@@ -234,7 +234,7 @@ function ScoutShare({ me, call, base }: { me: ScoutMe; call?: ScoutCall; base: s
             <span className="scs-brand">Fivehundrd Scout</span>
             {one && <span className="scs-kick">I called this early.</span>}
             {one && <b className="scs-story">{one.name}</b>}
-            {one && <span className="scs-line">{`Found #${one.position} · ${one.breakout === "hotspot" ? "now a Hotspot" : `${(one.finalKeepers ?? one.keepersNow).toLocaleString("en-US")} kept it`}`}</span>}
+            {one && <span className="scs-line">{`Found #${one.position} · ${one.breakout === "hotspot" ? "now a Hotspot" : `${(one.finalKeepers ?? one.keepersNow).toLocaleString("en-US")} scouted it`}`}</span>}
             <b className="scs-name">{name.trim() || "A Fivehundrd Scout"}</b>
             <span className="scs-status">{tier ? `Top ${me.percentile}% · ${TIER_NAME[tier as keyof typeof TIER_NAME]}` : status.head === "Scout" ? "Scout" : "Fivehundrd Scout"}</span>
             {!one && (me.early > 0 || me.hotspots > 0) && (
@@ -277,7 +277,7 @@ function ScoutShare({ me, call, base }: { me: ScoutMe; call?: ScoutCall; base: s
 }
 const closeSheet = () => (document.querySelector("#shareSheet [data-close]") as HTMLElement | null)?.click();
 
-/** §12, now Scout: signing in. Browsing and Timehearts never need it. */
+/** §12, now Scout: signing in. Browsing and scouts never need it. */
 function Keep() {
   const st = useSyncExternalStore(wallStore.subscribe, wallStore.get, wallStore.getServer);
   const email = useRef<HTMLInputElement>(null);

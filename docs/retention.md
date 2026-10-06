@@ -6,7 +6,7 @@ Approved 2026-09-27. Three visible layers; everything else is data.
    by priority: something you called became a Hotspot → a Find ends within 6h → Finds
    gaining saves (≥ max(5, 50%) since your last visit) → a maker you found is back.
    10% of live visitors (fixed by visitor id) don't see it: the control group.
-2. **Call it** was replaced by Scout on 2026-09-28 (docs/scout.md): the Timeheart is the
+2. **Call it** was replaced by Scout on 2026-09-28 (docs/scout.md): the scout is the
    call. Its button and `/api/call` are gone; `public.call_story` and the `calls` rows it
    made stay, so the Finds of people who called before still show it ("Called 3rd · Sep 27").
 3. **Finds** (`app/wall/Card.tsx`): one line each, by priority: call became a Hotspot

@@ -4,9 +4,11 @@ import type { LaneId } from "./model";
 
 export const EYE = '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>';
 export const BOOKMARK = '<path d="M6 3h12v18l-6-4-6 4z"/>';
-/** The Timeheart (craft pass): a heart with a clock's hands in it. */
-export const HEART = '<path d="M12 20.5s-8-4.7-8-10.6A4.4 4.4 0 0 1 12 7.3a4.4 4.4 0 0 1 8 2.6c0 5.9-8 10.6-8 10.6z"/>';
-export const HANDS = '<path d="M12 9.6v3.6l2.4 1.5"/>';
+/** Scout it (2026-10-06, was the Timeheart's heart and clock hands): a flag with a notch, "I was here first". The cloth fills; the pole stays a line. */
+export const FLAG = '<path d="M6.5 4h12l-3.2 4.6 3.2 4.6h-12z"/>';
+export const POLE = '<path d="M6.5 3v18"/>';
+/** The tile's count: the same flag, its cloth filled so it reads at 10px. */
+export const FLAG_SMALL = '<path d="M6.5 4h12l-3.2 4.6 3.2 4.6h-12z" fill="currentColor"/><path d="M6.5 3v18"/>';
 
 export const ICON = {
   eye: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">${EYE}</svg>`,

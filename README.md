@@ -131,6 +131,7 @@ which were signed off:
     - **Share my card** under "Your story": the share sheet with every size, the 9:16 story card for Instagram and TikTok included.
     - **In the story**: what the audio clip is from (Music, Podcasts), something coming up with a day that counts down and disappears once it has passed, and up to two more images for Art and Games. The wall only carries their names; the images load when the spot is open.
     - `/api/wall` is now cached at the edge only (`Vercel-CDN-Cache-Control`). The browser's `stale-while-revalidate` showed a reload a wall from up to 45 seconds earlier.
+27. **Scout it** replaces Timeheart, approved 2026-10-06 (`overrides/20-scout-it.css`). The action is **Scout it**, its done state **Scouted**, and the counts read "18 scouted it", so the word matches the Scout Card and "See it. Scout it. Watch what happens." The heart with a clock's hands is now a flag, on the button and on every tile's count. Scouting waves the flag where the heart beat. Only the words and the icon changed: the data is the same (`saves`, calls), and so are the founder events (`from: "timeheart"`). The items above keep the old name where they describe what was built then.
 
 CSS for these lives in `app/wall/overrides/`, one file per part, joined in order (`app/wall/overrides/index.ts`). The visual suite applies it
 to the reference too, so the baselines are "the reference plus the approved

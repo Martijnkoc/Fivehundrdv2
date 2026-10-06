@@ -129,7 +129,8 @@ test.describe("desktop", () => {
     const text = await page.locator("body").innerText();
     expect(text).not.toMatch(/\b(My Finds|Finds|Saved|Likes?|Favou?rites?|Bookmarks?|Trending|Listings?|Campaigns?)\b/);
     expect(text).toContain("Your Scouts");
-    expect(text).toContain("Kept");
+    expect(text).toContain("Scouted");
+    expect(text).not.toMatch(/Timeheart/);
   });
 
   test("signed in without Scouts yet: where the story starts", async ({ wall, page }) => {

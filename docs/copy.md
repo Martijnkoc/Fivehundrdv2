@@ -21,8 +21,8 @@ This is the one-line promise and what's on the Wall, today's numbers (with
 Come back. There are no separate buttons under the promise, so the first
 screen stays short and the Wall shows sooner. The Wall itself is the way in.
 
-The first screen is only shown on a first visit. Once a visitor has given a
-Timeheart (`fh-intro`) or signed in (`fh-account`), an inline script adds
+The first screen is only shown on a first visit. Once a visitor has scouted
+something (`fh-intro`) or signed in (`fh-account`), an inline script adds
 `.fh-back` to `<html>` before the first paint. The wall then starts right
 under the header, so nothing jumps.
 
@@ -41,7 +41,7 @@ action, with no heading that promises numbers. The box is not a live region.
 
 ## Vocabulary
 
-Wall · Spot · Discovery · Timeheart (the action) · Kept (its done state) ·
+Wall · Spot · Discovery · Scout it (the action) · Scouted (its done state) ·
 Scout (the person, and the verb) · Scouts (your list) · Scout Card · Early
 Call · Hotspot · Open Spot.
 
@@ -51,7 +51,7 @@ and the phone tab says "Claim".
 
 ## Truthfulness rules the copy follows
 
-- **Step 3** says "Signed in". A Timehearted story is kept on the device
+- **Step 3** says "Signed in". A scouted story is kept on the device
   without an account, but earliness is only proven for signed-in calls.
 - **"You called it early."** is only said once a call is settled
   (`settledAt`, an Early Call). A breakout while the story is still live says
@@ -64,7 +64,7 @@ and the phone tab says "Claim".
   signal.
 - **Your Wall Today** only shows lines that are true today:
   - new spots since your last visit
-  - Scouts that gained Timehearts while you were away
+  - Scouts that gained scouts while you were away
   - Scouts that end within 6 hours
 
   When there's nothing to say, the section is left out.

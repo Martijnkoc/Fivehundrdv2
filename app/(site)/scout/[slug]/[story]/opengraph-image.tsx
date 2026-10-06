@@ -13,7 +13,7 @@ export default async function Image({ params }: { params: Promise<{ slug: string
   return scoutImage({
     kicker: "I called this early.",
     title: c.name,
-    lines: [`Found #${c.position} · ${c.hotspot ? "now a Hotspot" : `${c.keepersNow.toLocaleString("en-US")} kept it`}`],
+    lines: [`Found #${c.position} · ${c.hotspot ? "now a Hotspot" : `${c.keepersNow.toLocaleString("en-US")} scouted it`}`],
     name: c.scout,
     standing: standing(c),
     tier: c.tier,

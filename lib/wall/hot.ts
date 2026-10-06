@@ -26,7 +26,7 @@ export function hotspots(wall: Spot[], hot: HotEntry[] | null, lane: NavId, n = 
       .slice(0, n)
       .map(({ h, s }) => ({
         s,
-        why: h.saves ? `${plural(h.saves, "Timeheart")} lately` : h.clicks ? `${plural(h.clicks, "visit")} to the maker` : `${plural(h.opens, "open")} lately`,
+        why: h.saves ? `${h.saves.toLocaleString("en-US")} scouted it lately` : h.clicks ? `${plural(h.clicks, "visit")} to the maker` : `${plural(h.opens, "open")} lately`,
       }));
   }
   /* the demo wall: its own counters, favouring saves, per hour on the wall */

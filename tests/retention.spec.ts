@@ -3,7 +3,7 @@ import { expect, test, viewports } from "./wall";
 /*
  * Retention (docs/retention.md): the one line of history under each Find,
  * the one personal thing "since your last visit" says. (Call it became the
- * Scout Timeheart, docs/scout.md; its old calls still show in the history.) The
+ * Scout Scout it, docs/scout.md; its old calls still show in the history.) The
  * history normally comes from the database (/api/finds); on the fixture wall
  * it is seeded into the browser's copy (fh-finds).
  */
@@ -39,7 +39,7 @@ test.describe("behaviour", () => {
     await expect(lines).toHaveCount(3);
     expect((await lines.allInnerTexts()).sort()).toEqual(["Called 3rd · 14h early", "Found at 23 · now 1,284", "Maker is back"].sort());
     await expect(page.locator("#card .sq-r.called")).toHaveAttribute("title", "You called this 14 hours before it became a Hotspot. You were the 3rd to call it.");
-    await expect(page.locator("#card .sq-r.early")).toHaveAttribute("title", /You were the 23rd to give this a Timeheart, among the first 10% of the people who did\. 1,284 keep it now\./);
+    await expect(page.locator("#card .sq-r.early")).toHaveAttribute("title", /You were the 23rd to scout this, among the first 10% of the people who did\. 1,284 have scouted it now\./);
   });
 
   test("since your last visit: the wall's news plus one thing that changed for you", async ({ wall, page }) => {
@@ -99,7 +99,7 @@ for (const viewport of [viewports[2], viewports[0]])
       await expect(wall.openView.locator("[data-share]")).toBeVisible();
       await expect(wall.openView.locator(".act.call")).toHaveCount(0);
       /* "Your story" on the card: the maker's own numbers */
-      await expect(page.locator("#card .mine .mine-nums")).toHaveText(/^(\d[\d,]* (saw it|opened|Timehearts?|to your links|shared)( · )?)+$|^Live now\./);
+      await expect(page.locator("#card .mine .mine-nums")).toHaveText(/^(\d[\d,]* (saw it|opened|scouted it|to your links|shared)( · )?)+$|^Live now\./);
       await wall.goto("", { spotlight: true });
       await page.locator(".sl-tabs").getByRole("tab", { name: "Newest" }).click();
       await expect(page.locator(".sl-item").first()).toHaveAttribute("aria-label", /^Lowtide Club, No\. \d{3}: joined/);

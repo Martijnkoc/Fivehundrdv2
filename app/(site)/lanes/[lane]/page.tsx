@@ -12,7 +12,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const l = laneBySlug((await params).lane);
   if (!l) return {};
   const title = `${l.label}: discover ${l.what}`;
-  const description = `500 spots for ${l.who}, each live for 72 hours. Open one for ${l.preview}, give it a Timeheart, share it. No algorithm, no front row.`;
+  const description = `500 spots for ${l.who}, each live for 72 hours. Open one for ${l.preview}, scout it, share it. No algorithm, no front row.`;
   return {
     title,
     description,

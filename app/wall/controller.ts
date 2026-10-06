@@ -34,7 +34,7 @@ import { cardFileName, readyCard, shareCardBlob } from "./shareCard";
 import { wallStore, type Bridge } from "./store";
 import * as liveApi from "./liveClient";
 import { laneBySlug, lanePath } from "../../lib/site/facts";
-import { CREATE, MAKER } from "../../lib/site/copy";
+import { CREATE, MAKER, SCOUT_IT } from "../../lib/site/copy";
 import { createMoment, startTracking, surface, unwatchTiles, visitorId, watchTiles } from "./track";
 
 type Opts = { align: boolean };
@@ -117,7 +117,7 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
   const ev = (id: string | undefined, kind: liveApi.EventKind, link?: string) => {
     if (!live || !id) return;
     if (kind !== "save" && kind !== "unsave") return liveApi.sendEvent(id, kind, null, link);
-    /* Scout: a signed-in Timeheart is a call made by the account (the server checks the token). The
+    /* Scout: a signed-in Scout it is a call made by the account (the server checks the token). The
        session is read directly, not from ACCOUNT, which is only filled once syncAccount() returns */
     void liveApi.authToken().then((t) => {
       liveApi.sendEvent(id, kind, t);
@@ -327,11 +327,11 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
   if (!live) ACCOUNT = read<Account | null>("fh-account", null);
 
   /* ---------- Scout (docs/scout.md): the signed-in visitor's card and calls ---------- */
-  /** the Timeheart that led to signing in, so it can still count (30 minutes, checked again by the server) */
+  /** the scout that led to signing in, so it can still count (30 minutes, checked again by the server) */
   const PENDING_KEY = "fh-scout-pending";
   const NUDGE_KEY = "fh-scout-nudge";
   let SCOUT: ScoutMe | null = null;
-  /** The demo wall has no accounts: a demo Scout is this browser's Timehearts, building (or a seeded card, fh-scout). */
+  /** The demo wall has no accounts: a demo Scout is this browser's scouts, building (or a seeded card, fh-scout). */
   function demoScout(): ScoutMe | null {
     if (!ACCOUNT) return null;
     const seeded = read<ScoutMe | null>("fh-scout", null);
@@ -357,7 +357,7 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
       refreshSince(false);
     }
   }
-  /** After a Timeheart without an account: the line that says what signing in is for, once a day. */
+  /** After a scout without an account: the line that says what signing in is for, once a day. */
   function scoutNudge(s: FilledSpot) {
     if (ACCOUNT) {
       if (!live) {
@@ -424,7 +424,7 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
   }
 
   /**
-   * The Timeheart (craft pass): keeping a find beats once. The heart fills,
+   * The Scout it (craft pass): keeping a find beats once. The heart fills,
    * its clock hands sweep round, one ring goes out, and the time left on the
    * open spot and on its tile answers. CSS does the motion (overrides/10-craft.css);
    * reduced motion shows only the new state.
@@ -480,7 +480,7 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
       } else flyToCard(li, s, from);
       heartbeat(btn, li);
       scoutNudge(s);
-      toast("Kept in your Scouts.");
+      toast(SCOUT_IT.toast);
       writeText("fh-intro", "1");
       dispatchEvent(new Event("fh-intro-done"));
     }
@@ -603,7 +603,7 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
       history.replaceState(null, "", homeAddress());
     } catch {}
   }
-  /** A click inside an open spot (panel or sheet): its player and links, Timeheart, Share, Next spot. */
+  /** A click inside an open spot (panel or sheet): its player and links, Scout it, Share, Next spot. */
   function coverAction(e: MouseEvent, el: HTMLElement) {
     const t = e.target as Element;
     const s = filledOf(el);
@@ -1256,7 +1256,7 @@ export function startWall(bridge: Bridge, live?: Live): () => void {
     /* signed in: the account's live and ended stories too, from any device */
     void loadMakerStats();
     void loadEnded();
-    /* Scout: this browser's history joins the account; the Timeheart that led here can still count */
+    /* Scout: this browser's history joins the account; the scout that led here can still count */
     const pending = read<{ id: string; at: number } | null>(PENDING_KEY, null);
     drop(PENDING_KEY);
     const story = pending && Date.now() - pending.at < 30 * 60e3 ? pending.id : undefined;

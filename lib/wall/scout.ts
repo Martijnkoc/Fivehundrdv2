@@ -139,20 +139,20 @@ export function statusLine(me: Pick<ScoutMe, "status" | "percentile" | "settled"
 
 /** The one line under a Scout in the list, from its call only. */
 export function callLine(c: ScoutCall): { text: string; title: string; kind: "early" | "moving" | "called" | "ended" } {
-  const before = c.source === "migrated" ? " Kept before you signed in, so it doesn't count toward your Scout standing." : "";
-  const then = `${n(c.keepersThen)} ${c.keepersThen === 1 ? "person" : "people"} had kept it before you`;
+  const before = c.source === "migrated" ? " Scouted before you signed in, so it doesn't count toward your Scout standing." : "";
+  const then = `${n(c.keepersThen)} ${c.keepersThen === 1 ? "person" : "people"} had scouted it before you`;
   if (c.settled && c.early) {
     const now = c.finalKeepers ?? c.keepersNow;
     return c.breakout === "hotspot"
-      ? { kind: "early", text: "Early Call · Hotspot", title: `Early Call: you were #${c.position} to keep it, before it became a Hotspot. ${then}; ${n(now)} kept it.${before}` }
-      : { kind: "early", text: `Early Call · #${c.position}`, title: `Early Call: you were #${c.position} to keep it. ${then}; ${n(now)} kept it.${before}` };
+      ? { kind: "early", text: "Early Call · Hotspot", title: `Early Call: you were #${c.position} to scout it, before it became a Hotspot. ${then}; ${n(now)} scouted it.${before}` }
+      : { kind: "early", text: `Early Call · #${c.position}`, title: `Early Call: you were #${c.position} to scout it. ${then}; ${n(now)} scouted it.${before}` };
   }
   if (!c.settled && c.breakout)
     return {
       kind: "moving",
       text: c.breakout === "hotspot" ? `#${c.position} · now a Hotspot` : `#${c.position} · now ${n(c.keepersNow)}`,
-      title: `You were #${c.position} to keep it and it's moving. ${then}. Whether it's an Early Call is settled when its 72 hours end.${before}`,
+      title: `You were #${c.position} to scout it and it's moving. ${then}. Whether it's an Early Call is settled when its 72 hours end.${before}`,
     };
-  if (c.settled) return { kind: "ended", text: `Scouted #${c.position}`, title: `You were #${c.position} to keep it. ${then}.${before}` };
-  return { kind: "called", text: `#${c.position} · now ${n(c.keepersNow)}`, title: `You were #${c.position} to keep it. ${then}; ${n(c.keepersNow)} keep it now.${before}` };
+  if (c.settled) return { kind: "ended", text: `Scouted #${c.position}`, title: `You were #${c.position} to scout it. ${then}.${before}` };
+  return { kind: "called", text: `#${c.position} · now ${n(c.keepersNow)}`, title: `You were #${c.position} to scout it. ${then}; ${n(c.keepersNow)} have scouted it now.${before}` };
 }

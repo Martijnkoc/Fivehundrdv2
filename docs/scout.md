@@ -4,7 +4,7 @@ Approved 2026-09-28. It replaces "provenance, not competition" (CLAUDE.md) and C
 (docs/retention.md).
 
 **Fivehundrd remembers what you found early.** A signed-in visitor is a Scout. Their
-Timehearts are calls. Calls that prove themselves earn a private percentile and a tier,
+scouts are calls. Calls that prove themselves earn a private percentile and a tier,
 which the Scout can share by their own action.
 
 There is no leaderboard, no ranking of people, no raw score, no points, XP or streaks.
@@ -13,7 +13,7 @@ There is no leaderboard, no ranking of people, no raw score, no points, XP or st
 
 | Word | Meaning |
 |---|---|
-| Timeheart | The action. It keeps a discovery and, for a signed-in visitor, makes a call. |
+| Scout it | The action. It keeps a discovery and, for a signed-in visitor, makes a call. |
 | Kept | The completed state. |
 | Scout | The person: a signed-in visitor with at least one call. |
 | Scouts | Their history: the list that replaced Finds. |
@@ -23,10 +23,10 @@ There is no leaderboard, no ranking of people, no raw score, no points, XP or st
 ## What's recorded
 
 `scout_calls` holds one row per account and story, and one per browser and story. The first
-Timeheart stands: keeping it again doesn't make a new call, and letting go hides it without
+scout stands: scouting it again doesn't make a new call, and letting go hides it without
 removing it from the record.
 
-The snapshot is taken on the server at the moment of the Timeheart, and a trigger stops it
+The snapshot is taken on the server at the moment of the scout, and a trigger stops it
 from ever changing:
 - keepers before you, and your position
 - people who had opened it, and people exposed to it
@@ -73,13 +73,13 @@ A call doesn't count toward reputation (`scored = false`, with flags) when any o
 - it is the 11th or later signed-in call within a minute (`burst`).
 
 Every check is made at the moment of the call (`called_at`), also when signing in makes the
-prompting Timeheart count. Burst and the daily cap count only calls made signed in, never a
-browser's anonymous or migrated history and never the call itself. A Timeheart takes the
+prompting scout count. Burst and the daily cap count only calls made signed in, never a
+browser's anonymous or migrated history and never the call itself. A scout takes the
 clock once, with the story's row locked, so the call, its snapshot and its save event share
-one time and two Timehearts can't share a position
+one time and two scouts can't share a position
 (`supabase/migrations/20260928110000_scout_flags_at.sql`).
 
-The one exception to the first rule: the Timeheart that led to signing in, made within the
+The one exception to the first rule: the scout that led to signing in, made within the
 last 30 minutes on a live story, counts as if made signed in, with the same checks.
 
 Multiple accounts make those accounts ineligible for a percentile this cycle. They keep

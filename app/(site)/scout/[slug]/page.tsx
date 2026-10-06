@@ -34,7 +34,7 @@ export default async function ScoutPage({ params }: Props) {
           <p className="scs-best">
             <span>Strongest call</span>
             <Link href={storyPath({ lane: s.best.lane, no: s.best.no, slug: s.best.slug })}>{s.best.name}</Link>
-            <em>{`Found #${s.best.position} · ${s.best.keepersNow.toLocaleString("en-US")} kept it${s.best.hotspot ? " · a Hotspot" : ""}`}</em>
+            <em>{`Found #${s.best.position} · ${s.best.keepersNow.toLocaleString("en-US")} scouted it${s.best.hotspot ? " · a Hotspot" : ""}`}</em>
           </p>
         )}
       </article>

@@ -35,7 +35,7 @@
 .sv-local{margin:-2px 0 8px;font-size:11.5px;line-height:1.35;color:rgba(20,18,16,.62)}
 @media (max-width:979px){.sc-cta{min-height:44px}.sc-link{padding:12px 0}}
 
-/* after a Timeheart without an account: one quiet line, never a wall */
+/* after a scout without an account: one quiet line, never a wall */
 .scout-nudge{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 0;padding:10px 6px 10px 12px;border-radius:10px;background:color-mix(in oklab,var(--paper),var(--ink) 5%);font-size:13.5px;line-height:1.4;color:var(--ink2)}
 .scout-nudge span{flex:1 1 220px}
 .scout-nudge b{color:var(--ink)}

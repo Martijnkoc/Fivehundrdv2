@@ -13,7 +13,7 @@ export const POST = measured("/api/events", async (req: Request) => {
   const b = (await req.json().catch(() => ({}))) as { story?: string; kind?: string; visitor?: string; link?: unknown };
   if (!b.story || !isUuid(b.story) || !b.kind || !KINDS.has(b.kind) || !b.visitor || !isVisitor(b.visitor))
     return json({ error: "bad request" }, { status: 400 });
-  /* Scout: a signed-in Timeheart is the account's call (only saves carry the account) */
+  /* Scout: a signed-in Scout it is the account's call (only saves carry the account) */
   const user = b.kind === "save" || b.kind === "unsave" ? await userFrom(req) : null;
   try {
     const counted = await rpc<boolean>("record_event", {

@@ -30,7 +30,7 @@ export default async function ScoutCallPage({ params }: Props) {
         <span className="scs-brand">Fivehundrd Scout</span>
         <span className="scs-kick">I called this early.</span>
         <h1 className="scs-story">{c.name}</h1>
-        <span className="scs-line">{`Found #${c.position} · ${c.hotspot ? "now a Hotspot" : `${c.keepersNow.toLocaleString("en-US")} kept it`}`}</span>
+        <span className="scs-line">{`Found #${c.position} · ${c.hotspot ? "now a Hotspot" : `${c.keepersNow.toLocaleString("en-US")} scouted it`}`}</span>
         <span className="scs-name">{c.scout}</span>
         <span className="scs-status">{standing(c)}</span>
       </article>

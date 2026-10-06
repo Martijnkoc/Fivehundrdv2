@@ -74,7 +74,7 @@ function Report({ e }: { e: EndedStory }) {
     [
       ["Saw it", m.seen],
       ["Opened it", m.opened],
-      [m.kept === 1 ? "Timeheart" : "Timehearts", m.kept],
+      ["Scouted it", m.kept],
       ["To your links", m.clicked],
       ["Shared it", m.shared],
     ] as const
@@ -111,7 +111,7 @@ function MakerLine({ nums, final }: { nums: MakerNumbers; final?: boolean }) {
     nums.hotAt && "Hotspot",
     nums.seen > 0 && `${n(nums.seen)} saw it`,
     nums.opened > 0 && `${n(nums.opened)} opened`,
-    nums.kept > 0 && `${n(nums.kept)} ${nums.kept === 1 ? "Timeheart" : "Timehearts"}`,
+    nums.kept > 0 && `${n(nums.kept)} scouted it`,
     nums.clicked > 0 && `${n(nums.clicked)} to your links`,
     nums.shared > 0 && `${n(nums.shared)} shared`,
   ].filter(Boolean) as string[];
@@ -363,7 +363,7 @@ function ScoutCard({ card }: { card: CardData }) {
         <div className="sc-best">
           <span>{SCOUT.strongest}</span>
           <b>{best.name}</b>
-          <em>{`Found #${best.position} · ${(best.finalKeepers ?? best.keepersNow).toLocaleString("en-US")} kept it${best.breakout === "hotspot" ? " · a Hotspot" : ""}`}</em>
+          <em>{`Found #${best.position} · ${(best.finalKeepers ?? best.keepersNow).toLocaleString("en-US")} scouted it${best.breakout === "hotspot" ? " · a Hotspot" : ""}`}</em>
           <button type="button" className="sc-link" data-share-call={best.id}>
             {SCOUT.shareCall}
           </button>
@@ -392,7 +392,7 @@ function WallToday({ today }: { today?: CardData["today"] }) {
   if (!today) return null;
   const lines = [
     today.fresh > 0 && `${today.fresh} new ${today.fresh === 1 ? "spot" : "spots"} since your last visit`,
-    today.moving > 0 && `${today.moving} of your Scouts gained Timehearts while you were away`,
+    today.moving > 0 && `${today.moving} of your Scouts gained new Scouts while you were away`,
     today.ending > 0 && `${today.ending} of your Scouts ${today.ending === 1 ? "ends" : "end"} within 6 hours`,
   ].filter(Boolean) as string[];
   if (!lines.length) return null;

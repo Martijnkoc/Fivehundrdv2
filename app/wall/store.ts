@@ -52,7 +52,7 @@ export type WallState = {
   since: { at: number; fresh: number; gone: number } | null;
   /** The one thing that changed for this visitor (lib/wall/retention.ts). */
   sinceItem: SinceItem | null;
-  /** Scout: after a signed-out Timeheart, the sign-in line shows under that story's actions (its key). */
+  /** Scout: after a signed-out Scout it, the sign-in line shows under that story's actions (its key). */
   scoutNudge: string | null;
 };
 
@@ -254,7 +254,7 @@ export const bridge = {
     scoutMoveSeen?: (id: number) => void;
     /** Shares (or stops sharing) the Scout Card under a chosen name; the card's link, or an error message. */
     scoutShare: (on: boolean, name?: string, fresh?: boolean) => Promise<{ url: string | null } | { error: string }>;
-    /** The sign-in sheet, from a Timeheart: back to this story afterwards. */
+    /** The sign-in sheet, from a scout: back to this story afterwards. */
     scoutSignIn: (story?: string) => void;
     scoutNudgeClosed: () => void;
     /** The first screen's calls to action (docs/copy.md). */

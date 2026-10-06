@@ -1,8 +1,8 @@
 "use client";
 
 import { memo, useEffect, useState, useSyncExternalStore } from "react";
-import { SCOUT, TIMEHEART } from "../../lib/site/copy";
-import { HANDS, HEART, ICON } from "../../lib/wall/icons";
+import { SCOUT, SCOUT_IT } from "../../lib/site/copy";
+import { FLAG, ICON, POLE } from "../../lib/wall/icons";
 import { LANE, LIFE, numOf, pad, rng, type FilledSpot } from "../../lib/wall/model";
 import { skey } from "../../lib/wall/saves";
 import { age, comingUp, left, long } from "../../lib/wall/time";
@@ -150,8 +150,8 @@ function Trailer({ s }: { s: FilledSpot }) {
  */
 
 /**
- * Scout (docs/scout.md): after a Timeheart without an account, one quiet line
- * says what signing in is for. Never a wall: the Timeheart already counts
+ * Scout (docs/scout.md): after a scout without an account, one quiet line
+ * says what signing in is for. Never a wall: the scout already counts
  * and is kept on this device.
  */
 function ScoutNudge({ s }: { s: FilledSpot }) {
@@ -217,14 +217,14 @@ export const Cover = memo(function Cover({ s, saved, preview }: { s: FilledSpot;
               <button className="act solid" data-share="">
                 Share
               </button>
-              {/* craft pass: Save is the Timeheart; keeping a find is its own small moment */}
-              <button className="act th" data-save="" aria-pressed={saved} title={saved ? TIMEHEART.titleDone : TIMEHEART.title}>
+              {/* craft pass: Save is Scout it (was the Timeheart); scouting a find is its own small moment */}
+              <button className="act th" data-save="" aria-pressed={saved} title={saved ? SCOUT_IT.titleDone : SCOUT_IT.title}>
                 <svg className="th-ic" viewBox="0 0 24 24" aria-hidden="true">
-                  <g className="th-fill" dangerouslySetInnerHTML={{ __html: HEART }} />
-                  <g className="th-line" dangerouslySetInnerHTML={{ __html: HEART }} />
-                  <g className="th-hands" dangerouslySetInnerHTML={{ __html: HANDS }} />
+                  <g className="th-fill" dangerouslySetInnerHTML={{ __html: FLAG }} />
+                  <g className="th-line" dangerouslySetInnerHTML={{ __html: FLAG }} />
+                  <g className="th-hands" dangerouslySetInnerHTML={{ __html: POLE }} />
                 </svg>
-                <span>{saved ? TIMEHEART.done : TIMEHEART.give}</span>
+                <span>{saved ? SCOUT_IT.done : SCOUT_IT.give}</span>
               </button>
               <button className="act" data-next="">
                 Next spot

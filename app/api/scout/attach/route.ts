@@ -4,7 +4,7 @@ import { isUuid, isVisitor } from "../../../../lib/server/ids";
 
 /**
  * Scout (docs/scout.md): after signing in, this browser's history joins the
- * account (scout_attach). `story`: the Timeheart that led to signing in,
+ * account (scout_attach). `story`: the scout that led to signing in,
  * which the database lets count only within 30 minutes on a live story.
  */
 export const POST = measured("/api/scout/attach", async (req: Request) => {

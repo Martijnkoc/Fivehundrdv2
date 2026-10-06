@@ -5,7 +5,7 @@
  */
 
 /* the tile says less: art, name, time. Opens stay in the markup for the counters,
-   the Timehearts are quiet ink instead of a pink pill, and inside one lane the
+   the scouts are quiet ink instead of a pink pill, and inside one lane the
    lane label is not repeated on every tile */
 .cap .meta .m-o{display:none}
 .cap .meta i.m-v{background:none;color:var(--ink2);padding:1px 0 1px 2px;font-weight:800}
@@ -18,7 +18,7 @@
 .spot[data-phase="last"] .cap-l .t{background:#1c1b18;color:#d8ff45;padding:1px 6px;border-radius:2px;font-variant-numeric:tabular-nums}
 .spot[data-phase="last"] .book .prog{animation:fh-breathe 2.4s ease-in-out infinite}
 @keyframes fh-breathe{50%{opacity:.35}}
-/* narrow tiles: the label and the Timehearts stay on one line */
+/* narrow tiles: the label and the scouts stay on one line */
 @media (max-width:453px){.spot[data-phase="last"] .cap-l .t{padding:1px 4px;font-size:10.5px;letter-spacing:-.01em}.spot[data-phase="last"] .cap-l{flex-wrap:nowrap}}
 /* Rising: its first three hours; the new dot has a soft halo that fades as it settles */
 .spot[data-phase="rising"] .book .new{box-shadow:0 0 0 2px #1c1b18,0 0 0 5px color-mix(in oklab,#ff7bc3,transparent 55%)}
@@ -68,7 +68,7 @@
 @keyframes fh-unfold{from{clip-path:inset(0 0 100% 0 round 8px)}}
 @keyframes fh-rise{from{opacity:0;transform:translateY(12px)}}
 
-/* the Timeheart: a heart with a clock's hands. Kept, it fills pink; the
+/* the Timeheart (now Scout it and a flag, 20-scout-it.css): a heart with a clock's hands. Kept, it fills pink; the
    moment you give one it beats twice, its hands sweep a full turn, one ring
    goes out in the lane's colour, and the time left answers */
 .act.th{position:relative;display:inline-flex;align-items:center;gap:7px}

@@ -29,7 +29,7 @@ export const INFO: Record<PageSlug, Info> = {
             or creator trailer. Up to three links take you to the maker.
           </li>
           <li>
-            <b>Give what you like a Timeheart.</b> It stays in your Scouts, even after the spot ends. No account needed; sign in and Fivehundrd remembers what you found early.
+            <b>Scout what you like.</b> It stays in your Scouts, even after the spot ends. No account needed; sign in and Fivehundrd remembers what you found early.
           </li>
           <li>
             <b>Share it.</b> Every spot has a lasting link and a share card made for stories and feeds.
@@ -61,18 +61,18 @@ export const INFO: Record<PageSlug, Info> = {
           Above the wall, Hotspots shows five spots with traction right now: how many people opened them, visited the maker, kept them and shared them in the last hours, weighed against how
           often they were seen, so a spot that joined an hour ago can be there too. A spot&apos;s turn in Hotspots fades after a few hours. Switch to Newest for the five that
           joined last. When you come back, the wall tells you how many spots are new since your last visit, and the one thing that changed for you: something you
-          Scouted breaking out, one of your Scouts about to end, Scouts gaining Timehearts, or a maker you found back on the wall.
+          Scouted breaking out, one of your Scouts about to end, Scouts gaining new Scouts, or a maker you found back on the wall.
         </p>
         <h2>Scout</h2>
         <p>
-          Signed in, every Timeheart is a call: Fivehundrd notes, at that moment, how many people had kept the discovery before you. If it then breaks out (it becomes a
-          Hotspot, or grows to at least 25 people keeping it and three times your place) and you were among the first 20% to keep it, it is an Early Call. That is settled
+          Signed in, every scout is a call: Fivehundrd notes, at that moment, how many people had kept the discovery before you. If it then breaks out (it becomes a
+          Hotspot, or grows to at least 25 people scouting it and three times your place) and you were among the first 20% to scout it, it is an Early Call. That is settled
           when its 72 hours end. Your Scout Card shows your Early Calls, and once there are enough Scouts, where you stand among them: Top 25%, 10% or 3%. It is
           private unless you share it. There are no points, no leaderboards and no public rankings, and Scouting never counts toward Hotspots.
         </p>
         <h2>Your Scouts</h2>
         <p>
-          Everything you gave a Timeheart, with one line of its history: the place you kept it at and how many keep it now, and whether it was an Early Call.
+          Everything you scouted, with one line of its history: the place you scouted it at and how many have scouted it now, and whether it was an Early Call.
           Scouts stay after their 72 hours. Without an account they stay in this browser only.
         </p>
         <h2>The lanes</h2>
@@ -248,7 +248,7 @@ export const INFO: Record<PageSlug, Info> = {
           limit any rights you have under the law where you live.
         </p>
         <h2>6. Accounts</h2>
-        <p>Signing in is optional. You can sign in to Scout: your Timehearts become calls and your Scouts follow you to every device.</p>
+        <p>Signing in is optional. You can sign in to Scout: what you scout becomes a call and your Scouts follow you to every device.</p>
         <h2>7. Liability</h2>
         <p>
           Fivehundrd is provided as it is. Links on the wall lead to other sites that we don&apos;t control. To the extent the law allows, our liability is limited to what you paid
@@ -268,7 +268,7 @@ export const INFO: Record<PageSlug, Info> = {
         <h2>Visitors</h2>
         <ul>
           <li>
-            <b>A random visitor id</b> stored in your browser, and your Scouts. They keep your card working and count opens, Timehearts, shares and which of a maker&apos;s links you followed.
+            <b>A random visitor id</b> stored in your browser, and your Scouts. They keep your card working and count opens, scouts, shares and which of a maker&apos;s links you followed.
           </li>
           <li>
             <b>How you arrived and on what</b>: the referring site, campaign tags in the link, device type (phone, tablet or computer) and country. Never your exact location.
@@ -283,7 +283,7 @@ export const INFO: Record<PageSlug, Info> = {
         </ul>
         <h2>Scout (optional)</h2>
         <p>
-          If you sign in, we keep your email address to sync your Scouts across devices. Each Timeheart you give while signed in is kept as a call, with how many people had
+          If you sign in, we keep your email address to sync your Scouts across devices. Each thing you scout while signed in is kept as a call, with how many people had
           kept that discovery before you, so your Scout Card can show your Early Calls and, once there are enough Scouts, your standing among them. Your Scout Card is
           private until you share it; a shared card shows the name you choose, never your email, and you can switch the link off at any time. Where reminders are offered and you leave them on, we also use it to email you
           about an hour before one of your Scouts leaves the wall, through our email provider (Resend). Every reminder has a link to turn them off.

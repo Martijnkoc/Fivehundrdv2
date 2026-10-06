@@ -32,20 +32,20 @@ async function signedIn(page: import("@playwright/test").Page, card: Seed | null
 test.describe("desktop", () => {
   test.use({ viewport: { width: desktop.width, height: desktop.height }, viewportSpec: desktop });
 
-  test("signed out: a Timeheart still works, and one quiet line says what signing in is for, once a day", async ({ wall, page }) => {
+  test("signed out: a scout still works, and one quiet line says what signing in is for, once a day", async ({ wall, page }) => {
     await wall.goto();
     await expect(page.locator("#card .sc-out .lc-h")).toHaveText("Think you know what’s next? Prove it.");
     await expect(page.locator("#card [data-keep]")).toHaveText("Start Scouting");
     await wall.openTile(0);
     await wall.openView.locator("[data-save]").click();
-    await expect(wall.openView.locator("[data-save]")).toHaveText("Kept");
+    await expect(wall.openView.locator("[data-save]")).toHaveText("Scouted");
     const nudge = wall.openView.locator(".scout-nudge");
     await expect(nudge).toContainText("Scout this? Sign in to remember you found it early.");
     await expect(nudge).toContainText("Fivehundrd will track when you discovered it and show you what happens next.");
     await expect(nudge.locator(".scout-in")).toHaveText("Sign in & Scout");
     await nudge.getByRole("button", { name: "Not now" }).click();
     await expect(nudge).toHaveCount(0);
-    /* the next Timeheart today: no line */
+    /* the next Scout it today: no line */
     const no = await wall.openView.getAttribute("data-no");
     await wall.openView.locator("[data-next]").click();
     await expect(wall.openView).not.toHaveAttribute("data-no", no ?? "");
@@ -77,7 +77,7 @@ test.describe("desktop", () => {
     await expect(card).toHaveAttribute("data-tier", "silver");
     await expect(page.locator("#card .sc-status")).toHaveText("Top 8%Silver Scout");
     await expect(page.locator("#card .sc-facts")).toHaveText("42 Scouts · 11 Early Calls · 4 became Hotspots");
-    await expect(page.locator("#card .sc-best")).toContainText("Lowtide ClubFound #14 · 1,284 kept it · a Hotspot");
+    await expect(page.locator("#card .sc-best")).toContainText("Lowtide ClubFound #14 · 1,284 scouted it · a Hotspot");
     await expect(page.locator("#card .sc-move")).toContainText("Your eye is getting sharper.You’re now a Silver Scout. Top 10% of Fivehundrd Scouts.Some of the things you found early are starting to move.");
     await expect(page.locator("#card .sc-move button")).toHaveText(["See your Scouts", "Share your Scout Card"]);
     await page.reload();
@@ -117,7 +117,7 @@ test.describe("desktop", () => {
     await wall.goto();
     const lines = page.locator("#card .sq-r");
     expect((await lines.allInnerTexts()).sort()).toEqual(["#12 · now 340", "Early Call · Hotspot"]);
-    await expect(page.locator("#card .sq-r.early")).toHaveAttribute("title", /before it became a Hotspot.*Kept before you signed in/);
+    await expect(page.locator("#card .sq-r.early")).toHaveAttribute("title", /before it became a Hotspot.*Scouted before you signed in/);
   });
 
   test("sharing: what the link shows, a name of your choosing, never the email", async ({ wall, page }) => {
@@ -154,7 +154,7 @@ test.describe("desktop", () => {
 test.describe("phone", () => {
   test.use({ viewport: { width: phone.width, height: phone.height }, viewportSpec: phone, hasTouch: true });
 
-  test("after a Timeheart the sign-in prompt comes into view in the sheet", async ({ wall, page }) => {
+  test("after a scout the sign-in prompt comes into view in the sheet", async ({ wall, page }) => {
     await wall.goto();
     await wall.openTile(3);
     await wall.openView.locator("[data-save]").click();

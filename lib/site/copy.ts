@@ -3,7 +3,7 @@
  * Create and the site read their headlines, calls to action and empty states
  * from here, so the same thing is always called the same.
  *
- * Vocabulary: Wall · Spot · Discovery · Timeheart · Kept · Scout · Scouts ·
+ * Vocabulary: Wall · Spot · Discovery · Scout it · Scouted · Scout · Scouts ·
  * Scout Card · Early Call · Hotspot · Open Spot. Never: likes, favorites,
  * bookmarks, saved, finds, posts, listings, campaigns, trending.
  *
@@ -36,23 +36,24 @@ export const STEPS = {
   head: "See it. Scout it. Watch what happens.",
   items: [
     { t: "Discover", d: "Explore the Wall and find something you didn’t know yet. Every spot is gone after 72 hours." },
-    { t: "Scout", d: "Seen something early? Give it a Timeheart. It becomes one of your Scouts." },
+    { t: "Scout", d: "Seen something early? Scout it. It goes in your Scouts." },
     { t: "Come back", d: "Signed in, Fivehundrd remembers when you found it. If it takes off, you can prove you were early." },
   ],
 };
 
-export const TIMEHEART = {
-  give: "Timeheart",
-  done: "Kept",
-  title: "Timeheart: remember this. It goes in your Scouts, even after it leaves the Wall.",
-  titleDone: "Kept in your Scouts. Tap to let it go.",
-  toast: "Kept in your Scouts.",
+/** The action (renamed from "Timeheart", 2026-10-06): scouting a discovery, with a flag. */
+export const SCOUT_IT = {
+  give: "Scout it",
+  done: "Scouted",
+  title: "Scout it: remember you found this. It goes in your Scouts, even after it leaves the Wall.",
+  titleDone: "In your Scouts. Tap to let it go.",
+  toast: "Scouted. It's in your Scouts.",
 };
 
 export const SCOUT = {
   pitchHead: "Think you know what’s next? Prove it.",
   pitch: [
-    "When you give something a Timeheart, you become one of its Scouts.",
+    "When you scout something, you become one of its Scouts.",
     "Find great things early and your Scout Card gets stronger over time.",
   ],
   tiers: [
@@ -72,7 +73,7 @@ export const SCOUT = {
   startsBody: "Scout a few things you believe in. We’ll remember when you found them.",
   buildingHead: "Building your Scout history",
   buildingSub: (n: number) => `Your standing shows once ${n} of your Scouts have had their 72 hours.`,
-  /* after a Timeheart without an account */
+  /* after scouting without an account */
   askHead: "Scout this?",
   askBody: "Sign in to remember you found it early.",
   askSub: "Fivehundrd will track when you discovered it and show you what happens next.",

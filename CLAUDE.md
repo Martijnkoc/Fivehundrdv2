@@ -5,8 +5,8 @@
 These hold for every change, whoever asks for it; raise it before building anything that breaks one.
 
 - **Reputation for taste, never competition.** (Replaces "provenance, not competition",
-  2026-09-28, by Martijn.) Signed-in visitors are Scouts: their Timehearts are calls with a
-  snapshot frozen at that moment, and proven early calls earn a private percentile and a tier
+  2026-09-28, by Martijn.) Signed-in visitors are Scouts: each thing they scout ("Scout it", formerly Timeheart) is a call
+  with a snapshot frozen at that moment, and proven early calls earn a private percentile and a tier
   (Gold top 3%, Silver 10%, Bronze 25%), shown only to them and shared only by their own
   explicit action. No leaderboards, no rankings of people, no "#1 Scout", no public lists,
   no raw scores, no points, XP or streaks. Tiers and percentiles only exist above a minimum

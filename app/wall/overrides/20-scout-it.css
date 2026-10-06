@@ -1,0 +1,17 @@
+
+/*
+ * Scout it (approved 2026-10-06): the Timeheart's name and its heart with a
+ * clock's hands become "Scout it" and a flag, "I was here first". Scouted,
+ * the cloth fills pink as the heart did; the pole stays a line and no longer
+ * turns like the hands did; giving one waves the flag instead of sweeping.
+ * The tile's count uses the same flag.
+ */
+.th-line,.th-fill{transform-box:fill-box}
+.th-line{transform-origin:0% 60%}
+.th-hands path{stroke-width:2.2}
+@media (hover:hover){.act.th:not([aria-pressed="true"]):hover .th-hands{transform:none}
+  .act.th:not([aria-pressed="true"]):hover .th-line{animation:fh-wave .6s cubic-bezier(.3,.9,.3,1)}}
+.act.th.beat .th-hands{animation:none}
+.act.th.beat .th-line{animation:fh-wave .7s cubic-bezier(.3,.9,.3,1)}
+@keyframes fh-wave{30%{transform:skewY(-9deg) scaleX(.94)}65%{transform:skewY(5deg)}}
+@media (prefers-reduced-motion:reduce){.act.th .th-line,.act.th:hover .th-line{animation:none}}
